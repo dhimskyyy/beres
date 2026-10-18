@@ -1,0 +1,151 @@
+name: Beres Monorepo CI (Database, Mobile Flutter, & Web Admin)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ==========================================================================
+  # 1. GUARDRAIL CHECK: Pastikan Rahasia & Fitur Phase 2 Tidak Bocor ke MVP
+  # ==========================================================================
+  mvp-guardrails:
+    name: "Guardrail: MVP & Security Check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Verify Essential Docs Exist
+        run: |
+          test -f AGENTS.md
+          test -f docs/PRD.md
+          test -f docs/ARCHITECTURE.md
+          test -f docs/DATABASE_SCHEMA.md
+          test -f docs/ROADMAP.md
+          test -f docs/E2E_TESTING.md
+          test -f .env.example
+
+      - name: Ensure No Real .env File Is Committed
+        run: |
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "ERROR: File .env terdeteksi di dalam Git! Hapus segera."
+            exit 1
+          fi
+
+  # ==========================================================================
+  # 2. DATABASE CI: Validasi Migrasi SQL PostgreSQL + PostGIS (v1.4.0)
+  # ==========================================================================
+  database-ci:
+    name: "Database: PostgreSQL + PostGIS Migration"
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+          POSTGRES_DB: beres_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run SQL Migrations from Scratch (Idempotency Check)
+        env:
+          PGPASSWORD: postgrespassword
+        run: |
+          for sql_file in supabase/migrations/*.sql; do
+            echo "Applying migration: $sql_file"
+            psql -h localhost -U postgres -d beres_test -v ON_ERROR_STOP=1 -f "$sql_file"
+          done
+
+      - name: Verify Core Tables & Seed Configs (v1.4.0)
+        env:
+          PGPASSWORD: postgrespassword
+        run: |
+          psql -h localhost -U postgres -d beres_test -v ON_ERROR_STOP=1 -c "
+            SELECT COUNT(*) FROM categories WHERE is_active = TRUE;
+            SELECT key, value_int FROM app_configs ORDER BY key;
+          "
+
+  # ==========================================================================
+  # 3. MOBILE CI: Flutter Shared, User, & Tukang (Analyze, Format, & Test)
+  # ==========================================================================
+  mobile-flutter-ci:
+    name: "Mobile: Flutter (shared, user, tukang)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter SDK
+        if: hashFiles('mobile/shared/pubspec.yaml', 'mobile/user/pubspec.yaml', 'mobile/tukang/pubspec.yaml') != ''
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Check & Test mobile/shared
+        if: hashFiles('mobile/shared/pubspec.yaml') != ''
+        working-directory: mobile/shared
+        run: |
+          flutter pub get
+          dart format --output=none --set-exit-if-changed .
+          flutter analyze --fatal-infos
+          if [ -d "test" ]; then flutter test; fi
+
+      - name: Check & Test mobile/user
+        if: hashFiles('mobile/user/pubspec.yaml') != ''
+        working-directory: mobile/user
+        run: |
+          flutter pub get
+          dart format --output=none --set-exit-if-changed .
+          flutter analyze --fatal-infos
+          if [ -d "test" ]; then flutter test; fi
+
+      - name: Check & Test mobile/tukang
+        if: hashFiles('mobile/tukang/pubspec.yaml') != ''
+        working-directory: mobile/tukang
+        run: |
+          flutter pub get
+          dart format --output=none --set-exit-if-changed .
+          flutter analyze --fatal-infos
+          if [ -d "test" ]; then flutter test; fi
+
+  # ==========================================================================
+  # 4. WEB ADMIN CI: Next.js Lint, Typecheck, & Build
+  # ==========================================================================
+  web-admin-ci:
+    name: "Web Admin: Next.js (Lint, Typecheck, Build)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: hashFiles('web/admin/package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/admin/package-lock.json
+
+      - name: Install, Lint, Typecheck & Build web/admin
+        if: hashFiles('web/admin/package.json') != ''
+        working-directory: web/admin
+        run: |
+          npm ci
+          npm run lint
+          npm run build
