@@ -56,7 +56,8 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
       if (checkResult.isRoleMismatch) {
         setState(() {
           _isLoading = false;
-          _errorMessage = checkResult.message ??
+          _errorMessage =
+              checkResult.message ??
               'Email ini sudah terdaftar sebagai Pelanggan (USER). Sesuai aturan Beres (BR-44), 1 email hanya boleh memiliki 1 peran.';
         });
         return;
@@ -65,7 +66,9 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
       if (checkResult.isDeleted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = checkResult.message ?? 'Akun telah dinonaktifkan/dihapus (BR-45).';
+          _errorMessage =
+              checkResult.message ??
+              'Akun telah dinonaktifkan/dihapus (BR-45).';
         });
         return;
       }
@@ -76,9 +79,12 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
             MaterialPageRoute(
               builder: (context) => SuspendScreen(
                 isPermanent: true,
-                reason: checkResult.suspendReason ?? 'Akun mitra dinonaktifkan permanen oleh Admin.',
+                reason:
+                    checkResult.suspendReason ??
+                    'Akun mitra dinonaktifkan permanen oleh Admin.',
                 appealEmail: checkResult.appealEmail ?? 'support@beres.id',
-                onSignOut: () => Navigator.of(context).pushReplacementNamed('/'),
+                onSignOut: () =>
+                    Navigator.of(context).pushReplacementNamed('/'),
               ),
             ),
           );
@@ -92,9 +98,12 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
             MaterialPageRoute(
               builder: (context) => SuspendScreen(
                 isPermanent: false,
-                reason: checkResult.suspendReason ?? 'Akun mitra ditangguhkan otomatis 2 hari karena akumulasi > 3x strike.',
+                reason:
+                    checkResult.suspendReason ??
+                    'Akun mitra ditangguhkan otomatis 2 hari karena akumulasi > 3x strike.',
                 suspendedUntil: checkResult.suspendedUntil,
-                onSignOut: () => Navigator.of(context).pushReplacementNamed('/'),
+                onSignOut: () =>
+                    Navigator.of(context).pushReplacementNamed('/'),
               ),
             ),
           );
@@ -129,7 +138,9 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
       return;
     }
 
-    final fullName = _isNewUser ? _fullNameController.text.trim() : 'Mitra Tukang Beres';
+    final fullName = _isNewUser
+        ? _fullNameController.text.trim()
+        : 'Mitra Tukang Beres';
     if (_isNewUser && fullName.isEmpty) {
       setState(() => _errorMessage = 'Nama lengkap wajib diisi.');
       return;
@@ -147,7 +158,9 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
         token: otp,
         targetRole: UserRole.tukang,
         fullName: fullName,
-        phone: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+        phone: _phoneController.text.trim().isNotEmpty
+            ? _phoneController.text.trim()
+            : null,
       );
 
       if (mounted) {
@@ -171,9 +184,7 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      appBar: AppBar(
-        title: const Text('Masuk Mitra Tukang'),
-      ),
+      appBar: AppBar(title: const Text('Masuk Mitra Tukang')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -216,12 +227,18 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.dangerLight,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.dangerCrimson.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.dangerCrimson.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.error_outline, color: AppColors.dangerCrimson, size: 22),
+                      const Icon(
+                        Icons.error_outline,
+                        color: AppColors.dangerCrimson,
+                        size: 22,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -302,7 +319,10 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Verifikasi & Masuk'),
                 ),
@@ -311,9 +331,9 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
                   onPressed: _isLoading
                       ? null
                       : () => setState(() {
-                            _isOtpSent = false;
-                            _otpController.clear();
-                          }),
+                          _isOtpSent = false;
+                          _otpController.clear();
+                        }),
                   child: const Text('Ganti Alamat Email'),
                 ),
               ] else ...[
@@ -326,7 +346,10 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Kirim Kode OTP'),
                 ),
@@ -343,7 +366,11 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.shield_outlined, color: AppColors.safetyOrange, size: 20),
+                    const Icon(
+                      Icons.shield_outlined,
+                      color: AppColors.safetyOrange,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

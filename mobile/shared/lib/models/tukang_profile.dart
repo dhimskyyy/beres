@@ -73,9 +73,11 @@ class TukangProfile {
     if (json['latitude'] != null && json['longitude'] != null) {
       lat = (json['latitude'] as num).toDouble();
       lng = (json['longitude'] as num).toDouble();
-    } else if (json['last_known_location'] != null && json['last_known_location'] is Map) {
+    } else if (json['last_known_location'] != null &&
+        json['last_known_location'] is Map) {
       final loc = json['last_known_location'] as Map<String, dynamic>;
-      if (loc['coordinates'] is List && (loc['coordinates'] as List).length >= 2) {
+      if (loc['coordinates'] is List &&
+          (loc['coordinates'] as List).length >= 2) {
         lng = ((loc['coordinates'] as List)[0] as num).toDouble();
         lat = ((loc['coordinates'] as List)[1] as num).toDouble();
       }
@@ -84,13 +86,15 @@ class TukangProfile {
     final rawAccounts = json['payment_accounts'];
     List<Map<String, dynamic>> accountsList = [];
     if (rawAccounts is List) {
-      accountsList = rawAccounts.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      accountsList =
+          rawAccounts.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     }
 
     return TukangProfile(
       userId: json['user_id'] as String,
       bio: json['bio'] as String?,
-      kycStatus: KycStatus.fromString(json['kyc_status'] as String? ?? 'PENDING'),
+      kycStatus:
+          KycStatus.fromString(json['kyc_status'] as String? ?? 'PENDING'),
       kycApprovedAt: json['kyc_approved_at'] != null
           ? DateTime.parse(json['kyc_approved_at'] as String)
           : null,
@@ -105,7 +109,9 @@ class TukangProfile {
       ratingAvg: (json['rating_avg'] as num?)?.toDouble() ?? 0.0,
       ratingCount: (json['rating_count'] as num?)?.toInt() ?? 0,
       tier: json['tier'] as String? ?? 'STANDARD',
-      goldUntil: json['gold_until'] != null ? DateTime.parse(json['gold_until'] as String) : null,
+      goldUntil: json['gold_until'] != null
+          ? DateTime.parse(json['gold_until'] as String)
+          : null,
     );
   }
 

@@ -3,7 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Service Singleton Wrapper untuk Supabase Client Beres v1.4.0
 class SupabaseClientService {
   static SupabaseClientService? _instance;
-  static SupabaseClientService get instance => _instance ??= SupabaseClientService._();
+  static SupabaseClientService get instance =>
+      _instance ??= SupabaseClientService._();
 
   SupabaseClientService._();
 

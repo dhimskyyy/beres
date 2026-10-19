@@ -7,24 +7,14 @@ import 'features/home/user_home_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(
-    const ProviderScope(
-      child: BeresUserApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: BeresUserApp()));
 }
 
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const UserLoginScreen(),
-    ),
-    GoRoute(
-      path: '/home',
-      builder: (context, state) => const UserHomeScreen(),
-    ),
+    GoRoute(path: '/', builder: (context, state) => const UserLoginScreen()),
+    GoRoute(path: '/home', builder: (context, state) => const UserHomeScreen()),
   ],
 );
 

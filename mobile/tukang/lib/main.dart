@@ -8,20 +8,13 @@ import 'features/home/tukang_home_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(
-    const ProviderScope(
-      child: BeresTukangApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: BeresTukangApp()));
 }
 
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const TukangLoginScreen(),
-    ),
+    GoRoute(path: '/', builder: (context, state) => const TukangLoginScreen()),
     GoRoute(
       path: '/onboarding',
       builder: (context, state) {

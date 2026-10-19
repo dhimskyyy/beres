@@ -71,7 +71,8 @@ class DefaultMapProviderAdapter implements MapProviderAdapter {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.map_outlined, size: 48, color: Color(0xFF64748B)),
+                const Icon(Icons.map_outlined,
+                    size: 48, color: Color(0xFF64748B)),
                 const SizedBox(height: 8),
                 Text(
                   'Map (${initialCenter.latitude.toStringAsFixed(4)}, ${initialCenter.longitude.toStringAsFixed(4)})',
@@ -83,7 +84,8 @@ class DefaultMapProviderAdapter implements MapProviderAdapter {
                 ),
                 Text(
                   'Markers: ${markers.length} | Zoom: ${initialZoom.toStringAsFixed(1)}',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                  style:
+                      const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
                 ),
               ],
             ),
@@ -100,7 +102,8 @@ class DefaultMapProviderAdapter implements MapProviderAdapter {
                 ),
                 child: Text(
                   '${markers.length} Active Marker(s)',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 11, fontWeight: FontWeight.bold),
                 ),
               ),
             ),

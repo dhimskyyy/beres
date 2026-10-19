@@ -11,10 +11,12 @@ class TukangOnboardingScreen extends ConsumerStatefulWidget {
   const TukangOnboardingScreen({super.key, required this.tukangId});
 
   @override
-  ConsumerState<TukangOnboardingScreen> createState() => _TukangOnboardingScreenState();
+  ConsumerState<TukangOnboardingScreen> createState() =>
+      _TukangOnboardingScreenState();
 }
 
-class _TukangOnboardingScreenState extends ConsumerState<TukangOnboardingScreen> {
+class _TukangOnboardingScreenState
+    extends ConsumerState<TukangOnboardingScreen> {
   final _bioController = TextEditingController();
   final _bankNameController = TextEditingController();
   final _accountNumberController = TextEditingController();
@@ -65,7 +67,9 @@ class _TukangOnboardingScreenState extends ConsumerState<TukangOnboardingScreen>
     }
 
     if (_selectedCategoryIds.isEmpty) {
-      setState(() => _errorMessage = 'Pilih minimal 1 kategori keahlian (FR-002).');
+      setState(
+        () => _errorMessage = 'Pilih minimal 1 kategori keahlian (FR-002).',
+      );
       return;
     }
 
@@ -74,7 +78,10 @@ class _TukangOnboardingScreenState extends ConsumerState<TukangOnboardingScreen>
     final accHolder = _accountHolderController.text.trim();
 
     if (bankName.isEmpty || accNum.isEmpty || accHolder.isEmpty) {
-      setState(() => _errorMessage = 'Rincian rekening / e-wallet wajib diisi lengkap untuk dicantumkan di Nota (BR-06).');
+      setState(
+        () => _errorMessage =
+            'Rincian rekening / e-wallet wajib diisi lengkap untuk dicantumkan di Nota (BR-06).',
+      );
       return;
     }
 
@@ -92,7 +99,7 @@ class _TukangOnboardingScreenState extends ConsumerState<TukangOnboardingScreen>
           'account_number': accNum,
           'account_holder': accHolder,
           'is_primary': true,
-        }
+        },
       ];
 
       await tukangService.updateTukangProfile(
@@ -120,9 +127,7 @@ class _TukangOnboardingScreenState extends ConsumerState<TukangOnboardingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      appBar: AppBar(
-        title: const Text('Profil Keahlian Mitra'),
-      ),
+      appBar: AppBar(title: const Text('Profil Keahlian Mitra')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
@@ -151,7 +156,9 @@ class _TukangOnboardingScreenState extends ConsumerState<TukangOnboardingScreen>
                         ),
                         child: Text(
                           _errorMessage!,
-                          style: AppTypography.bodySmall.copyWith(color: AppColors.dangerCrimson),
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.dangerCrimson,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -164,13 +171,17 @@ class _TukangOnboardingScreenState extends ConsumerState<TukangOnboardingScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Pengalaman & Keahlian', style: AppTypography.headingSmall),
+                            Text(
+                              'Pengalaman & Keahlian',
+                              style: AppTypography.headingSmall,
+                            ),
                             const SizedBox(height: 12),
                             TextField(
                               controller: _bioController,
                               maxLines: 3,
                               decoration: const InputDecoration(
-                                hintText: 'Contoh: Berpengalaman 7 tahun dalam instalasi listrik rumah, renovasi atap, dan pengecatan...',
+                                hintText:
+                                    'Contoh: Berpengalaman 7 tahun dalam instalasi listrik rumah, renovasi atap, dan pengecatan...',
                               ),
                             ),
                           ],
@@ -189,8 +200,14 @@ class _TukangOnboardingScreenState extends ConsumerState<TukangOnboardingScreen>
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('Bidang Keahlian', style: AppTypography.headingSmall),
-                                Text('Pilih ≥ 1', style: AppTypography.bodySmall),
+                                Text(
+                                  'Bidang Keahlian',
+                                  style: AppTypography.headingSmall,
+                                ),
+                                Text(
+                                  'Pilih ≥ 1',
+                                  style: AppTypography.bodySmall,
+                                ),
                               ],
                             ),
                             const SizedBox(height: 12),
@@ -198,15 +215,20 @@ class _TukangOnboardingScreenState extends ConsumerState<TukangOnboardingScreen>
                               spacing: 8,
                               runSpacing: 8,
                               children: _categories.map((cat) {
-                                final isSelected = _selectedCategoryIds.contains(cat.id);
+                                final isSelected = _selectedCategoryIds
+                                    .contains(cat.id);
                                 return FilterChip(
                                   label: Text(cat.name),
                                   selected: isSelected,
                                   selectedColor: AppColors.tukangBadgeBg,
                                   checkmarkColor: AppColors.safetyOrange,
                                   labelStyle: TextStyle(
-                                    color: isSelected ? AppColors.safetyOrange : AppColors.textPrimary,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    color: isSelected
+                                        ? AppColors.safetyOrange
+                                        : AppColors.textPrimary,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
                                   ),
                                   onSelected: (selected) {
                                     setState(() {
@@ -236,10 +258,15 @@ class _TukangOnboardingScreenState extends ConsumerState<TukangOnboardingScreen>
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('Radius Siap Bertugas', style: AppTypography.headingSmall),
+                                Text(
+                                  'Radius Siap Bertugas',
+                                  style: AppTypography.headingSmall,
+                                ),
                                 Text(
                                   '$_radiusKm km',
-                                  style: AppTypography.rupiahMedium.copyWith(color: AppColors.safetyOrange),
+                                  style: AppTypography.rupiahMedium.copyWith(
+                                    color: AppColors.safetyOrange,
+                                  ),
                                 ),
                               ],
                             ),
@@ -271,7 +298,10 @@ class _TukangOnboardingScreenState extends ConsumerState<TukangOnboardingScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Rekening Penerima Pembayaran', style: AppTypography.headingSmall),
+                            Text(
+                              'Rekening Penerima Pembayaran',
+                              style: AppTypography.headingSmall,
+                            ),
                             const SizedBox(height: 4),
                             Text(
                               'Dicantumkan otomatis pada Nota Sah pelanggan (BR-06). Pembayaran 100% langsung ke Anda.',
@@ -317,7 +347,10 @@ class _TukangOnboardingScreenState extends ConsumerState<TukangOnboardingScreen>
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Text('Simpan & Masuk ke Beres Mitra'),
                     ),

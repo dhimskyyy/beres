@@ -24,13 +24,48 @@ class TukangService {
     } catch (e) {
       final fallbackDate = DateTime(2026, 1, 1);
       return [
-        JobCategory(id: '1', slug: 'bangunan', name: 'Tukang Bangunan', iconName: 'construction', createdAt: fallbackDate),
-        JobCategory(id: '2', slug: 'listrik', name: 'Tukang Listrik', iconName: 'electrical_services', createdAt: fallbackDate),
-        JobCategory(id: '3', slug: 'pipa-plumbing', name: 'Tukang Pipa & Air', iconName: 'plumbing', createdAt: fallbackDate),
-        JobCategory(id: '4', slug: 'cleaning-service', name: 'Cleaning Service & AC', iconName: 'cleaning_services', createdAt: fallbackDate),
-        JobCategory(id: '5', slug: 'bengkel-motor', name: 'Bengkel Motor Panggilan', iconName: 'two_wheeler', createdAt: fallbackDate),
-        JobCategory(id: '6', slug: 'bengkel-mobil', name: 'Bengkel Mobil Panggilan', iconName: 'directions_car', createdAt: fallbackDate),
-        JobCategory(id: '7', slug: 'tukang-kayu', name: 'Tukang Kayu & Mebel', iconName: 'carpenter', createdAt: fallbackDate),
+        JobCategory(
+            id: '1',
+            slug: 'bangunan',
+            name: 'Tukang Bangunan',
+            iconName: 'construction',
+            createdAt: fallbackDate),
+        JobCategory(
+            id: '2',
+            slug: 'listrik',
+            name: 'Tukang Listrik',
+            iconName: 'electrical_services',
+            createdAt: fallbackDate),
+        JobCategory(
+            id: '3',
+            slug: 'pipa-plumbing',
+            name: 'Tukang Pipa & Air',
+            iconName: 'plumbing',
+            createdAt: fallbackDate),
+        JobCategory(
+            id: '4',
+            slug: 'cleaning-service',
+            name: 'Cleaning Service & AC',
+            iconName: 'cleaning_services',
+            createdAt: fallbackDate),
+        JobCategory(
+            id: '5',
+            slug: 'bengkel-motor',
+            name: 'Bengkel Motor Panggilan',
+            iconName: 'two_wheeler',
+            createdAt: fallbackDate),
+        JobCategory(
+            id: '6',
+            slug: 'bengkel-mobil',
+            name: 'Bengkel Mobil Panggilan',
+            iconName: 'directions_car',
+            createdAt: fallbackDate),
+        JobCategory(
+            id: '7',
+            slug: 'tukang-kayu',
+            name: 'Tukang Kayu & Mebel',
+            iconName: 'carpenter',
+            createdAt: fallbackDate),
       ];
     }
   }

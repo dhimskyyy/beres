@@ -96,7 +96,8 @@ class Job {
     } else if (json['location'] != null) {
       if (json['location'] is Map) {
         final loc = json['location'] as Map<String, dynamic>;
-        if (loc['coordinates'] is List && (loc['coordinates'] as List).length >= 2) {
+        if (loc['coordinates'] is List &&
+            (loc['coordinates'] as List).length >= 2) {
           lng = ((loc['coordinates'] as List)[0] as num).toDouble();
           lat = ((loc['coordinates'] as List)[1] as num).toDouble();
         }
@@ -120,21 +121,31 @@ class Job {
           ? JobStatus.fromString(json['status_before_cancel'] as String)
           : null,
       expiresAt: DateTime.parse(json['expires_at'] as String),
-      lockedAt: json['locked_at'] != null ? DateTime.parse(json['locked_at'] as String) : null,
-      lastChatAt: json['last_chat_at'] != null ? DateTime.parse(json['last_chat_at'] as String) : null,
+      lockedAt: json['locked_at'] != null
+          ? DateTime.parse(json['locked_at'] as String)
+          : null,
+      lastChatAt: json['last_chat_at'] != null
+          ? DateTime.parse(json['last_chat_at'] as String)
+          : null,
       lastChatSenderRole: json['last_chat_sender_role'] != null
           ? UserRole.fromString(json['last_chat_sender_role'] as String)
           : null,
       notaApprovedAt: json['nota_approved_at'] != null
           ? DateTime.parse(json['nota_approved_at'] as String)
           : null,
-      onTheWayAt: json['on_the_way_at'] != null ? DateTime.parse(json['on_the_way_at'] as String) : null,
-      arrivedAt: json['arrived_at'] != null ? DateTime.parse(json['arrived_at'] as String) : null,
+      onTheWayAt: json['on_the_way_at'] != null
+          ? DateTime.parse(json['on_the_way_at'] as String)
+          : null,
+      arrivedAt: json['arrived_at'] != null
+          ? DateTime.parse(json['arrived_at'] as String)
+          : null,
       arrivalMode: json['arrival_mode'] as String?,
       workStartedAt: json['work_started_at'] != null
           ? DateTime.parse(json['work_started_at'] as String)
           : null,
-      completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at'] as String) : null,
+      completedAt: json['completed_at'] != null
+          ? DateTime.parse(json['completed_at'] as String)
+          : null,
       agreedTotal: (json['agreed_total'] as num?)?.toInt(),
       actualPaymentMethod: json['actual_payment_method'] != null
           ? PaymentMethod.fromString(json['actual_payment_method'] as String)

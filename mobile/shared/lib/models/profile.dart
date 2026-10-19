@@ -74,13 +74,17 @@ class Profile {
       phone: json['phone'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       timezone: json['timezone'] as String? ?? 'Asia/Jakarta',
-      suspendType: SuspendType.fromString(json['suspend_type'] as String? ?? 'NONE'),
+      suspendType:
+          SuspendType.fromString(json['suspend_type'] as String? ?? 'NONE'),
       suspendedUntil: json['suspended_until'] != null
           ? DateTime.parse(json['suspended_until'] as String)
           : null,
       suspendReason: json['suspend_reason'] as String?,
-      appealEmailInfo: json['appeal_email_info'] as String? ?? 'support@beres.id',
-      deletedAt: json['deleted_at'] != null ? DateTime.parse(json['deleted_at'] as String) : null,
+      appealEmailInfo:
+          json['appeal_email_info'] as String? ?? 'support@beres.id',
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'] as String)
+          : null,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }

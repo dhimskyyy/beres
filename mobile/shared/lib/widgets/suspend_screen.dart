@@ -80,13 +80,17 @@ class _SuspendScreenState extends State<SuspendScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: isPermanent ? AppColors.dangerLight : AppColors.warningLight,
+                    color: isPermanent
+                        ? AppColors.dangerLight
+                        : AppColors.warningLight,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     isPermanent ? Icons.gavel_rounded : Icons.timer_outlined,
                     size: 44,
-                    color: isPermanent ? AppColors.dangerCrimson : AppColors.warningAmber,
+                    color: isPermanent
+                        ? AppColors.dangerCrimson
+                        : AppColors.warningAmber,
                   ),
                 ),
               ),
@@ -128,7 +132,8 @@ class _SuspendScreenState extends State<SuspendScreen> {
                       const SizedBox(height: 8),
                       Text(
                         '${_remaining.inHours.toString().padLeft(2, '0')}:${(_remaining.inMinutes % 60).toString().padLeft(2, '0')}:${(_remaining.inSeconds % 60).toString().padLeft(2, '0')}',
-                        style: AppTypography.timerDisplay.copyWith(fontSize: 28),
+                        style:
+                            AppTypography.timerDisplay.copyWith(fontSize: 28),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -147,12 +152,14 @@ class _SuspendScreenState extends State<SuspendScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, color: AppColors.warningAmber, size: 20),
+                      const Icon(Icons.info_outline,
+                          color: AppColors.warningAmber, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Sanksi ini dipicu otomatis karena akun telah mengumpulkan lebih dari 3 pelanggaran (strike) dalam bulan ini (BR-42b).',
-                          style: AppTypography.bodySmall.copyWith(color: AppColors.warningAmber),
+                          style: AppTypography.bodySmall
+                              .copyWith(color: AppColors.warningAmber),
                         ),
                       ),
                     ],
@@ -171,7 +178,8 @@ class _SuspendScreenState extends State<SuspendScreen> {
                   ),
                   child: Column(
                     children: [
-                      const Icon(Icons.mail_outline, color: AppColors.trustCobalt, size: 32),
+                      const Icon(Icons.mail_outline,
+                          color: AppColors.trustCobalt, size: 32),
                       const SizedBox(height: 10),
                       Text(
                         'Pengajuan Banding Resmi',
@@ -186,7 +194,8 @@ class _SuspendScreenState extends State<SuspendScreen> {
                       const SizedBox(height: 10),
                       SelectableText(
                         widget.appealEmail,
-                        style: AppTypography.button.copyWith(color: AppColors.trustCobalt),
+                        style: AppTypography.button
+                            .copyWith(color: AppColors.trustCobalt),
                       ),
                     ],
                   ),
@@ -209,7 +218,9 @@ class _SuspendScreenState extends State<SuspendScreen> {
                 icon: const Icon(Icons.logout),
                 label: const Text('Keluar dari Akun'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isPermanent ? AppColors.dangerCrimson : AppColors.primaryNavy,
+                  backgroundColor: isPermanent
+                      ? AppColors.dangerCrimson
+                      : AppColors.primaryNavy,
                 ),
               ),
             ],

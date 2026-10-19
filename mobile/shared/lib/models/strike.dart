@@ -57,7 +57,9 @@ class Strike {
       id: json['id'] as String,
       profileId: json['profile_id'] as String,
       jobId: json['job_id'] as String?,
-      reason: StrikeReason.fromString(json['type'] as String? ?? json['reason'] as String? ?? 'NO_DEPART_30M'),
+      reason: StrikeReason.fromString(json['type'] as String? ??
+          json['reason'] as String? ??
+          'NO_DEPART_30M'),
       notes: json['notes'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
     );

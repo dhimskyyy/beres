@@ -64,7 +64,10 @@ class UserHomeScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 4),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.userBadgeBg,
                                 borderRadius: BorderRadius.circular(6),
@@ -102,18 +105,26 @@ class UserHomeScreen extends ConsumerWidget {
                   children: [
                     Text(
                       'Butuh Bantuan Tukang?',
-                      style: AppTypography.headingMedium.copyWith(color: Colors.white),
+                      style: AppTypography.headingMedium.copyWith(
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       'Posting pekerjaan Anda, pilih tukang terpercaya, dan sepakati Nota digital.',
-                      style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: Colors.white70,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Fitur Posting Pekerjaan akan aktif di Milestone M3.')),
+                          const SnackBar(
+                            content: Text(
+                              'Fitur Posting Pekerjaan akan aktif di Milestone M3.',
+                            ),
+                          ),
                         );
                       },
                       icon: const Icon(Icons.add_task),
@@ -135,19 +146,36 @@ class UserHomeScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.shield_outlined, color: AppColors.trustCobalt),
+                      leading: const Icon(
+                        Icons.shield_outlined,
+                        color: AppColors.trustCobalt,
+                      ),
                       title: const Text('Aturan 1 Email 1 Peran (BR-44)'),
-                      subtitle: const Text('Email Anda hanya terikat ke akun Pelanggan'),
-                      trailing: const Icon(Icons.check_circle, color: AppColors.successGreen, size: 20),
+                      subtitle: const Text(
+                        'Email Anda hanya terikat ke akun Pelanggan',
+                      ),
+                      trailing: const Icon(
+                        Icons.check_circle,
+                        color: AppColors.successGreen,
+                        size: 20,
+                      ),
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      leading: const Icon(Icons.delete_forever_outlined, color: AppColors.dangerCrimson),
+                      leading: const Icon(
+                        Icons.delete_forever_outlined,
+                        color: AppColors.dangerCrimson,
+                      ),
                       title: Text(
                         'Hapus Akun Saya (FR-004)',
-                        style: TextStyle(color: AppColors.dangerCrimson, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: AppColors.dangerCrimson,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      subtitle: const Text('Hapus data akun permanen sesuai UU PDP (BR-45)'),
+                      subtitle: const Text(
+                        'Hapus data akun permanen sesuai UU PDP (BR-45)',
+                      ),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         DeleteAccountDialog.show(
@@ -157,7 +185,11 @@ class UserHomeScreen extends ConsumerWidget {
                             if (context.mounted) {
                               context.go('/');
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Akun Anda berhasil dinonaktifkan/dihapus.')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Akun Anda berhasil dinonaktifkan/dihapus.',
+                                  ),
+                                ),
                               );
                             }
                           },

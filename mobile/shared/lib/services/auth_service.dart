@@ -21,7 +21,8 @@ class CheckEmailRoleResult {
     this.appealEmail,
   });
 
-  bool get isAllowed => status == 'ALLOWED_NEW_USER' || status == 'ALLOWED_EXISTING_USER';
+  bool get isAllowed =>
+      status == 'ALLOWED_NEW_USER' || status == 'ALLOWED_EXISTING_USER';
   bool get isRoleMismatch => status == 'ROLE_MISMATCH';
   bool get isSuspendedPermanent => status == 'SUSPENDED_PERMANENT';
   bool get isSuspendedAuto2Days => status == 'SUSPENDED_AUTO_2_DAYS';
@@ -31,9 +32,13 @@ class CheckEmailRoleResult {
     return CheckEmailRoleResult(
       status: json['status'] as String? ?? 'UNKNOWN',
       message: json['message'] as String?,
-      currentRole: json['current_role'] != null ? UserRole.fromString(json['current_role'] as String) : null,
+      currentRole: json['current_role'] != null
+          ? UserRole.fromString(json['current_role'] as String)
+          : null,
       suspendReason: json['suspend_reason'] as String?,
-      suspendedUntil: json['suspended_until'] != null ? DateTime.parse(json['suspended_until'] as String) : null,
+      suspendedUntil: json['suspended_until'] != null
+          ? DateTime.parse(json['suspended_until'] as String)
+          : null,
       appealEmail: json['appeal_email'] as String?,
     );
   }
@@ -111,7 +116,8 @@ class AuthService {
     );
 
     if (rpcRes is Map && rpcRes['profile'] != null) {
-      return Profile.fromJson(Map<String, dynamic>.from(rpcRes['profile'] as Map));
+      return Profile.fromJson(
+          Map<String, dynamic>.from(rpcRes['profile'] as Map));
     }
 
     // Fallback profil
@@ -131,7 +137,11 @@ class AuthService {
     if (user == null) return null;
 
     try {
-      final data = await _client.from('profiles').select().eq('id', user.id).maybeSingle();
+      final data = await _client
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
       if (data != null) {
         return Profile.fromJson(data);
       }

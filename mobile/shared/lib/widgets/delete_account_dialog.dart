@@ -67,7 +67,8 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: AppColors.dangerCrimson, size: 28),
+          const Icon(Icons.warning_amber_rounded,
+              color: AppColors.dangerCrimson, size: 28),
           const SizedBox(width: 8),
           Text('Hapus Akun?', style: AppTypography.headingSmall),
         ],
@@ -90,7 +91,8 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
               ),
               child: Text(
                 'Perhatian: Penghapusan akun hanya diizinkan jika Anda tidak memiliki pekerjaan aktif yang sedang berjalan dan tidak sedang dalam investigasi sengketa (BR-45).',
-                style: AppTypography.bodySmall.copyWith(color: AppColors.warningAmber),
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.warningAmber),
               ),
             ),
             if (_errorMessage != null) ...[
@@ -104,12 +106,14 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.error_outline, color: AppColors.dangerCrimson, size: 20),
+                    const Icon(Icons.error_outline,
+                        color: AppColors.dangerCrimson, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _errorMessage!,
-                        style: AppTypography.bodySmall.copyWith(color: AppColors.dangerCrimson),
+                        style: AppTypography.bodySmall
+                            .copyWith(color: AppColors.dangerCrimson),
                       ),
                     ),
                   ],
@@ -134,7 +138,8 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
               ? const SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Text('Ya, Hapus Akun'),
         ),

@@ -66,7 +66,10 @@ class TukangHomeScreen extends ConsumerWidget {
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.tukangBadgeBg,
                                     borderRadius: BorderRadius.circular(6),
@@ -81,7 +84,10 @@ class TukangHomeScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.warningLight,
                                     borderRadius: BorderRadius.circular(6),
@@ -118,9 +124,16 @@ class TukangHomeScreen extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.verified_user_outlined, color: AppColors.trustCobalt, size: 22),
+                        const Icon(
+                          Icons.verified_user_outlined,
+                          color: AppColors.trustCobalt,
+                          size: 22,
+                        ),
                         const SizedBox(width: 8),
-                        Text('Verifikasi KTP (KYC)', style: AppTypography.headingSmall),
+                        Text(
+                          'Verifikasi KTP (KYC)',
+                          style: AppTypography.headingSmall,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 6),
@@ -132,7 +145,11 @@ class TukangHomeScreen extends ConsumerWidget {
                     OutlinedButton.icon(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Alur unggah Foto KTP akan aktif di Milestone M2.')),
+                          const SnackBar(
+                            content: Text(
+                              'Alur unggah Foto KTP akan aktif di Milestone M2.',
+                            ),
+                          ),
                         );
                       },
                       icon: const Icon(Icons.upload_file),
@@ -144,32 +161,57 @@ class TukangHomeScreen extends ConsumerWidget {
               const SizedBox(height: 20),
 
               // Section: Pengaturan & Kepatuhan Privasi (FR-004, BR-45)
-              Text('Pengaturan & Informasi Akun', style: AppTypography.headingSmall),
+              Text(
+                'Pengaturan & Informasi Akun',
+                style: AppTypography.headingSmall,
+              ),
               const SizedBox(height: 12),
               Card(
                 child: Column(
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.shield_outlined, color: AppColors.safetyOrange),
+                      leading: const Icon(
+                        Icons.shield_outlined,
+                        color: AppColors.safetyOrange,
+                      ),
                       title: const Text('Aturan 1 Email 1 Peran (BR-44)'),
-                      subtitle: const Text('Email Anda terikat khusus untuk akun Mitra Tukang'),
-                      trailing: const Icon(Icons.check_circle, color: AppColors.successGreen, size: 20),
+                      subtitle: const Text(
+                        'Email Anda terikat khusus untuk akun Mitra Tukang',
+                      ),
+                      trailing: const Icon(
+                        Icons.check_circle,
+                        color: AppColors.successGreen,
+                        size: 20,
+                      ),
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      leading: const Icon(Icons.info_outline, color: AppColors.warningAmber),
+                      leading: const Icon(
+                        Icons.info_outline,
+                        color: AppColors.warningAmber,
+                      ),
                       title: const Text('Aturan Pelanggaran & Strike (BR-57)'),
-                      subtitle: const Text('Batas 3x strike per bulan kalender. Strike ke-4 = suspend 48 jam.'),
+                      subtitle: const Text(
+                        'Batas 3x strike per bulan kalender. Strike ke-4 = suspend 48 jam.',
+                      ),
                       trailing: const Icon(Icons.chevron_right),
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      leading: const Icon(Icons.delete_forever_outlined, color: AppColors.dangerCrimson),
+                      leading: const Icon(
+                        Icons.delete_forever_outlined,
+                        color: AppColors.dangerCrimson,
+                      ),
                       title: Text(
                         'Hapus Akun Mitra (FR-004)',
-                        style: TextStyle(color: AppColors.dangerCrimson, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: AppColors.dangerCrimson,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      subtitle: const Text('Hapus data akun sesuai regulasi UU PDP (BR-45)'),
+                      subtitle: const Text(
+                        'Hapus data akun sesuai regulasi UU PDP (BR-45)',
+                      ),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         DeleteAccountDialog.show(
@@ -179,7 +221,11 @@ class TukangHomeScreen extends ConsumerWidget {
                             if (context.mounted) {
                               context.go('/');
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Akun Mitra Anda berhasil dinonaktifkan/dihapus.')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Akun Mitra Anda berhasil dinonaktifkan/dihapus.',
+                                  ),
+                                ),
                               );
                             }
                           },

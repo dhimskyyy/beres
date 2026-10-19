@@ -60,7 +60,9 @@ class NotaItem {
 
   factory NotaItem.fromJson(Map<String, dynamic> json) => NotaItem(
         name: json['name'] as String? ?? json['description'] as String? ?? '',
-        qty: (json['qty'] as num?)?.toInt() ?? (json['quantity'] as num?)?.toInt() ?? 1,
+        qty: (json['qty'] as num?)?.toInt() ??
+            (json['quantity'] as num?)?.toInt() ??
+            1,
         unitPrice: (json['unit_price'] as num?)?.toInt() ?? 0,
       );
 }
@@ -116,7 +118,8 @@ class Nota {
           .map((e) => NotaItem.fromJson(e as Map<String, dynamic>))
           .toList(),
       totalAmount: (json['total_amount'] as num?)?.toInt() ?? 0,
-      paymentMethod: PaymentMethod.fromString(json['payment_method'] as String? ?? 'CASH'),
+      paymentMethod:
+          PaymentMethod.fromString(json['payment_method'] as String? ?? 'CASH'),
       paymentDestination: json['payment_destination'] as Map<String, dynamic>?,
       note: json['note'] as String?,
       status: NotaStatus.fromString(json['status'] as String? ?? 'SENT'),
