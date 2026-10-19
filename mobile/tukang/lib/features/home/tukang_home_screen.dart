@@ -144,16 +144,10 @@ class TukangHomeScreen extends ConsumerWidget {
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Alur unggah Foto KTP akan aktif di Milestone M2.',
-                            ),
-                          ),
-                        );
+                        context.push('/kyc');
                       },
                       icon: const Icon(Icons.upload_file),
-                      label: const Text('Unggah Berkas KYC'),
+                      label: const Text('Kelola / Unggah Berkas KYC'),
                     ),
                   ],
                 ),

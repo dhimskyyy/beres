@@ -104,4 +104,51 @@ class TukangService {
       },
     );
   }
+
+  /// Mengambil data pengajuan KYC terakhir milik tukang (FR-003)
+  Future<Map<String, dynamic>?> getLatestKycDocument(String tukangId) async {
+    try {
+      final data = await _client
+          .from('kyc_documents')
+          .select()
+          .eq('tukang_id', tukangId)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      return data;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Mengunggah file ke bucket privat kyc-private (FR-003)
+  Future<String> uploadKycFile({
+    required String tukangId,
+    required String fileName,
+    required List<int> fileBytes,
+  }) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final path = 'kyc-documents/$tukangId/${timestamp}_$fileName';
+    await _client.storage.from('kyc-private').uploadBinary(
+          path,
+          fileBytes as dynamic,
+        );
+    return path;
+  }
+
+  /// Submit dokumen KYC ke database (FR-003)
+  Future<void> submitKycDocument({
+    required String tukangId,
+    required String ktpStoragePath,
+    required String selfieStoragePath,
+  }) async {
+    await _client.rpc(
+      'rpc_submit_kyc_document',
+      params: {
+        'p_tukang_id': tukangId,
+        'p_ktp_storage_path': ktpStoragePath,
+        'p_selfie_storage_path': selfieStoragePath,
+      },
+    );
+  }
 }

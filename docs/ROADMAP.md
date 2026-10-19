@@ -28,10 +28,10 @@ Dokumen ini adalah daftar periksa (*checklist*) tahapan pembangunan ekosistem **
 ---
 
 ## Milestone M2: Kategori Dinamis, Verifikasi KYC, & Konfigurasi Sistem
-- [ ] **FR-003:** Alur unggah Foto KTP dan Selfie memegang KTP di aplikasi Tukang ke bucket privat `kyc-private`.
-- [ ] **FR-032:** Panel Verifikasi KYC di Web Admin (akses dokumen via *Signed URL* berumur pendek, tombol *Approve* & *Reject* dengan alasan wajib).
-- [ ] **FR-033:** Fitur Suspend / Ban manual oleh Admin beserta pencatatan di `audit_logs`.
-- [ ] **FR-035:** CRUD Kategori Pekerjaan Dinamis dan pengaturan parameter operasional (`app_configs`) di Web Admin yang langsung tercermin di aplikasi mobile.
+- [x] **FR-003:** Alur unggah Foto KTP dan Selfie memegang KTP di aplikasi Tukang ke bucket privat `kyc-private`.
+- [x] **FR-032:** Panel Verifikasi KYC di Web Admin (akses dokumen via *Signed URL* berumur pendek, tombol *Approve* & *Reject* dengan alasan wajib).
+- [x] **FR-033:** Fitur Suspend / Ban manual oleh Admin beserta pencatatan di `audit_logs`.
+- [x] **FR-035:** CRUD Kategori Pekerjaan Dinamis dan pengaturan parameter operasional (`app_configs`) di Web Admin yang langsung tercermin di aplikasi mobile.
 
 ---
 

@@ -5,6 +5,7 @@ import 'package:beres_shared/beres_shared.dart';
 import 'features/auth/tukang_login_screen.dart';
 import 'features/profile/tukang_onboarding_screen.dart';
 import 'features/home/tukang_home_screen.dart';
+import 'features/kyc/tukang_kyc_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +32,13 @@ final _router = GoRouter(
     GoRoute(
       path: '/home',
       builder: (context, state) => const TukangHomeScreen(),
+    ),
+    GoRoute(
+      path: '/kyc',
+      builder: (context, state) {
+        final tukangId = state.extra as String? ?? 'me';
+        return TukangKycScreen(tukangId: tukangId);
+      },
     ),
   ],
 );
