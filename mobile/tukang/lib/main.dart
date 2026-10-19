@@ -36,7 +36,8 @@ final _router = GoRouter(
     GoRoute(
       path: '/kyc',
       builder: (context, state) {
-        final tukangId = state.extra as String? ?? 'me';
+        final currentId = SupabaseClientService.instance.currentUser?.id;
+        final tukangId = state.extra as String? ?? currentId ?? 'me';
         return TukangKycScreen(tukangId: tukangId);
       },
     ),

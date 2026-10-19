@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Layers,
   Settings,
@@ -153,6 +153,49 @@ export default function CategoriesAndConfigPage() {
   const [categories, setCategories] = useState<CategoryItem[]>(initialCategories);
   const [configs, setConfigs] = useState<ConfigItem[]>(initialConfigs);
 
+  const isUuid = (str: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const { data: catData } = await supabase
+          .from('categories')
+          .select('*')
+          .order('sort_order', { ascending: true });
+        if (catData && catData.length > 0) {
+          setCategories(
+            catData.map((c: { id: string; slug: string; name: string; description: string | null; icon_name: string | null; is_active: boolean; sort_order: number }) => ({
+              id: c.id,
+              slug: c.slug,
+              name: c.name,
+              description: c.description || '',
+              iconName: c.icon_name || 'build',
+              isActive: c.is_active,
+              sortOrder: c.sort_order,
+            }))
+          );
+        }
+
+        const { data: cfgData } = await supabase
+          .from('app_configs')
+          .select('*');
+        if (cfgData && cfgData.length > 0) {
+          setConfigs(
+            cfgData.map((c: { key: string; value_int: number; description: string | null }) => ({
+              key: c.key,
+              valueInt: c.value_int,
+              description: c.description || '',
+            }))
+          );
+        }
+      } catch {
+        // Fallback ke seed lokal
+      }
+    }
+    loadData();
+  }, []);
+
   // Edit / Add Category Modal State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
@@ -193,10 +236,12 @@ export default function CategoriesAndConfigPage() {
     e.preventDefault();
     if (!catName || !catSlug) return;
 
+    const validId = editingCategory && isUuid(editingCategory.id) ? editingCategory.id : null;
+
     try {
       await supabase.rpc('rpc_admin_save_category', {
         p_admin_id: '00000000-0000-0000-0000-000000000000',
-        p_id: editingCategory ? editingCategory.id : null,
+        p_id: validId,
         p_slug: catSlug.trim().toLowerCase(),
         p_name: catName.trim(),
         p_description: catDesc.trim(),
@@ -242,6 +287,14 @@ export default function CategoriesAndConfigPage() {
     setCategories((prev) =>
       prev.map((c) => (c.id === id ? { ...c, isActive: !current } : c))
     );
+    try {
+      if (isUuid(id)) {
+        await supabase
+          .from('categories')
+          .update({ is_active: !current })
+          .eq('id', id);
+      }
+    } catch {}
   };
 
   const handleSaveConfig = async (key: string) => {

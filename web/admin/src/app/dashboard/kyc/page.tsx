@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FileCheck,
   Search,
@@ -20,7 +20,7 @@ interface KycDocumentItem {
   tukangName: string;
   email: string;
   phone: string;
-  category: string;
+  category?: string;
   ktpStoragePath: string;
   selfieStoragePath: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -82,6 +82,60 @@ export default function KycVerificationPage() {
   // Reject Dialog State
   const [rejectingItem, setRejectingItem] = useState<KycDocumentItem | null>(null);
   const [rejectionReasonInput, setRejectionReasonInput] = useState('');
+
+  useEffect(() => {
+    async function fetchKyc() {
+      try {
+        const { data, error } = await supabase
+          .from('kyc_documents')
+          .select('id, tukang_id, ktp_storage_path, selfie_storage_path, status, rejection_reason, created_at')
+          .order('created_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const tukangIds = Array.from(new Set(data.map((d: { tukang_id: string }) => d.tukang_id)));
+          const { data: profs } = await supabase
+            .from('profiles')
+            .select('id, full_name, email, phone')
+            .in('id', tukangIds);
+
+          const profMap = new Map<string, { full_name?: string; email?: string; phone?: string }>();
+          if (profs) {
+            profs.forEach((p: { id: string; full_name?: string; email?: string; phone?: string }) => profMap.set(p.id, p));
+          }
+
+          const mapped: KycDocumentItem[] = data.map((d: {
+            id: string;
+            tukang_id: string;
+            ktp_storage_path: string;
+            selfie_storage_path: string;
+            status: 'PENDING' | 'APPROVED' | 'REJECTED';
+            rejection_reason?: string | null;
+            created_at: string;
+          }) => {
+            const p = profMap.get(d.tukang_id);
+            return {
+              id: d.id,
+              tukangId: d.tukang_id,
+              tukangName: p?.full_name || 'Mitra Tukang',
+              email: p?.email || '-',
+              phone: p?.phone || '-',
+              category: 'Mitra Terdaftar',
+              ktpStoragePath: d.ktp_storage_path,
+              selfieStoragePath: d.selfie_storage_path,
+              status: d.status,
+              rejectionReason: d.rejection_reason || undefined,
+              submittedAt: d.created_at,
+            };
+          });
+
+          setKycList(mapped);
+        }
+      } catch {
+        // Fallback ke mock
+      }
+    }
+    fetchKyc();
+  }, []);
 
   const filtered = kycList.filter((item) => {
     const matchSearch =

@@ -95,7 +95,7 @@ class AuthService {
     final response = await _client.auth.verifyOTP(
       email: email.trim().toLowerCase(),
       token: token.trim(),
-      type: OtpType.magiclink,
+      type: OtpType.email,
     );
 
     final user = response.user;

@@ -29,6 +29,14 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
   String _ktpFileName = '';
   String _selfieFileName = '';
 
+  String get _effectiveTukangId {
+    if (widget.tukangId != 'me' && widget.tukangId.isNotEmpty) {
+      return widget.tukangId;
+    }
+    return SupabaseClientService.instance.currentUser?.id ??
+        '00000000-0000-0000-0000-000000000000';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -39,9 +47,9 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
     setState(() => _isLoading = true);
     try {
       final tukangService = ref.read(tukangServiceProvider);
-      final profile = await tukangService.getTukangProfile(widget.tukangId);
+      final profile = await tukangService.getTukangProfile(_effectiveTukangId);
       final latestKyc = await tukangService.getLatestKycDocument(
-        widget.tukangId,
+        _effectiveTukangId,
       );
 
       if (mounted) {
@@ -62,16 +70,22 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
   }
 
   void _simulatePickKtp() {
+    final prefix = _effectiveTukangId.length >= 5
+        ? _effectiveTukangId.substring(0, 5)
+        : _effectiveTukangId;
     setState(() {
       _hasKtpImage = true;
-      _ktpFileName = 'ktp_original_${widget.tukangId.substring(0, 5)}.jpg';
+      _ktpFileName = 'ktp_original_$prefix.jpg';
     });
   }
 
   void _simulatePickSelfie() {
+    final prefix = _effectiveTukangId.length >= 5
+        ? _effectiveTukangId.substring(0, 5)
+        : _effectiveTukangId;
     setState(() {
       _hasSelfieImage = true;
-      _selfieFileName = 'selfie_ktp_${widget.tukangId.substring(0, 5)}.jpg';
+      _selfieFileName = 'selfie_ktp_$prefix.jpg';
     });
   }
 
@@ -102,20 +116,20 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
       );
 
       final ktpStoragePath = await tukangService.uploadKycFile(
-        tukangId: widget.tukangId,
+        tukangId: _effectiveTukangId,
         fileName: _ktpFileName,
         fileBytes: dummyKtpBytes,
       );
 
       final selfieStoragePath = await tukangService.uploadKycFile(
-        tukangId: widget.tukangId,
+        tukangId: _effectiveTukangId,
         fileName: _selfieFileName,
         fileBytes: dummySelfieBytes,
       );
 
       // Submit ke tabel kyc_documents & set kyc_status = PENDING
       await tukangService.submitKycDocument(
-        tukangId: widget.tukangId,
+        tukangId: _effectiveTukangId,
         ktpStoragePath: ktpStoragePath,
         selfieStoragePath: selfieStoragePath,
       );

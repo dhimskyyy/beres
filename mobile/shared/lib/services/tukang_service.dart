@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/category.dart';
 import '../models/tukang_profile.dart';
@@ -131,7 +132,7 @@ class TukangService {
     final path = 'kyc-documents/$tukangId/${timestamp}_$fileName';
     await _client.storage.from('kyc-private').uploadBinary(
           path,
-          fileBytes as dynamic,
+          Uint8List.fromList(fileBytes),
         );
     return path;
   }

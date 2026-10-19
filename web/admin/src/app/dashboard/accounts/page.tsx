@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, Search, AlertOctagon, CheckCircle2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface AccountRow {
   id: string;
@@ -63,6 +64,49 @@ export default function AccountsManagementPage() {
   const [selectedRole, setSelectedRole] = useState<'ALL' | 'USER' | 'TUKANG'>('ALL');
   const [selectedSuspend, setSelectedSuspend] = useState<'ALL' | 'SUSPENDED' | 'ACTIVE'>('ALL');
 
+  const isUuid = (str: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+  useEffect(() => {
+    async function fetchAccounts() {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, email, role, full_name, phone, suspend_type, suspended_until, suspend_reason')
+          .order('created_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const mapped: AccountRow[] = data
+            .filter((p: { role: string }) => p.role === 'USER' || p.role === 'TUKANG')
+            .map((p: {
+              id: string;
+              email: string;
+              role: 'USER' | 'TUKANG';
+              full_name: string | null;
+              phone: string | null;
+              suspend_type: 'NONE' | 'AUTO_2_DAYS' | 'MANUAL_PERMANENT' | null;
+              suspended_until: string | null;
+              suspend_reason: string | null;
+            }) => ({
+              id: p.id,
+              email: p.email,
+              role: p.role,
+              fullName: p.full_name || 'Tanpa Nama',
+              phone: p.phone || '-',
+              strikes: 0,
+              suspendType: p.suspend_type || 'NONE',
+              suspendedUntil: p.suspended_until || undefined,
+              suspendReason: p.suspend_reason || undefined,
+            }));
+          setAccounts(mapped);
+        }
+      } catch {
+        // Fallback ke mock
+      }
+    }
+    fetchAccounts();
+  }, []);
+
   const filtered = accounts.filter((acc) => {
     const matchSearch =
       acc.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -76,7 +120,7 @@ export default function AccountsManagementPage() {
     return matchSearch && matchRole && matchSuspend;
   });
 
-  const handleRevokeSuspend = (id: string) => {
+  const handleRevokeSuspend = async (id: string) => {
     setAccounts((prev) =>
       prev.map((acc) =>
         acc.id === id
@@ -84,9 +128,23 @@ export default function AccountsManagementPage() {
           : acc
       )
     );
+
+    try {
+      if (isUuid(id)) {
+        await supabase
+          .from('profiles')
+          .update({
+            suspend_type: 'NONE',
+            suspended_until: null,
+            suspend_reason: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', id);
+      }
+    } catch {}
   };
 
-  const handleApplyPermanentSuspend = (id: string) => {
+  const handleApplyPermanentSuspend = async (id: string) => {
     const reason = prompt('Masukkan alasan wajib suspend permanen Admin:');
     if (!reason || !reason.trim()) return;
 
@@ -101,6 +159,19 @@ export default function AccountsManagementPage() {
           : acc
       )
     );
+
+    try {
+      if (isUuid(id)) {
+        await supabase
+          .from('profiles')
+          .update({
+            suspend_type: 'MANUAL_PERMANENT',
+            suspend_reason: reason.trim(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', id);
+      }
+    } catch {}
   };
 
   return (
