@@ -1,10 +1,10 @@
 -- ============================================================================
 -- BERES PLATFORM - MIGRATION 0004: ENABLE ROW LEVEL SECURITY & HARDEN RPCs
 -- Menyelesaikan seluruh peringatan Supabase Database Linter & Security Advisor
+-- Catatan: spatial_ref_sys diabaikan karena merupakan tabel internal PostGIS milik supabase_admin
 -- ============================================================================
 
 -- 1. AKTIFKAN ROW LEVEL SECURITY (RLS) DI SELURUH TABEL PUBLIC
-ALTER TABLE IF EXISTS spatial_ref_sys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS tukang_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS kyc_documents ENABLE ROW LEVEL SECURITY;
@@ -42,12 +42,7 @@ AS $$
   );
 $$;
 
--- 3. POLICIES: spatial_ref_sys (PostGIS)
-DROP POLICY IF EXISTS "Public read spatial_ref_sys" ON spatial_ref_sys;
-CREATE POLICY "Public read spatial_ref_sys" ON spatial_ref_sys
-  FOR SELECT USING (true);
-
--- 4. POLICIES: categories & app_configs (Publik Boleh Baca, Admin Boleh Edit)
+-- 3. POLICIES: categories & app_configs (Publik Boleh Baca, Admin Boleh Edit)
 DROP POLICY IF EXISTS "Allow public read categories" ON categories;
 CREATE POLICY "Allow public read categories" ON categories
   FOR SELECT USING (true);
@@ -64,7 +59,7 @@ DROP POLICY IF EXISTS "Allow admin write app_configs" ON app_configs;
 CREATE POLICY "Allow admin write app_configs" ON app_configs
   FOR ALL USING (is_admin() OR auth.role() = 'service_role');
 
--- 5. POLICIES: profiles (Publik baca info dasar, User ubah profil sendiri, Admin akses semua)
+-- 4. POLICIES: profiles (Publik baca info dasar, User ubah profil sendiri, Admin akses semua)
 DROP POLICY IF EXISTS "Allow read profiles" ON profiles;
 CREATE POLICY "Allow read profiles" ON profiles
   FOR SELECT USING (true);
@@ -77,7 +72,7 @@ DROP POLICY IF EXISTS "Allow self update profile" ON profiles;
 CREATE POLICY "Allow self update profile" ON profiles
   FOR UPDATE USING (id = auth.uid() OR auth.role() = 'service_role' OR is_admin());
 
--- 6. POLICIES: tukang_profiles & tukang_categories
+-- 5. POLICIES: tukang_profiles & tukang_categories
 DROP POLICY IF EXISTS "Allow read tukang_profiles" ON tukang_profiles;
 CREATE POLICY "Allow read tukang_profiles" ON tukang_profiles
   FOR SELECT USING (true);
@@ -98,7 +93,7 @@ DROP POLICY IF EXISTS "Allow tukang manage own categories" ON tukang_categories;
 CREATE POLICY "Allow tukang manage own categories" ON tukang_categories
   FOR ALL USING (tukang_id = auth.uid() OR auth.role() = 'service_role' OR is_admin());
 
--- 7. POLICIES: kyc_documents (Tukang baca/unggah milik sendiri, Admin kelola semua)
+-- 6. POLICIES: kyc_documents (Tukang baca/unggah milik sendiri, Admin kelola semua)
 DROP POLICY IF EXISTS "Allow tukang read own kyc" ON kyc_documents;
 CREATE POLICY "Allow tukang read own kyc" ON kyc_documents
   FOR SELECT USING (tukang_id = auth.uid() OR is_admin() OR auth.role() = 'service_role');
@@ -111,7 +106,7 @@ DROP POLICY IF EXISTS "Allow admin update kyc" ON kyc_documents;
 CREATE POLICY "Allow admin update kyc" ON kyc_documents
   FOR UPDATE USING (is_admin() OR auth.role() = 'service_role');
 
--- 8. POLICIES: jobs, job_status_history, job_photos
+-- 7. POLICIES: jobs, job_status_history, job_photos
 DROP POLICY IF EXISTS "Allow read jobs" ON jobs;
 CREATE POLICY "Allow read jobs" ON jobs
   FOR SELECT USING (true);
@@ -140,7 +135,7 @@ DROP POLICY IF EXISTS "Allow insert job_photos" ON job_photos;
 CREATE POLICY "Allow insert job_photos" ON job_photos
   FOR INSERT WITH CHECK (uploaded_by = auth.uid() OR is_admin() OR auth.role() = 'service_role');
 
--- 9. POLICIES: bids & cancel_requests
+-- 8. POLICIES: bids & cancel_requests
 DROP POLICY IF EXISTS "Allow read bids" ON bids;
 CREATE POLICY "Allow read bids" ON bids
   FOR SELECT USING (true);
@@ -157,7 +152,7 @@ DROP POLICY IF EXISTS "Allow insert cancel_requests" ON cancel_requests;
 CREATE POLICY "Allow insert cancel_requests" ON cancel_requests
   FOR ALL USING (requester_id = auth.uid() OR is_admin() OR auth.role() = 'service_role');
 
--- 10. POLICIES: notas, chat_rooms, chat_messages, tracking_locations
+-- 9. POLICIES: notas, chat_rooms, chat_messages, tracking_locations, location_pings
 DROP POLICY IF EXISTS "Allow read notas" ON notas;
 CREATE POLICY "Allow read notas" ON notas
   FOR SELECT USING (true);
@@ -186,7 +181,7 @@ DROP POLICY IF EXISTS "Allow location_pings" ON location_pings;
 CREATE POLICY "Allow location_pings" ON location_pings
   FOR ALL USING (tukang_id = auth.uid() OR is_admin() OR auth.role() = 'service_role');
 
--- 11. POLICIES: reviews, strikes, reports, device_tokens, notifications, audit_logs
+-- 10. POLICIES: reviews, strikes, reports, device_tokens, notifications, audit_logs
 DROP POLICY IF EXISTS "Allow read reviews" ON reviews;
 CREATE POLICY "Allow read reviews" ON reviews
   FOR SELECT USING (true);
@@ -219,8 +214,7 @@ DROP POLICY IF EXISTS "Allow admin read audit_logs" ON audit_logs;
 CREATE POLICY "Allow admin read audit_logs" ON audit_logs
   FOR SELECT USING (is_admin() OR auth.role() = 'service_role');
 
--- 12. HARDEN PRIVILEGES ON SECURITY DEFINER FUNCTIONS
--- Menghilangkan peringatan "Public Can Execute SECURITY DEFINER Function"
+-- 11. HARDEN PRIVILEGES ON SECURITY DEFINER FUNCTIONS
 REVOKE EXECUTE ON FUNCTION rpc_check_email_role(TEXT, user_role) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION rpc_check_email_role(TEXT, user_role) TO anon, authenticated, service_role;
 
@@ -228,19 +222,29 @@ REVOKE EXECUTE ON FUNCTION rpc_sync_profile_after_auth(UUID, TEXT, user_role, TE
 GRANT EXECUTE ON FUNCTION rpc_sync_profile_after_auth(UUID, TEXT, user_role, TEXT, TEXT) TO anon, authenticated, service_role;
 
 REVOKE EXECUTE ON FUNCTION rpc_update_tukang_profile(UUID, TEXT, INTEGER, JSONB, UUID[]) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION rpc_update_tukang_profile(UUID, TEXT, INTEGER, JSONB, UUID[]) FROM anon;
 GRANT EXECUTE ON FUNCTION rpc_update_tukang_profile(UUID, TEXT, INTEGER, JSONB, UUID[]) TO authenticated, service_role;
 
 REVOKE EXECUTE ON FUNCTION rpc_delete_account(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION rpc_delete_account(UUID) FROM anon;
 GRANT EXECUTE ON FUNCTION rpc_delete_account(UUID) TO authenticated, service_role;
 
 REVOKE EXECUTE ON FUNCTION rpc_submit_kyc_document(UUID, TEXT, TEXT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION rpc_submit_kyc_document(UUID, TEXT, TEXT) FROM anon;
 GRANT EXECUTE ON FUNCTION rpc_submit_kyc_document(UUID, TEXT, TEXT) TO authenticated, service_role;
 
 REVOKE EXECUTE ON FUNCTION rpc_review_kyc(UUID, UUID, kyc_status, TEXT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION rpc_review_kyc(UUID, UUID, kyc_status, TEXT) FROM anon;
 GRANT EXECUTE ON FUNCTION rpc_review_kyc(UUID, UUID, kyc_status, TEXT) TO authenticated, service_role;
 
 REVOKE EXECUTE ON FUNCTION rpc_admin_update_app_config(UUID, TEXT, INTEGER, TEXT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION rpc_admin_update_app_config(UUID, TEXT, INTEGER, TEXT) FROM anon;
 GRANT EXECUTE ON FUNCTION rpc_admin_update_app_config(UUID, TEXT, INTEGER, TEXT) TO authenticated, service_role;
 
 REVOKE EXECUTE ON FUNCTION rpc_admin_save_category(UUID, UUID, TEXT, TEXT, TEXT, TEXT, BOOLEAN, INTEGER) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION rpc_admin_save_category(UUID, UUID, TEXT, TEXT, TEXT, TEXT, BOOLEAN, INTEGER) FROM anon;
 GRANT EXECUTE ON FUNCTION rpc_admin_save_category(UUID, UUID, TEXT, TEXT, TEXT, TEXT, BOOLEAN, INTEGER) TO authenticated, service_role;
+
+REVOKE EXECUTE ON FUNCTION is_admin() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION is_admin() FROM anon;
+GRANT EXECUTE ON FUNCTION is_admin() TO authenticated, service_role;
