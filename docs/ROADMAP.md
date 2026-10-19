@@ -19,11 +19,11 @@ Dokumen ini adalah daftar periksa (*checklist*) tahapan pembangunan ekosistem **
 ---
 
 ## Milestone M1: Autentikasi, Peran Tunggal per Email, MFA Admin, & Profil
-- [ ] **FR-001 & BR-44:** Implementasi Registrasi & Login Email OTP (6 digit via Custom SMTP/Resend) untuk `Beres User` dan `Beres Mitra (Tukang)` dengan penegakan **1 Email = 1 Peran** (tolak jika email User dipakai daftar Tukang, dan sebaliknya).
-- [ ] **FR-002:** Form biodata Tukang, pemilihan multi-kategori keahlian, dan manajemen rekening bank / e-wallet pribadi.
-- [ ] **FR-004 & BR-45:** Fitur **Hapus Akun** di aplikasi User dan Tukang (ditolak bila sedang ada job berjalan atau sengketa pembayaran aktif).
-- [ ] **FR-037:** Login Web Admin dengan kewajiban **MFA (Email + Password + OTP 2 Langkah)**.
-- [ ] **BR-42:** Tampilan layar akun terkena **Suspend Otomatis 2 Hari** (menampilkan penyebab, rincian strike, & waktu berakhir) vs **Suspend Permanen Admin** (menampilkan alasan & alamat Email Resmi Perusahaan untuk banding).
+- [x] **FR-001 & BR-44:** Implementasi Registrasi & Login Email OTP (6 digit via Custom SMTP/Resend) untuk `Beres User` dan `Beres Mitra (Tukang)` dengan penegakan **1 Email = 1 Peran** (tolak jika email User dipakai daftar Tukang, dan sebaliknya).
+- [x] **FR-002:** Form biodata Tukang, pemilihan multi-kategori keahlian, dan manajemen rekening bank / e-wallet pribadi.
+- [x] **FR-004 & BR-45:** Fitur **Hapus Akun** di aplikasi User dan Tukang (ditolak bila sedang ada job berjalan atau sengketa pembayaran aktif).
+- [x] **FR-037:** Login Web Admin dengan kewajiban **MFA (Email + Password + OTP 2 Langkah)**.
+- [x] **BR-42:** Tampilan layar akun terkena **Suspend Otomatis 2 Hari** (menampilkan penyebab, rincian strike, & waktu berakhir) vs **Suspend Permanen Admin** (menampilkan alasan & alamat Email Resmi Perusahaan untuk banding).
 
 ---
 

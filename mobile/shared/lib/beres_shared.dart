@@ -21,6 +21,12 @@ export 'adapters/map_adapter.dart';
 
 // Services
 export 'services/supabase_client_service.dart';
+export 'services/auth_service.dart';
+export 'services/tukang_service.dart';
+
+// Widgets
+export 'widgets/suspend_screen.dart';
+export 'widgets/delete_account_dialog.dart';
 
 // Utils
 export 'utils/formatters.dart';
