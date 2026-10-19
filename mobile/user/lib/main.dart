@@ -5,8 +5,14 @@ import 'package:beres_shared/beres_shared.dart';
 import 'features/auth/login_screen.dart';
 import 'features/home/user_home_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await SupabaseClientService.initialize(
+      supabaseUrl: AppEnvironment.supabaseUrl,
+      supabaseAnonKey: AppEnvironment.supabaseAnonKey,
+    );
+  } catch (_) {}
   runApp(const ProviderScope(child: BeresUserApp()));
 }
 

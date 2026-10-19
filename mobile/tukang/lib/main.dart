@@ -6,8 +6,14 @@ import 'features/auth/tukang_login_screen.dart';
 import 'features/profile/tukang_onboarding_screen.dart';
 import 'features/home/tukang_home_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await SupabaseClientService.initialize(
+      supabaseUrl: AppEnvironment.supabaseUrl,
+      supabaseAnonKey: AppEnvironment.supabaseAnonKey,
+    );
+  } catch (_) {}
   runApp(const ProviderScope(child: BeresTukangApp()));
 }
 

@@ -19,6 +19,9 @@ export 'theme/app_theme.dart';
 // Adapters
 export 'adapters/map_adapter.dart';
 
+// Config
+export 'config/app_environment.dart';
+
 // Services
 export 'services/supabase_client_service.dart';
 export 'services/auth_service.dart';
