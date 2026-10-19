@@ -14,7 +14,7 @@ Dokumen ini adalah daftar periksa (*checklist*) tahapan pembangunan ekosistem **
   - [x] 10 status pekerjaan (`OPEN`, `NEGOTIATING`, `NOTA_APPROVED`, `ON_THE_WAY`, `ARRIVED`, `WORKING`, `COMPLETED`, `CANCELLED`, `EXPIRED`, `CANCEL_PENDING`).
   - [x] Seluruh tabel v1.4.0 (`profiles`, `tukang_profiles`, `kyc_documents`, `categories`, `tukang_categories`, `jobs`, `job_status_history`, `job_photos`, `bids`, `notas`, `chat_messages`, `cancel_requests`, `strikes`, `reports`, `location_pings`, `reviews`, `app_configs`, `device_tokens`, `notifications`, `audit_logs`).
   - [x] Fungsi & Trigger penegak aturan bisnis v1.4.0 (1 Email = 1 Peran, Maks 5 Bid Aktif & Auto-Clear Bid Lain saat Lock, Immutability Nota Sah & Alert Revisi Nota, Deteksi Kedatangan 50m/200m, Perhitungan Strike User & Tukang > 3x = Suspend Otomatis 2 Hari, serta Suspend Langsung User Tidak Bayar).
-- [ ] Inisialisasi proyek Flutter (`mobile/shared`, `mobile/user`, `mobile/tukang`) dan Next.js (`web/admin`) agar seluruh proyek ter-build bersih (`flutter analyze` & `eslint` hijau).
+- [x] Inisialisasi proyek Flutter (`mobile/shared`, `mobile/user`, `mobile/tukang`) dan Next.js (`web/admin`) agar seluruh proyek ter-build bersih (`flutter analyze` & `eslint` hijau).
 
 ---
 
