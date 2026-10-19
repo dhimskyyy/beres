@@ -6,6 +6,8 @@ import 'features/auth/tukang_login_screen.dart';
 import 'features/profile/tukang_onboarding_screen.dart';
 import 'features/home/tukang_home_screen.dart';
 import 'features/kyc/tukang_kyc_screen.dart';
+import 'features/job_portal/job_portal_screen.dart';
+import 'features/notifications/notifications_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +34,14 @@ final _router = GoRouter(
     GoRoute(
       path: '/home',
       builder: (context, state) => const TukangHomeScreen(),
+    ),
+    GoRoute(
+      path: '/job-portal',
+      builder: (context, state) => const JobPortalScreen(),
+    ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const TukangNotificationsScreen(),
     ),
     GoRoute(
       path: '/kyc',

@@ -1,32 +1,103 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import { Users, Briefcase, AlertTriangle, ShieldCheck, Clock, CheckCircle } from 'lucide-react';
 
 export default function DashboardOverviewPage() {
+  const [statsData, setStatsData] = useState({
+    activeJobs: 0,
+    onlineTukang: 0,
+    kycPending: 0,
+    paymentDisputes: 0,
+  });
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    async function loadMetrics() {
+      try {
+        const [jobsRes, tukangRes, kycRes, disputesRes] = await Promise.all([
+          supabase
+            .from('jobs')
+            .select('id', { count: 'exact', head: true })
+            .in('status', ['OPEN', 'NEGOTIATING', 'NOTA_APPROVED', 'ON_THE_WAY', 'ARRIVED', 'WORKING']),
+          supabase
+            .from('tukang_profiles')
+            .select('user_id', { count: 'exact', head: true })
+            .eq('is_online', true),
+          supabase
+            .from('kyc_documents')
+            .select('id', { count: 'exact', head: true })
+            .eq('status', 'PENDING'),
+          supabase
+            .from('jobs')
+            .select('id', { count: 'exact', head: true })
+            .eq('payment_dispute_active', true),
+        ]);
+
+        setStatsData({
+          activeJobs: jobsRes.count || 0,
+          onlineTukang: tukangRes.count || 0,
+          kycPending: kycRes.count || 0,
+          paymentDisputes: disputesRes.count || 0,
+        });
+      } catch (err) {
+        console.error('Gagal mengambil metrik dashboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadMetrics();
+  }, []);
+
   const stats = [
-    { label: 'Pekerjaan Aktif (Bursa & Berjalan)', value: '18', icon: Briefcase, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    { label: 'Mitra Tukang Online', value: '42', icon: Users, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    { label: 'Antrean Laporan Pembayaran (BR-67)', value: '1', icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10' },
-    { label: 'Verifikasi KYC Pending', value: '7', icon: ShieldCheck, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    {
+      label: 'Pekerjaan Aktif (Bursa & Berjalan)',
+      value: loading ? '...' : statsData.activeJobs.toString(),
+      icon: Briefcase,
+      color: 'text-blue-400',
+      bg: 'bg-blue-500/10',
+    },
+    {
+      label: 'Mitra Tukang Online (FR-020)',
+      value: loading ? '...' : statsData.onlineTukang.toString(),
+      icon: Users,
+      color: 'text-emerald-400',
+      bg: 'bg-emerald-500/10',
+    },
+    {
+      label: 'Antrean Masalah Pembayaran (BR-67)',
+      value: loading ? '...' : statsData.paymentDisputes.toString(),
+      icon: AlertTriangle,
+      color: 'text-red-400',
+      bg: 'bg-red-500/10',
+    },
+    {
+      label: 'Verifikasi KYC Pending (FR-032)',
+      value: loading ? '...' : statsData.kycPending.toString(),
+      icon: ShieldCheck,
+      color: 'text-amber-400',
+      bg: 'bg-amber-500/10',
+    },
   ];
 
   const recentIncidents = [
     {
-      id: 'JOB-9021',
-      title: 'Laporan Pembayaran Masalah (BR-67)',
-      actor: 'Tukang: Budi Santoso',
-      against: 'User: Hendra Gunawan',
-      time: '12 menit lalu',
-      severity: 'PRIORITAS TINGGI',
+      id: 'JOB-M3-01',
+      title: 'Bursa Pekerjaan Aktif (FR-022)',
+      actor: 'Sistem Marketplace Terbuka',
+      against: 'Radius 0–50 km (BR-15)',
+      time: 'Real-time',
+      severity: 'NORMAL',
     },
     {
-      id: 'ACC-4102',
-      title: 'Suspend Otomatis 2 Hari (> 3x Strike)',
-      actor: 'Mitra: Rudi Hartono',
-      against: 'Strike ke-4 (Depart Timeout 30m)',
-      time: '1 jam lalu',
-      severity: 'AUTO SUSPEND',
+      id: 'SEC-M3-02',
+      title: 'Atomic Lock & Auto-Clear Bids',
+      actor: 'Database Guardrail BR-17',
+      against: 'Auto WITHDRAWN pada Job Lain',
+      time: 'Active',
+      severity: 'ENFORCED',
     },
   ];
 
@@ -73,7 +144,7 @@ export default function DashboardOverviewPage() {
               <div key={i} className="p-3.5 bg-slate-800/60 border border-slate-700/60 rounded-xl text-xs space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-white">{inc.id} — {inc.title}</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-400">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-400">
                     {inc.severity}
                   </span>
                 </div>
@@ -96,20 +167,16 @@ export default function DashboardOverviewPage() {
           </div>
           <ul className="space-y-2 text-xs text-slate-300">
             <li className="flex items-start gap-2 p-2 bg-slate-800/40 rounded-lg">
-              <span className="text-emerald-400 font-bold shrink-0">BR-44:</span>
-              <span>1 Email = 1 Peran ditegakkan via PostgreSQL constraint & RPC check.</span>
+              <span className="text-emerald-400 font-bold shrink-0">BR-15:</span>
+              <span>Batas maksimal 5 lamaran (bid) aktif per mitra ditegakkan via database trigger.</span>
             </li>
             <li className="flex items-start gap-2 p-2 bg-slate-800/40 rounded-lg">
-              <span className="text-emerald-400 font-bold shrink-0">BR-45:</span>
-              <span>Hapus Akun dilindungi validasi job aktif & sengketa berjalan sesuai UU PDP.</span>
+              <span className="text-emerald-400 font-bold shrink-0">BR-16:</span>
+              <span>Privasi data pelanggan sebelum lock dilindungi (hanya tampil area label kelurahan).</span>
             </li>
             <li className="flex items-start gap-2 p-2 bg-slate-800/40 rounded-lg">
-              <span className="text-emerald-400 font-bold shrink-0">BR-42:</span>
-              <span>Suspend Otomatis 2 Hari (&gt; 3x Strike) &amp; Suspend Permanen Admin aktif.</span>
-            </li>
-            <li className="flex items-start gap-2 p-2 bg-slate-800/40 rounded-lg">
-              <span className="text-emerald-400 font-bold shrink-0">FR-037:</span>
-              <span>Akses dashboard Web Admin terkunci MFA (Email + Password + OTP 2 Langkah).</span>
+              <span className="text-emerald-400 font-bold shrink-0">BR-17:</span>
+              <span>Auto-Clear: Seluruh lamaran lain milik mitra otomatis ditarik saat di-lock pelanggan.</span>
             </li>
           </ul>
         </div>

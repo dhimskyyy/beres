@@ -1,4 +1,6 @@
 /// Model Kategori Jasa Dinamis Beres v1.4.0 (FR-005, FR-036)
+typedef Category = JobCategory;
+
 class JobCategory {
   final String id;
   final String slug;

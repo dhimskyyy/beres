@@ -10,6 +10,8 @@ export 'models/job.dart';
 export 'models/profile.dart';
 export 'models/tukang_profile.dart';
 export 'models/category.dart';
+export 'models/job_feed_item.dart';
+export 'models/in_app_notification.dart';
 
 // Theme
 export 'theme/app_colors.dart';
@@ -26,6 +28,8 @@ export 'config/app_environment.dart';
 export 'services/supabase_client_service.dart';
 export 'services/auth_service.dart';
 export 'services/tukang_service.dart';
+export 'services/job_service.dart';
+export 'services/notification_service.dart';
 
 // Widgets
 export 'widgets/suspend_screen.dart';

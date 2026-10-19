@@ -36,11 +36,11 @@ Dokumen ini adalah daftar periksa (*checklist*) tahapan pembangunan ekosistem **
 ---
 
 ## Milestone M3: Posting Job, Batas 5 Bid, Auto-Clear Saat Lock, & FCM Dasar
-- [ ] **FR-010 & BR-16:** Form Posting Pekerjaan di `Beres User` (validasi pin lokasi $\le$ 2 km dari GPS HP User, pengambilan `area_label` Kelurahan/Kecamatan via OS Reverse Geocoding HP, dan fitur edit job selama masih `OPEN`).
-- [ ] **FR-020 & FR-027:** Toggle `Online`/`Offline`, slider radius `0–50 km`, dan pengiriman Lokasi Dasar tukang saat aplikasi di foreground.
-- [ ] **FR-022 & BR-15:** Job Portal di `Beres Mitra` (hanya menampilkan detail job & `area_label` kecamatan, batas melamar maksimal **5 job `OPEN` sekaligus**, serta fitur tarik lamaran *Withdraw Bid*).
-- [ ] **FR-011, FR-012, & BR-17:** Daftar bid di `Beres User` (menampilkan nama, foto profil, keahlian, hari aktif, & rating tukang) dan aksi **Lock Tukang** yang secara atomik **menarik/menghapus seluruh lamaran aktif tukang tersebut di job lain (Job A, B, D, E otomatis `WITHDRAWN`)**.
-- [ ] **FR-040 (Dasar):** Integrasi Firebase Cloud Messaging (FCM) dengan satu bunyi notifikasi standar yang seragam.
+- [x] **FR-010 & BR-16:** Form Posting Pekerjaan di `Beres User` (validasi pin lokasi $\le$ 2 km dari GPS HP User, pengambilan `area_label` Kelurahan/Kecamatan via OS Reverse Geocoding HP, dan fitur edit job selama masih `OPEN`).
+- [x] **FR-020 & FR-027:** Toggle `Online`/`Offline`, slider radius `0–50 km`, dan pengiriman Lokasi Dasar tukang saat aplikasi di foreground.
+- [x] **FR-022 & BR-15:** Job Portal di `Beres Mitra` (hanya menampilkan detail job & `area_label` kecamatan, batas melamar maksimal **5 job `OPEN` sekaligus**, serta fitur tarik lamaran *Withdraw Bid*).
+- [x] **FR-011, FR-012, & BR-17:** Daftar bid di `Beres User` (menampilkan nama, foto profil, keahlian, hari aktif, & rating tukang) dan aksi **Lock Tukang** yang secara atomik **menarik/menghapus seluruh lamaran aktif tukang tersebut di job lain (Job A, B, D, E otomatis `WITHDRAWN`)**.
+- [x] **FR-040 (Dasar):** Integrasi Firebase Cloud Messaging (FCM) dengan satu bunyi notifikasi standar yang seragam.
 
 ---
 

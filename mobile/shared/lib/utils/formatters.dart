@@ -1,6 +1,8 @@
 import 'package:intl/intl.dart';
 
 /// Formatter Utilitas Ekosistem Beres v1.4.0
+typedef Formatters = BeresFormatters;
+
 class BeresFormatters {
   /// Format Rupiah integer tanpa desimal (BR-01, BR-05)
   /// Contoh: 150000 -> "Rp 150.000"

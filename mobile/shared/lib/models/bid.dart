@@ -2,6 +2,7 @@
 enum BidStatus {
   active('ACTIVE', 'Aktif'),
   locked('LOCKED', 'Terkunci (Dipilih User)'),
+  rejected('REJECTED', 'Ditolak (User Memilih Mitra Lain)'),
   withdrawn('WITHDRAWN', 'Ditarik Otomatis (Auto-Clear)');
 
   final String value;
