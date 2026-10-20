@@ -42,6 +42,7 @@ export 'services/cancellation_service.dart';
 // Widgets
 export 'widgets/suspend_screen.dart';
 export 'widgets/delete_account_dialog.dart';
+export 'widgets/faq_rules_screen.dart';
 export 'widgets/chat/chat_screen.dart';
 export 'widgets/chat/timer_banner_widget.dart';
 export 'widgets/chat/nota_card_widget.dart';

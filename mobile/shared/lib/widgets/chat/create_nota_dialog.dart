@@ -3,6 +3,7 @@ import '../../models/nota.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../../utils/formatters.dart';
+import '../faq_rules_screen.dart';
 
 class CreateNotaDialog extends StatefulWidget {
   final String jobId;
@@ -376,6 +377,36 @@ class _CreateNotaDialogState extends State<CreateNotaDialog> {
                             'Misal garansi pekerjaan 7 hari, beli semen sendiri...',
                         border: OutlineInputBorder(),
                         isDense: true,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    InkWell(
+                      onTap: () => FaqRulesScreen.show(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.info_outline,
+                                size: 14, color: AppColors.trustCobalt),
+                            SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Nota yang disetujui sah mengikat & terkunci. Baca Aturan (Lampiran C)',
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.trustCobalt,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            Icon(Icons.chevron_right,
+                                size: 14, color: AppColors.trustCobalt),
+                          ],
+                        ),
                       ),
                     ),
                   ],

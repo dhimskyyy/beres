@@ -606,18 +606,34 @@ class _TukangHomeScreenState extends ConsumerState<TukangHomeScreen> {
                               ),
                             ),
                             const Divider(height: 1),
-                            const ListTile(
-                              leading: Icon(
+                            ListTile(
+                              leading: const Icon(
+                                Icons.menu_book_outlined,
+                                color: AppColors.trustCobalt,
+                              ),
+                              title: const Text(
+                                'Aturan & FAQ Resmi Beres (Lampiran C)',
+                              ),
+                              subtitle: const Text(
+                                'Kekuatan Nota Sah, pembayaran langsung, & sanksi',
+                              ),
+                              trailing: const Icon(Icons.chevron_right),
+                              onTap: () => FaqRulesScreen.show(context),
+                            ),
+                            const Divider(height: 1),
+                            ListTile(
+                              leading: const Icon(
                                 Icons.info_outline,
                                 color: AppColors.warningAmber,
                               ),
-                              title: Text(
+                              title: const Text(
                                 'Aturan Pelanggaran & Strike (BR-57)',
                               ),
-                              subtitle: Text(
+                              subtitle: const Text(
                                 'Batas 3x strike per bulan kalender. Strike ke-4 = suspend 48 jam.',
                               ),
-                              trailing: Icon(Icons.chevron_right),
+                              trailing: const Icon(Icons.chevron_right),
+                              onTap: () => FaqRulesScreen.show(context),
                             ),
                             const Divider(height: 1),
                             ListTile(

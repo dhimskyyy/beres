@@ -310,6 +310,19 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                       const Divider(height: 1),
                       ListTile(
                         leading: const Icon(
+                          Icons.menu_book_outlined,
+                          color: AppColors.trustCobalt,
+                        ),
+                        title: const Text('Aturan & FAQ Resmi Beres (Lampiran C)'),
+                        subtitle: const Text(
+                          'Kekuatan Nota Sah, pembayaran langsung, & sanksi',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => FaqRulesScreen.show(context),
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(
                           Icons.delete_forever_outlined,
                           color: AppColors.dangerCrimson,
                         ),

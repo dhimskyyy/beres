@@ -419,7 +419,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
 
             // Kartu Keputusan Pembatalan (CANCEL_PENDING - BR-53, BR-55)
-            if (_contextData?.jobStatus == JobStatus.cancelPending)
+            if (_contextData?.status == 'CANCEL_PENDING')
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: CancelDecisionCard(
@@ -499,7 +499,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
 
             // Tombol Batalkan Tugas untuk Tukang saat NOTA_APPROVED (BR-50)
-            if (_contextData?.jobStatus == JobStatus.notaApproved && _contextData!.isTukang)
+            if (_contextData?.status == 'NOTA_APPROVED' && _contextData!.isTukang)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),

@@ -74,8 +74,8 @@ Dokumen ini adalah daftar periksa (*checklist*) tahapan pembangunan ekosistem **
 ---
 
 ## Milestone M7: Admin Lengkap, Audit Log, & Halaman FAQ / Aturan Tertulis In-App
-- [ ] **FR-031 & FR-036:** Panel Audit Lengkap di Web Admin (riwayat transisi 10 status, isi chat, versi Nota & Revisi, foto kerusakan, foto hasil kerja, bukti transfer, & `audit_logs`) serta Dashboard Analitik.
-- [ ] **Lampiran C PRD:** Menampilkan halaman **FAQ & Aturan Tertulis Resmi** di dalam aplikasi `Beres User` dan `Beres Mitra (Tukang)` (mencakup aturan pembayaran langsung, kekuatan Nota Sah, Revisi Nota, batas 5 lamaran, serta aturan Strike & Suspend).
+- [x] **FR-031 & FR-036:** Panel Audit Lengkap di Web Admin (riwayat transisi 10 status, isi chat, versi Nota & Revisi, foto kerusakan, foto hasil kerja, bukti transfer, & `audit_logs`) serta Dashboard Analitik.
+- [x] **Lampiran C PRD:** Menampilkan halaman **FAQ & Aturan Tertulis Resmi** di dalam aplikasi `Beres User` dan `Beres Mitra (Tukang)` (mencakup aturan pembayaran langsung, kekuatan Nota Sah, Revisi Nota, batas 5 lamaran, serta aturan Strike & Suspend).
 
 ---
 
