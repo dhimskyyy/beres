@@ -15,6 +15,9 @@ class BeresFormatters {
     return currencyFormatter.format(amount);
   }
 
+  /// Alias untuk formatRupiah
+  static String formatCurrency(int amount) => formatRupiah(amount);
+
   /// Format durasi detik ke format MM:SS untuk countdown timer (BR-31, BR-70)
   /// Contoh: 1800 detik -> "30:00"
   static String formatCountdown(int totalSeconds) {

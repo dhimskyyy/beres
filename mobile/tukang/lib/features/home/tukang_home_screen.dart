@@ -20,6 +20,7 @@ class _TukangHomeScreenState extends ConsumerState<TukangHomeScreen> {
   String _kycStatus = 'PENDING';
   int _activeBidsCount = 0;
   int _unreadNotifsCount = 0;
+  Map<String, dynamic>? _activeJob;
   bool _isLoading = true;
 
   @override
@@ -56,6 +57,18 @@ class _TukangHomeScreenState extends ConsumerState<TukangHomeScreen> {
           .eq('jobs.status', 'OPEN');
 
       _activeBidsCount = (bidsRes as List<dynamic>).length;
+
+      // Ambil pekerjaan aktif tukang yang sedang berjalan (M4: Chat, Nota, Timer)
+      final activeJobRes = await Supabase.instance.client
+          .from('jobs')
+          .select('id, status, description, area_label, locked_at')
+          .eq('locked_tukang_id', user.id)
+          .inFilter('status', ['NEGOTIATING', 'NOTA_APPROVED', 'ON_THE_WAY', 'ARRIVED', 'WORKING'])
+          .order('locked_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      _activeJob = activeJobRes;
 
       final notifService = ref.read(notificationServiceProvider);
       final count = await notifService.getUnreadCount();
@@ -254,7 +267,99 @@ class _TukangHomeScreenState extends ConsumerState<TukangHomeScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // 2. Action Banner: Bursa Pekerjaan (Job Portal)
+                // 2. Pekerjaan Aktif yang Sedang Berjalan (M4: FR-013, FR-014, BR-31)
+                if (_activeJob != null) ...[
+                  Card(
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: const BorderSide(color: AppColors.trustCobalt, width: 1.5),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.handyman, color: AppColors.trustCobalt, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Pekerjaan Aktif Anda',
+                                    style: AppTypography.headingSmall.copyWith(fontSize: 15),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: AppColors.trustCobalt.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  _activeJob!['status'] as String? ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.trustCobalt,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            _activeJob!['description'] as String? ?? '',
+                            style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
+                              const SizedBox(width: 4),
+                              Text(
+                                _activeJob!['area_label'] as String? ?? '',
+                                style: AppTypography.bodySmall,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ChatScreen(
+                                      jobId: _activeJob!['id'] as String,
+                                    ),
+                                  ),
+                                );
+                                _loadData();
+                              },
+                              icon: const Icon(Icons.chat_outlined, size: 18),
+                              label: const Text('Buka Ruang Chat & Nota Digital'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.trustCobalt,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // 3. Action Banner: Bursa Pekerjaan (Job Portal)
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(

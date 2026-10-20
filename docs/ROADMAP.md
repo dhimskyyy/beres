@@ -45,11 +45,11 @@ Dokumen ini adalah daftar periksa (*checklist*) tahapan pembangunan ekosistem **
 ---
 
 ## Milestone M4: Ruang Chat, Nota Sah, Revisi Nota, & Timer 30 Menit
-- [ ] **FR-013 & BR-70:** Ruang Chat *real-time* (teks & foto) beserta **Timer 30 Menit di tahap `NEGOTIATING`** (jika User atau Tukang tidak membalas $> 30$ menit, job otomatis dilepas kembali ke Job Portal `OPEN` + tombol Cancel ke portal, **tanpa Strike** bagi siapa pun).
-- [ ] **FR-014, FR-023, & BR-05:** Pembuatan Nota di aplikasi Tukang dan persetujuan oleh User menjadi **Nota Sah yang terkunci (*immutable*)**.
-- [ ] **FR-015 & BR-05:** Fitur **Revisi Nota** saat di lokasi (`ARRIVED`/`WORKING`) yang memunculkan **notifikasi jelas di ruang chat User (perbandingan Harga Nota Awal vs Harga Revisi Baru)** dan wajib menunggu klik *Approve* dari User.
-- [ ] **BR-08:** Tombol **"Tarik / Batalkan Revisi Nota"** di aplikasi Tukang untuk membatalkan Revisi Nota yang belum dijawab User.
-- [ ] **BR-31 (`T4a`):** **Timer 30 Menit Wajib Klik "Berangkat"** setelah `NOTA_APPROVED` (selama 30 menit User menunggu; jika lewat 30 menit Tukang tidak klik Berangkat $\rightarrow$ job otomatis dilepas kembali ke Job Portal `OPEN` dan **Tukang terkena +1 Strike**).
+- [x] **FR-013 & BR-70:** Ruang Chat *real-time* (teks & foto) beserta **Timer 30 Menit di tahap `NEGOTIATING`** (jika User atau Tukang tidak membalas $> 30$ menit, job otomatis dilepas kembali ke Job Portal `OPEN` + tombol Cancel ke portal, **tanpa Strike** bagi siapa pun).
+- [x] **FR-014, FR-023, & BR-05:** Pembuatan Nota di aplikasi Tukang dan persetujuan oleh User menjadi **Nota Sah yang terkunci (*immutable*)**.
+- [x] **FR-015 & BR-05:** Fitur **Revisi Nota** saat di lokasi (`ARRIVED`/`WORKING`) yang memunculkan **notifikasi jelas di ruang chat User (perbandingan Harga Nota Awal vs Harga Revisi Baru)** dan wajib menunggu klik *Approve* dari User.
+- [x] **BR-08:** Tombol **"Tarik / Batalkan Revisi Nota"** di aplikasi Tukang untuk membatalkan Revisi Nota yang belum dijawab User.
+- [x] **BR-31 (`T4a`):** **Timer 30 Menit Wajib Klik "Berangkat"** setelah `NOTA_APPROVED` (selama 30 menit User menunggu; jika lewat 30 menit Tukang tidak klik Berangkat $\rightarrow$ job otomatis dilepas kembali ke Job Portal `OPEN` dan **Tukang terkena +1 Strike**).
 
 ---
 

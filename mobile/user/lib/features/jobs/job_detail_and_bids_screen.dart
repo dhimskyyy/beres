@@ -129,6 +129,12 @@ class _JobDetailAndBidsScreenState
           ),
         );
         _loadJobAndBids();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(jobId: _job!.id),
+          ),
+        ).then((_) => _loadJobAndBids());
       }
     } catch (e) {
       if (mounted) {
@@ -313,6 +319,26 @@ class _JobDetailAndBidsScreenState
                   ),
                 ),
               ),
+              if (!isJobOpen) ...[
+                const SizedBox(height: 14),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(jobId: _job!.id),
+                      ),
+                    ).then((_) => _loadJobAndBids());
+                  },
+                  icon: const Icon(Icons.chat_outlined),
+                  label: const Text('Buka Ruang Chat & Nota Digital'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.trustCobalt,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
 
               // 2. Section: Pelamar / Bids

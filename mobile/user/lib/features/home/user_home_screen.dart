@@ -420,6 +420,30 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                       size: 18, color: AppColors.textSecondary),
                 ],
               ),
+              if (job.status != JobStatus.open &&
+                  job.status != JobStatus.cancelled &&
+                  job.status != JobStatus.expired &&
+                  job.status != JobStatus.completed) ...[
+                const SizedBox(height: 10),
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Buka Ruang Chat & Nota',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.trustCobalt,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward,
+                        size: 14, color: AppColors.trustCobalt),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

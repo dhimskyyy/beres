@@ -12,6 +12,7 @@ export 'models/tukang_profile.dart';
 export 'models/category.dart';
 export 'models/job_feed_item.dart';
 export 'models/in_app_notification.dart';
+export 'models/chat_message.dart';
 
 // Theme
 export 'theme/app_colors.dart';
@@ -29,11 +30,17 @@ export 'services/supabase_client_service.dart';
 export 'services/auth_service.dart';
 export 'services/tukang_service.dart';
 export 'services/job_service.dart';
+export 'services/chat_service.dart';
+export 'services/nota_service.dart';
 export 'services/notification_service.dart';
 
 // Widgets
 export 'widgets/suspend_screen.dart';
 export 'widgets/delete_account_dialog.dart';
+export 'widgets/chat/chat_screen.dart';
+export 'widgets/chat/timer_banner_widget.dart';
+export 'widgets/chat/nota_card_widget.dart';
+export 'widgets/chat/create_nota_dialog.dart';
 
 // Utils
 export 'utils/formatters.dart';
