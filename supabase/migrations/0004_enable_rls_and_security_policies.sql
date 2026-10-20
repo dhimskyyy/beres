@@ -13,9 +13,7 @@ ALTER TABLE IF EXISTS tukang_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS bids ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS notas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS chat_rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS chat_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS tracking_locations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS job_photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS job_status_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS cancel_requests ENABLE ROW LEVEL SECURITY;
@@ -152,7 +150,7 @@ DROP POLICY IF EXISTS "Allow insert cancel_requests" ON cancel_requests;
 CREATE POLICY "Allow insert cancel_requests" ON cancel_requests
   FOR ALL USING (requester_id = auth.uid() OR is_admin() OR auth.role() = 'service_role');
 
--- 9. POLICIES: notas, chat_rooms, chat_messages, tracking_locations, location_pings
+-- 9. POLICIES: notas, chat_messages, location_pings
 DROP POLICY IF EXISTS "Allow read notas" ON notas;
 CREATE POLICY "Allow read notas" ON notas
   FOR SELECT USING (true);
@@ -161,21 +159,9 @@ DROP POLICY IF EXISTS "Allow tukang manage notas" ON notas;
 CREATE POLICY "Allow tukang manage notas" ON notas
   FOR ALL USING (tukang_id = auth.uid() OR is_admin() OR auth.role() = 'service_role');
 
-DROP POLICY IF EXISTS "Allow participants read chat_rooms" ON chat_rooms;
-CREATE POLICY "Allow participants read chat_rooms" ON chat_rooms
-  FOR SELECT USING (user_id = auth.uid() OR tukang_id = auth.uid() OR is_admin() OR auth.role() = 'service_role');
-
-DROP POLICY IF EXISTS "Allow participants insert chat_rooms" ON chat_rooms;
-CREATE POLICY "Allow participants insert chat_rooms" ON chat_rooms
-  FOR INSERT WITH CHECK (user_id = auth.uid() OR is_admin() OR auth.role() = 'service_role');
-
 DROP POLICY IF EXISTS "Allow participants chat_messages" ON chat_messages;
 CREATE POLICY "Allow participants chat_messages" ON chat_messages
   FOR ALL USING (sender_id = auth.uid() OR is_admin() OR auth.role() = 'service_role');
-
-DROP POLICY IF EXISTS "Allow tracking_locations" ON tracking_locations;
-CREATE POLICY "Allow tracking_locations" ON tracking_locations
-  FOR ALL USING (tukang_id = auth.uid() OR is_admin() OR auth.role() = 'service_role');
 
 DROP POLICY IF EXISTS "Allow location_pings" ON location_pings;
 CREATE POLICY "Allow location_pings" ON location_pings
