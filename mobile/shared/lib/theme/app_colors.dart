@@ -33,4 +33,10 @@ class AppColors {
   static const Color userBadgeText = Color(0xFF1D4ED8);
   static const Color tukangBadgeBg = Color(0xFFFFF7ED);
   static const Color tukangBadgeText = Color(0xFFC2410C);
+
+  // Convenient Aliases
+  static const Color primary = cobaltBlue;
+  static const Color success = successGreen;
+  static const Color error = dangerCrimson;
+  static const Color warning = warningAmber;
 }

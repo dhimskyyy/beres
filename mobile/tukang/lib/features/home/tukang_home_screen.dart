@@ -393,6 +393,53 @@ class _TukangHomeScreenState extends ConsumerState<TukangHomeScreen> {
                                     ),
                                   ),
                                 ),
+                                if ([
+                                  'ON_THE_WAY',
+                                  'ARRIVED',
+                                  'WORKING',
+                                  'COMPLETED',
+                                ].contains(_activeJob!['status'])) ...[
+                                  const SizedBox(height: 8),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      onPressed: () async {
+                                        await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                TrackingScreen(
+                                                  jobId:
+                                                      _activeJob!['id']
+                                                          as String,
+                                                  isTukang: true,
+                                                  trackingService:
+                                                      TrackingService(),
+                                                  jobService: ref.read(
+                                                    jobServiceProvider,
+                                                  ),
+                                                ),
+                                          ),
+                                        );
+                                        _loadData();
+                                      },
+                                      icon: const Icon(
+                                        Icons.location_on,
+                                        size: 18,
+                                      ),
+                                      label: const Text(
+                                        'Pelaksanaan & Live GPS Tracking (M5)',
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.safetyOrange,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 10,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),

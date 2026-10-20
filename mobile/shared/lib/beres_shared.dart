@@ -13,6 +13,8 @@ export 'models/category.dart';
 export 'models/job_feed_item.dart';
 export 'models/in_app_notification.dart';
 export 'models/chat_message.dart';
+export 'models/location_ping.dart';
+export 'models/review.dart';
 
 // Theme
 export 'theme/app_colors.dart';
@@ -33,6 +35,8 @@ export 'services/job_service.dart';
 export 'services/chat_service.dart';
 export 'services/nota_service.dart';
 export 'services/notification_service.dart';
+export 'services/tracking_service.dart';
+export 'services/review_service.dart';
 
 // Widgets
 export 'widgets/suspend_screen.dart';
@@ -41,6 +45,10 @@ export 'widgets/chat/chat_screen.dart';
 export 'widgets/chat/timer_banner_widget.dart';
 export 'widgets/chat/nota_card_widget.dart';
 export 'widgets/chat/create_nota_dialog.dart';
+export 'widgets/tracking/tracking_screen.dart';
+export 'widgets/tracking/job_completion_dialog.dart';
+export 'widgets/tracking/payment_dispute_dialog.dart';
+export 'widgets/tracking/review_dialog.dart';
 
 // Utils
 export 'utils/formatters.dart';

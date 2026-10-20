@@ -54,12 +54,12 @@ Dokumen ini adalah daftar periksa (*checklist*) tahapan pembangunan ekosistem **
 ---
 
 ## Milestone M5: Eksekusi Kerja, Live GPS, Kedatangan 50m/200m, Penyelesaian, & Lapor Pembayaran
-- [ ] **FR-016, FR-024, & FR-030:** Pengiriman Live GPS Tracking saat `ON_THE_WAY`, `ARRIVED`, dan `WORKING` yang tampil *real-time* di peta User dan **Live Map Web Admin**.
-- [ ] **BR-60 & BR-61:** Deteksi status `ARRIVED` otomatis di server saat jarak **$\le$ 50 meter** (akurasi $\le$ 30 m) + tombol fallback manual **"Saya Sudah Tiba"** saat jarak **$\le$ 200 meter**, dilanjutkan tombol manual **"Mulai Bekerja"** (`WORKING`).
-- [ ] **BR-65:** Penegakan larangan pembatalan oleh User maupun Tukang saat status `WORKING`.
-- [ ] **FR-025 & BR-32:** Form Penyelesaian Tugas di aplikasi Tukang: unggah **Foto Bukti Hasil Kerja** ($\ge 1$), pilih **Metode Bayar Aktual** (`CASH`, `BANK_TRANSFER`, `E_WALLET`), centang **"User sudah membayar"**, dan unggah **Screenshot Bukti Bayar** bila metode aktual non-tunai.
-- [ ] **BR-67 & FR-033:** Tombol khusus **"Laporkan Masalah Pembayaran (User Tidak Membayar / Kurang)"** di aplikasi Tukang $\rightarrow$ melepas ikatan job aktif tukang sementara $\rightarrow$ masuk Antrean Investigasi Prioritas di Web Admin $\rightarrow$ fitur **Suspend Permanen Langsung terhadap User yang terbukti bersalah tanpa toleransi 3x**.
-- [ ] **FR-017 & FR-021:** Perhitungan otomatis kuota mingguan 5 job `COMPLETED` (berdasarkan zona waktu lokal tukang `BR-75`) serta form **Rating & Review** bagi User.
+- [x] **FR-016, FR-024, & FR-030:** Pengiriman Live GPS Tracking saat `ON_THE_WAY`, `ARRIVED`, dan `WORKING` yang tampil *real-time* di peta User dan **Live Map Web Admin**.
+- [x] **BR-60 & BR-61:** Deteksi status `ARRIVED` otomatis di server saat jarak **$\le$ 50 meter** (akurasi $\le$ 30 m) + tombol fallback manual **"Saya Sudah Tiba"** saat jarak **$\le$ 200 meter**, dilanjutkan tombol manual **"Mulai Bekerja"** (`WORKING`).
+- [x] **BR-65:** Penegakan larangan pembatalan oleh User maupun Tukang saat status `WORKING`.
+- [x] **FR-025 & BR-32:** Form Penyelesaian Tugas di aplikasi Tukang: unggah **Foto Bukti Hasil Kerja** ($\ge 1$), pilih **Metode Bayar Aktual** (`CASH`, `BANK_TRANSFER`, `E_WALLET`), centang **"User sudah membayar"**, dan unggah **Screenshot Bukti Bayar** bila metode aktual non-tunai.
+- [x] **BR-67 & FR-033:** Tombol khusus **"Laporkan Masalah Pembayaran (User Tidak Membayar / Kurang)"** di aplikasi Tukang $\rightarrow$ melepas ikatan job aktif tukang sementara $\rightarrow$ masuk Antrean Investigasi Prioritas di Web Admin $\rightarrow$ fitur **Suspend Permanen Langsung terhadap User yang terbukti bersalah tanpa toleransi 3x**.
+- [x] **FR-017 & FR-021:** Perhitungan otomatis kuota mingguan 5 job `COMPLETED` (berdasarkan zona waktu lokal tukang `BR-75`) serta form **Rating & Review** bagi User.
 
 ---
 

@@ -340,6 +340,41 @@ class _JobDetailAndBidsScreenState
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
+                if (_job!.isOnTheWay ||
+                    _job!.isArrived ||
+                    _job!.isWorking ||
+                    _job!.isCompleted) ...[
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TrackingScreen(
+                            jobId: _job!.id,
+                            isTukang: false,
+                            trackingService: TrackingService(),
+                            jobService: ref.read(jobServiceProvider),
+                            reviewService: ReviewService(),
+                          ),
+                        ),
+                      ).then((_) => _loadJobAndBids());
+                    },
+                    icon: const Icon(Icons.map_outlined),
+                    label: Text(
+                      _job!.isCompleted
+                          ? 'Lihat Ringkasan & Ulasan (FR-021)'
+                          : 'Pantau Lokasi Tukang & Pelaksanaan (M5)',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _job!.isCompleted
+                          ? Colors.amber.shade700
+                          : AppColors.safetyOrange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ],
               ],
               const SizedBox(height: 20),
 
