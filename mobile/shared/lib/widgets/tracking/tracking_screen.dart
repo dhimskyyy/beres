@@ -7,7 +7,11 @@ import '../../models/location_ping.dart';
 import '../../services/job_service.dart';
 import '../../services/tracking_service.dart';
 import '../../services/review_service.dart';
+import '../../services/cancellation_service.dart';
 import '../../theme/app_colors.dart';
+import '../cancellation/tukang_cancel_flow_dialog.dart';
+import '../cancellation/user_cancel_otw_dialog.dart';
+import '../cancellation/cancel_decision_card.dart';
 import 'job_completion_dialog.dart';
 import 'payment_dispute_dialog.dart';
 import 'review_dialog.dart';
@@ -20,17 +24,19 @@ class TrackingScreen extends StatefulWidget {
   final TrackingService trackingService;
   final JobService jobService;
   final ReviewService? reviewService;
+  final CancellationService cancellationService;
   final VoidCallback? onBack;
 
-  const TrackingScreen({
+  TrackingScreen({
     super.key,
     required this.jobId,
     required this.isTukang,
     required this.trackingService,
     required this.jobService,
     this.reviewService,
+    CancellationService? cancellationService,
     this.onBack,
-  });
+  }) : cancellationService = cancellationService ?? CancellationService();
 
   @override
   State<TrackingScreen> createState() => _TrackingScreenState();
@@ -243,6 +249,82 @@ class _TrackingScreenState extends State<TrackingScreen> {
     );
   }
 
+  void _openTukangCancelDialog() {
+    TukangCancelFlowDialog.show(
+      context,
+      jobId: widget.jobId,
+      cancellationService: widget.cancellationService,
+      currentLatitude: _tukangLat,
+      currentLongitude: _tukangLng,
+      onSuccess: _refreshJobStatus,
+    );
+  }
+
+  void _openUserCancelOtwDialog() {
+    UserCancelOtwDialog.show(
+      context,
+      jobId: widget.jobId,
+      cancellationService: widget.cancellationService,
+      onSuccess: _refreshJobStatus,
+    );
+  }
+
+  Future<void> _handleReportUserUnresponsive() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.report_problem, color: AppColors.error),
+            SizedBox(width: 8),
+            Text('Lapor User Tidak Aktif'),
+          ],
+        ),
+        content: const Text(
+          'Sesuai aturan BR-71:\n'
+          'Jika Anda sudah mengirim chat dan pelanggan tidak merespons selama > 30 menit saat Anda dalam perjalanan atau di lokasi, pekerjaan akan dilepas kembali ke portal dan pelanggan terkena +1 Strike.\n\n'
+          'Apakah Anda yakin ingin melaporkan?',
+          style: TextStyle(fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Ya, Laporkan', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await widget.cancellationService.tukangReportUserUnresponsive(widget.jobId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: AppColors.primary,
+            content: Text('Laporan diterima. Pekerjaan telah dilepas kembali ke portal dan User menerima 1 Strike (BR-71).'),
+          ),
+        );
+        widget.onBack?.call();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+          ),
+        );
+      }
+    }
+  }
+
   void _openReviewDialog() {
     if (widget.reviewService == null) return;
     showDialog(
@@ -423,6 +505,17 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     ),
                     const Divider(height: 20),
 
+                    // KARTU KEPUTUSAN PEMBATALAN (CANCEL_PENDING - BR-53, BR-55, BR-56b)
+                    if (job.isCancelPending) ...[
+                      CancelDecisionCard(
+                        jobId: widget.jobId,
+                        isTukang: widget.isTukang,
+                        cancellationService: widget.cancellationService,
+                        onDecisionResolved: _refreshJobStatus,
+                      ),
+                      const Divider(height: 20),
+                    ],
+
                     // B. TAMPILAN KHUSUS STATUS WORKING (BR-65: DILARANG BATAL)
                     if (job.isWorking)
                       Container(
@@ -523,6 +616,41 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         ),
                       ],
 
+                      // Tombol Pembatalan & Lapor User Inaktif untuk Tukang saat OTW atau ARRIVED (BR-50 & BR-71)
+                      if (job.isOnTheWay || job.isArrived) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.error,
+                                  side: const BorderSide(color: AppColors.error),
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                ),
+                                icon: const Icon(Icons.cancel_outlined, size: 16),
+                                label: const Text('Batalkan Tugas (BR-50)',
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                onPressed: _openTukangCancelDialog,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextButton.icon(
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.grey.shade700,
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                ),
+                                icon: const Icon(Icons.timer_off_outlined, size: 16),
+                                label: const Text('Lapor User Inaktif (BR-71)',
+                                    style: TextStyle(fontSize: 10)),
+                                onPressed: _handleReportUserUnresponsive,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+
                       // 3. TAHAP WORKING
                       if (job.isWorking) ...[
                         ElevatedButton.icon(
@@ -582,11 +710,60 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       ],
                     ] else ...[
                       // D. TAMPILAN KHUSUS PELANGGAN (USER)
-                      if (job.isOnTheWay)
+                      if (job.isOnTheWay) ...[
                         const Text(
                           'Tukang sedang menuju lokasi Anda. Lokasi diperbarui secara real-time.',
                           style: TextStyle(fontSize: 12, color: Colors.black87),
                         ),
+                        const SizedBox(height: 10),
+                        // Evaluasi 3 Jam ON_THE_WAY untuk Tombol Cancel (BR-56b)
+                        Builder(
+                          builder: (context) {
+                            final otwStartTime = job.onTheWayAt ?? job.createdAt;
+                            final elapsedMinutes =
+                                DateTime.now().difference(otwStartTime).inMinutes;
+                            final isEligibleToCancel = elapsedMinutes >= 180;
+
+                            if (isEligibleToCancel) {
+                              return ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.error,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                ),
+                                icon: const Icon(Icons.cancel_schedule_send, size: 18),
+                                label: const Text(
+                                  'Batalkan Pekerjaan (>= 3 Jam Belum Tiba) (BR-56b)',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                                onPressed: _openUserCancelOtwDialog,
+                              );
+                            } else {
+                              final remainingMinutes = 180 - elapsedMinutes;
+                              return Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.blue.shade200),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        'Perjalanan: $elapsedMinutes menit. Tombol batal aktif jika tukang belum tiba setelah 3 jam ($remainingMinutes menit lagi — BR-56a).',
+                                        style: const TextStyle(fontSize: 11, color: Colors.blueGrey),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ],
                       if (job.isArrived)
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -595,7 +772,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Text(
-                            'Tukang telah tiba di lokasi Anda dan bersiap memulai pekerjaan.',
+                            'Tukang telah tiba di lokasi Anda dan bersiap memulai pekerjaan. Sesuai aturan BR-56c, pembatalan sepihak telah ditutup.',
                             style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,

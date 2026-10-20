@@ -323,6 +323,15 @@ class _JobDetailAndBidsScreenState
               ),
               if (!isJobOpen) ...[
                 const SizedBox(height: 14),
+                if (_job!.isCancelPending) ...[
+                  CancelDecisionCard(
+                    jobId: _job!.id,
+                    isTukang: false,
+                    cancellationService: CancellationService(),
+                    onDecisionResolved: _loadJobAndBids,
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.push(

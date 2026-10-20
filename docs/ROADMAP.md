@@ -64,12 +64,12 @@ Dokumen ini adalah daftar periksa (*checklist*) tahapan pembangunan ekosistem **
 ---
 
 ## Milestone M6: Alur Pembatalan, Aturan 3 Jam `ON_THE_WAY`, & Sistem Strike/Suspend 2 Hari
-- [ ] **FR-026, FR-028, & BR-50 s/d BR-55:** Alur pembatalan oleh Tukang pada `NOTA_APPROVED`/`ON_THE_WAY`/`ARRIVED`: *slide-to-cancel* $\rightarrow$ dialog Ya/Tidak $\rightarrow$ halaman form pembatalan (`DRAFT` tidak mengubah tampilan User) $\rightarrow$ klik **Kirim** (`CANCEL_PENDING`, User hanya melihat alasan, Admin melihat semua field). Jika disetujui User $\rightarrow$ job dilepas kembali ke Job Portal (`OPEN`) dan **Tukang terkena +1 Strike**.
-- [ ] **FR-018 & BR-56:** Aturan pembatalan oleh User:
+- [x] **FR-026, FR-028, & BR-50 s/d BR-55:** Alur pembatalan oleh Tukang pada `NOTA_APPROVED`/`ON_THE_WAY`/`ARRIVED`: *slide-to-cancel* $\rightarrow$ dialog Ya/Tidak $\rightarrow$ halaman form pembatalan (`DRAFT` tidak mengubah tampilan User) $\rightarrow$ klik **Kirim** (`CANCEL_PENDING`, User hanya melihat alasan, Admin melihat semua field). Jika disetujui User $\rightarrow$ job dilepas kembali ke Job Portal (`OPEN`) dan **Tukang terkena +1 Strike**.
+- [x] **FR-018 & BR-56:** Aturan pembatalan oleh User:
   - Tidak ada tombol Cancel bagi User saat `ON_THE_WAY` $< 3$ jam dan saat `ARRIVED`.
   - Muncul tombol **Cancel** bagi User jika `ON_THE_WAY` sudah berlangsung **$\ge$ 3 jam** belum sampai (meminta persetujuan Tukang; otomatis disetujui + **1 Strike Tukang** jika Tukang tidak merespons dalam 30 menit).
-- [ ] **BR-71:** Pencatatan **+1 Strike User** apabila saat Tukang sudah `ON_THE_WAY` atau `ARRIVED`, User tidak aktif / tidak membalas chat Tukang selama $> 30$ menit.
-- [ ] **BR-57, BR-71, & FR-039:** Otomatisasi **Suspend 2 Hari Penuh (48 Jam)** ketika Strike Tukang atau Strike User mencapai **lebih dari 3x (Strike ke-4)** dalam 1 bulan kalender lokal, beserta panel pantauan Strike di Web Admin.
+- [x] **BR-71:** Pencatatan **+1 Strike User** apabila saat Tukang sudah `ON_THE_WAY` atau `ARRIVED`, User tidak aktif / tidak membalas chat Tukang selama $> 30$ menit.
+- [x] **BR-57, BR-71, & FR-039:** Otomatisasi **Suspend 2 Hari Penuh (48 Jam)** ketika Strike Tukang atau Strike User mencapai **lebih dari 3x (Strike ke-4)** dalam 1 bulan kalender lokal, beserta panel pantauan Strike di Web Admin.
 
 ---
 

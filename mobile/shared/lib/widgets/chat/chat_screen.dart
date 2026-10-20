@@ -6,6 +6,9 @@ import '../../theme/app_typography.dart';
 import '../../utils/formatters.dart';
 import '../../services/chat_service.dart';
 import '../../services/nota_service.dart';
+import '../../services/cancellation_service.dart';
+import '../cancellation/cancel_decision_card.dart';
+import '../cancellation/tukang_cancel_flow_dialog.dart';
 import 'timer_banner_widget.dart';
 import 'nota_card_widget.dart';
 import 'create_nota_dialog.dart';
@@ -25,6 +28,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final ChatService _chatService = ChatService();
   final NotaService _notaService = NotaService();
+  final CancellationService _cancellationService = CancellationService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -131,6 +135,15 @@ class _ChatScreenState extends State<ChatScreen> {
       _loadContext();
       _scrollToBottom();
     }
+  }
+
+  void _openTukangCancelDialog() {
+    TukangCancelFlowDialog.show(
+      context,
+      jobId: widget.jobId,
+      cancellationService: _cancellationService,
+      onSuccess: _loadContext,
+    );
   }
 
   Future<void> _handleApproveNota(Nota nota) async {
@@ -405,6 +418,18 @@ class _ChatScreenState extends State<ChatScreen> {
               onRefreshNeeded: _loadContext,
             ),
 
+            // Kartu Keputusan Pembatalan (CANCEL_PENDING - BR-53, BR-55)
+            if (_contextData?.jobStatus == JobStatus.cancelPending)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: CancelDecisionCard(
+                  jobId: widget.jobId,
+                  isTukang: _contextData!.isTukang,
+                  cancellationService: _cancellationService,
+                  onDecisionResolved: _loadContext,
+                ),
+              ),
+
             // 2. Chat Message Stream
             Expanded(
               child: StreamBuilder<List<ChatMessage>>(
@@ -470,6 +495,23 @@ class _ChatScreenState extends State<ChatScreen> {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
+                ),
+              ),
+
+            // Tombol Batalkan Tugas untuk Tukang saat NOTA_APPROVED (BR-50)
+            if (_contextData?.jobStatus == JobStatus.notaApproved && _contextData!.isTukang)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                color: Colors.white,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                  ),
+                  icon: const Icon(Icons.cancel_outlined, size: 16),
+                  label: const Text('Batalkan Tugas Sebelum Berangkat (BR-50)'),
+                  onPressed: _openTukangCancelDialog,
                 ),
               ),
 

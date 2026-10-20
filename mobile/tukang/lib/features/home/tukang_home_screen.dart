@@ -393,11 +393,21 @@ class _TukangHomeScreenState extends ConsumerState<TukangHomeScreen> {
                                     ),
                                   ),
                                 ),
+                                if (_activeJob!['status'] == 'CANCEL_PENDING') ...[
+                                  const SizedBox(height: 8),
+                                  CancelDecisionCard(
+                                    jobId: _activeJob!['id'] as String,
+                                    isTukang: true,
+                                    cancellationService: CancellationService(),
+                                    onDecisionResolved: _loadData,
+                                  ),
+                                ],
                                 if ([
                                   'ON_THE_WAY',
                                   'ARRIVED',
                                   'WORKING',
                                   'COMPLETED',
+                                  'CANCEL_PENDING',
                                 ].contains(_activeJob!['status'])) ...[
                                   const SizedBox(height: 8),
                                   SizedBox(

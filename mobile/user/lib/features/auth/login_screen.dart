@@ -133,8 +133,8 @@ class _UserLoginScreenState extends ConsumerState<UserLoginScreen> {
 
   Future<void> _handleVerifyOtp() async {
     final otp = _otpController.text.trim();
-    if (otp.length != 6) {
-      setState(() => _errorMessage = 'Masukkan 6 digit kode OTP.');
+    if (otp.length < 6 || otp.length > 8) {
+      setState(() => _errorMessage = 'Masukkan 6-8 digit kode OTP.');
       return;
     }
 
@@ -269,12 +269,12 @@ class _UserLoginScreenState extends ConsumerState<UserLoginScreen> {
                 TextField(
                   controller: _otpController,
                   keyboardType: TextInputType.number,
-                  maxLength: 6,
+                  maxLength: 8,
                   enabled: !_isLoading,
                   style: AppTypography.otpCode,
                   textAlign: TextAlign.center,
                   decoration: const InputDecoration(
-                    labelText: 'Kode OTP 6 Digit',
+                    labelText: 'Kode OTP',
                     hintText: '123456',
                     counterText: '',
                     prefixIcon: Icon(Icons.lock_clock_outlined),
