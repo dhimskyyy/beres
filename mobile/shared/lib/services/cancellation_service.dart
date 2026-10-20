@@ -107,7 +107,8 @@ class CancellationService {
 
   /// 7. Tukang melaporkan User tidak aktif / tidak balas chat > 30 menit (BR-71)
   /// User menerima +1 Strike, job dilepas kembali ke OPEN
-  Future<Map<String, dynamic>> tukangReportUserUnresponsive(String jobId) async {
+  Future<Map<String, dynamic>> tukangReportUserUnresponsive(
+      String jobId) async {
     final response = await _client.rpc(
       'rpc_tukang_report_user_unresponsive',
       params: {'p_job_id': jobId},

@@ -128,9 +128,9 @@ class FaqRulesScreen extends StatelessWidget {
             title: 'C.3 Keberangkatan, Pembatalan, & Strike/Suspend',
           ),
           _buildFaqItem(
-            question: '7. Kapan Tukang terkena Strike & Suspend Otomatis 2 Hari?',
-            answer:
-                'Tukang menerima 1 Strike jika:\n'
+            question:
+                '7. Kapan Tukang terkena Strike & Suspend Otomatis 2 Hari?',
+            answer: 'Tukang menerima 1 Strike jika:\n'
                 '1. Tidak klik "Berangkat" dalam 30 menit setelah Nota disetujui (job dilepas ke portal).\n'
                 '2. Mengajukan pembatalan saat NOTA_APPROVED, ON_THE_WAY, atau ARRIVED yang disetujui User.\n'
                 '3. Perjalanan ON_THE_WAY >= 3 jam belum tiba, dibatalkan User dan tukang tidak merespons dalam 30 menit.\n\n'
@@ -204,7 +204,9 @@ class FaqRulesScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isWarning ? Colors.red.shade50.withValues(alpha: 0.5) : Colors.white,
+        color: isWarning
+            ? Colors.red.shade50.withValues(alpha: 0.5)
+            : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isWarning ? Colors.red.shade200 : Colors.grey.shade200,

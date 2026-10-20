@@ -122,7 +122,7 @@ void main() {
     });
 
     test('TukangProfile model serialization and radius default', () {
-      final profile = TukangProfile(
+      const profile = TukangProfile(
         userId: 'user-001',
         bio: 'Tukang berpengalaman 10 tahun',
         kycStatus: KycStatus.approved,

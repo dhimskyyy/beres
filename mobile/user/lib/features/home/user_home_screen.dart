@@ -313,7 +313,9 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                           Icons.menu_book_outlined,
                           color: AppColors.trustCobalt,
                         ),
-                        title: const Text('Aturan & FAQ Resmi Beres (Lampiran C)'),
+                        title: const Text(
+                          'Aturan & FAQ Resmi Beres (Lampiran C)',
+                        ),
                         subtitle: const Text(
                           'Kekuatan Nota Sah, pembayaran langsung, & sanksi',
                         ),

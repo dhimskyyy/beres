@@ -114,8 +114,8 @@ class _TukangCancelFlowDialogState extends State<TukangCancelFlowDialog> {
     // Inisialisasi draft di server (BR-51: status job di DB tidak berubah)
     setState(() => _isLoading = true);
     try {
-      final res =
-          await widget.cancellationService.createTukangCancelDraft(widget.jobId);
+      final res = await widget.cancellationService
+          .createTukangCancelDraft(widget.jobId);
       if (mounted) {
         setState(() {
           _draftId = res['draft_id'] as String?;
@@ -245,8 +245,8 @@ class _TukangCancelFlowDialogState extends State<TukangCancelFlowDialog> {
             '• Pembatalan memerlukan persetujuan pelanggan.\n'
             '• Jika disetujui pelanggan, pekerjaan dilepas kembali ke portal dan Anda terkena +1 Strike Tukang.\n'
             '• Maksimal 3 Strike per bulan kalender. Strike ke-4 otomatis suspend 2 hari.',
-            style: TextStyle(
-                fontSize: 12, height: 1.4, color: Color(0xFF9F1239)),
+            style:
+                TextStyle(fontSize: 12, height: 1.4, color: Color(0xFF9F1239)),
           ),
         ),
         if (_errorMessage != null) ...[
@@ -347,7 +347,9 @@ class _TukangCancelFlowDialogState extends State<TukangCancelFlowDialog> {
             border: OutlineInputBorder(),
           ),
           items: _categories
-              .map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13))))
+              .map((c) => DropdownMenuItem(
+                  value: c,
+                  child: Text(c, style: const TextStyle(fontSize: 13))))
               .toList(),
           onChanged: (v) {
             if (v != null) setState(() => _selectedCategory = v);

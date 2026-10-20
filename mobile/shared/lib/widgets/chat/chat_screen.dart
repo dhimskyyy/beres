@@ -499,10 +499,12 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
 
             // Tombol Batalkan Tugas untuk Tukang saat NOTA_APPROVED (BR-50)
-            if (_contextData?.status == 'NOTA_APPROVED' && _contextData!.isTukang)
+            if (_contextData?.status == 'NOTA_APPROVED' &&
+                _contextData!.isTukang)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                 color: Colors.white,
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(

@@ -150,6 +150,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
           _calculateDistance();
         });
         await _refreshJobStatus();
+        if (!mounted) return;
         if (res['auto_arrived'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -182,6 +183,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
       if (mounted) {
         if (res['success'] == true) {
           await _refreshJobStatus();
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               backgroundColor: AppColors.success,
@@ -207,6 +209,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
       if (mounted) {
         if (res['success'] == true) {
           await _refreshJobStatus();
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               backgroundColor: AppColors.primary,
@@ -294,7 +297,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Ya, Laporkan', style: TextStyle(color: Colors.white)),
+            child: const Text('Ya, Laporkan',
+                style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -303,12 +307,14 @@ class _TrackingScreenState extends State<TrackingScreen> {
     if (confirm != true) return;
 
     try {
-      await widget.cancellationService.tukangReportUserUnresponsive(widget.jobId);
+      await widget.cancellationService
+          .tukangReportUserUnresponsive(widget.jobId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             backgroundColor: AppColors.primary,
-            content: Text('Laporan diterima. Pekerjaan telah dilepas kembali ke portal dan User menerima 1 Strike (BR-71).'),
+            content: Text(
+                'Laporan diterima. Pekerjaan telah dilepas kembali ke portal dan User menerima 1 Strike (BR-71).'),
           ),
         );
         widget.onBack?.call();
@@ -625,12 +631,17 @@ class _TrackingScreenState extends State<TrackingScreen> {
                               child: OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppColors.error,
-                                  side: const BorderSide(color: AppColors.error),
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  side:
+                                      const BorderSide(color: AppColors.error),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8),
                                 ),
-                                icon: const Icon(Icons.cancel_outlined, size: 16),
+                                icon:
+                                    const Icon(Icons.cancel_outlined, size: 16),
                                 label: const Text('Batalkan Tugas (BR-50)',
-                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold)),
                                 onPressed: _openTukangCancelDialog,
                               ),
                             ),
@@ -639,9 +650,11 @@ class _TrackingScreenState extends State<TrackingScreen> {
                               child: TextButton.icon(
                                 style: TextButton.styleFrom(
                                   foregroundColor: Colors.grey.shade700,
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8),
                                 ),
-                                icon: const Icon(Icons.timer_off_outlined, size: 16),
+                                icon: const Icon(Icons.timer_off_outlined,
+                                    size: 16),
                                 label: const Text('Lapor User Inaktif (BR-71)',
                                     style: TextStyle(fontSize: 10)),
                                 onPressed: _handleReportUserUnresponsive,
@@ -719,9 +732,11 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         // Evaluasi 3 Jam ON_THE_WAY untuk Tombol Cancel (BR-56b)
                         Builder(
                           builder: (context) {
-                            final otwStartTime = job.onTheWayAt ?? job.createdAt;
-                            final elapsedMinutes =
-                                DateTime.now().difference(otwStartTime).inMinutes;
+                            final otwStartTime =
+                                job.onTheWayAt ?? job.createdAt;
+                            final elapsedMinutes = DateTime.now()
+                                .difference(otwStartTime)
+                                .inMinutes;
                             final isEligibleToCancel = elapsedMinutes >= 180;
 
                             if (isEligibleToCancel) {
@@ -729,12 +744,16 @@ class _TrackingScreenState extends State<TrackingScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.error,
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 10),
                                 ),
-                                icon: const Icon(Icons.cancel_schedule_send, size: 18),
+                                icon: const Icon(Icons.cancel_schedule_send,
+                                    size: 18),
                                 label: const Text(
                                   'Batalkan Pekerjaan (>= 3 Jam Belum Tiba) (BR-56b)',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold),
                                 ),
                                 onPressed: _openUserCancelOtwDialog,
                               );
@@ -745,16 +764,20 @@ class _TrackingScreenState extends State<TrackingScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.blue.shade50,
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: Colors.blue.shade200),
+                                  border:
+                                      Border.all(color: Colors.blue.shade200),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                                    const Icon(Icons.info_outline,
+                                        size: 16, color: Colors.blue),
                                     const SizedBox(width: 6),
                                     Expanded(
                                       child: Text(
                                         'Perjalanan: $elapsedMinutes menit. Tombol batal aktif jika tukang belum tiba setelah 3 jam ($remainingMinutes menit lagi — BR-56a).',
-                                        style: const TextStyle(fontSize: 11, color: Colors.blueGrey),
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.blueGrey),
                                       ),
                                     ),
                                   ],

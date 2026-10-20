@@ -118,8 +118,8 @@ class _CancelDecisionCardState extends State<CancelDecisionCard> {
     }
 
     final requesterRole = _cancelRequest!['requester_role'] as String? ?? '';
-    final reasonCategory =
-        _cancelRequest!['reason_category'] as String? ?? 'Alasan tidak spesifik';
+    final reasonCategory = _cancelRequest!['reason_category'] as String? ??
+        'Alasan tidak spesifik';
     final reasonText = _cancelRequest!['reason_text'] as String? ?? '';
     final isRequester = (widget.isTukang && requesterRole == 'TUKANG') ||
         (!widget.isTukang && requesterRole == 'USER');
@@ -174,8 +174,7 @@ class _CancelDecisionCardState extends State<CancelDecisionCard> {
                   const SizedBox(height: 4),
                   Text(
                     'Alasan: "$reasonText"',
-                    style:
-                        const TextStyle(fontSize: 12, color: Colors.black87),
+                    style: const TextStyle(fontSize: 12, color: Colors.black87),
                   ),
                 ],
               ],
@@ -204,7 +203,8 @@ class _CancelDecisionCardState extends State<CancelDecisionCard> {
           else if (!widget.isTukang && requesterRole == 'TUKANG') ...[
             const Text(
               'Aturan: Jika disetujui, pekerjaan kembali ke Bursa & Tukang terkena 1 Strike. Jika ditolak, Tukang wajib melanjutkan pekerjaan (BR-55).',
-              style: TextStyle(fontSize: 11, color: Colors.black87, height: 1.3),
+              style:
+                  TextStyle(fontSize: 11, color: Colors.black87, height: 1.3),
             ),
             const SizedBox(height: 10),
             Row(
@@ -215,7 +215,8 @@ class _CancelDecisionCardState extends State<CancelDecisionCard> {
                       foregroundColor: AppColors.error,
                       side: const BorderSide(color: AppColors.error),
                     ),
-                    onPressed: _isActing ? null : () => _handleUserDecision(false),
+                    onPressed:
+                        _isActing ? null : () => _handleUserDecision(false),
                     child: const Text('Tolak Batal'),
                   ),
                 ),
@@ -226,7 +227,8 @@ class _CancelDecisionCardState extends State<CancelDecisionCard> {
                       backgroundColor: AppColors.success,
                       foregroundColor: Colors.white,
                     ),
-                    onPressed: _isActing ? null : () => _handleUserDecision(true),
+                    onPressed:
+                        _isActing ? null : () => _handleUserDecision(true),
                     child: _isActing
                         ? const SizedBox(
                             width: 16,
@@ -244,7 +246,8 @@ class _CancelDecisionCardState extends State<CancelDecisionCard> {
           else if (widget.isTukang && requesterRole == 'USER') ...[
             const Text(
               'Aturan BR-56b: Pelanggan mengajukan batal karena perjalanan >= 3 jam. Harap tanggapi dalam 30 menit (tanpa respons = auto-cancel & +1 Strike).',
-              style: TextStyle(fontSize: 11, color: Colors.black87, height: 1.3),
+              style:
+                  TextStyle(fontSize: 11, color: Colors.black87, height: 1.3),
             ),
             const SizedBox(height: 10),
             Row(

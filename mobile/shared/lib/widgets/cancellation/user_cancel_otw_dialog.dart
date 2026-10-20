@@ -202,7 +202,8 @@ class _UserCancelOtwDialogState extends State<UserCancelOtwDialog> {
           ),
           RadioListTile<String>(
             dense: true,
-            title: const Text('Tutup dan batalkan pekerjaan sepenuhnya (CANCELLED)',
+            title: const Text(
+                'Tutup dan batalkan pekerjaan sepenuhnya (CANCELLED)',
                 style: TextStyle(fontSize: 13)),
             value: 'CANCELLED',
             groupValue: _actionAfterCancel,
