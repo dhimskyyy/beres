@@ -62,6 +62,34 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Bootstrap Supabase Environment (Roles, Auth Schema, & Realtime Publication)
+        env:
+          PGPASSWORD: postgrespassword
+        run: |
+          psql -h localhost -U postgres -d beres_test -v ON_ERROR_STOP=1 -c "
+            CREATE SCHEMA IF NOT EXISTS auth;
+            CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS \$\$ SELECT NULL::uuid; \$\$;
+            CREATE OR REPLACE FUNCTION auth.role() RETURNS text LANGUAGE sql STABLE AS \$\$ SELECT 'authenticated'::text; \$\$;
+            DO \$\$
+            BEGIN
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'anon') THEN
+                CREATE ROLE anon NOLOGIN;
+              END IF;
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'authenticated') THEN
+                CREATE ROLE authenticated NOLOGIN;
+              END IF;
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'service_role') THEN
+                CREATE ROLE service_role NOLOGIN;
+              END IF;
+            END \$\$;
+            DO \$\$
+            BEGIN
+              IF NOT EXISTS (SELECT FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+                CREATE PUBLICATION supabase_realtime;
+              END IF;
+            END \$\$;
+          "
+
       - name: Run SQL Migrations from Scratch (Idempotency Check)
         env:
           PGPASSWORD: postgrespassword

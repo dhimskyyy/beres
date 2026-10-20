@@ -138,7 +138,8 @@ class _ChatScreenState extends State<ChatScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isRevision ? 'Setujui Revisi Nota?' : 'Setujui Nota Digital?'),
+        title:
+            Text(isRevision ? 'Setujui Revisi Nota?' : 'Setujui Nota Digital?'),
         content: Text(
           isRevision
               ? 'Anda akan menyetujui perubahan biaya menjadi ${Formatters.formatCurrency(nota.totalAmount)}. '
@@ -171,7 +172,9 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isRevision ? 'Revisi Nota berhasil disetujui' : 'Nota Sah terbentuk (Terkunci)'),
+            content: Text(isRevision
+                ? 'Revisi Nota berhasil disetujui'
+                : 'Nota Sah terbentuk (Terkunci)'),
             backgroundColor: AppColors.successGreen,
           ),
         );
@@ -327,9 +330,12 @@ class _ChatScreenState extends State<ChatScreen> {
     final otherPhone = _contextData!.otherUserPhone;
 
     // Cek apakah tukang bisa buat Nota Awal atau Revisi
-    final canCreateInitialNota = isTukang && status == 'NEGOTIATING' && _contextData!.pendingNota == null;
-    final canCreateRevisionNota =
-        isTukang && (status == 'ARRIVED' || status == 'WORKING') && _contextData!.pendingNota == null;
+    final canCreateInitialNota = isTukang &&
+        status == 'NEGOTIATING' &&
+        _contextData!.pendingNota == null;
+    final canCreateRevisionNota = isTukang &&
+        (status == 'ARRIVED' || status == 'WORKING') &&
+        _contextData!.pendingNota == null;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -338,11 +344,14 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: isUser ? AppColors.tukangBadgeBg : AppColors.userBadgeBg,
+              backgroundColor:
+                  isUser ? AppColors.tukangBadgeBg : AppColors.userBadgeBg,
               child: Icon(
                 isUser ? Icons.handyman : Icons.person,
                 size: 20,
-                color: isUser ? AppColors.tukangBadgeText : AppColors.userBadgeText,
+                color: isUser
+                    ? AppColors.tukangBadgeText
+                    : AppColors.userBadgeText,
               ),
             ),
             const SizedBox(width: 10),
@@ -353,12 +362,15 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   Text(
                     otherName,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     _contextData!.areaLabel,
-                    style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.8)),
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.8)),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -398,7 +410,8 @@ class _ChatScreenState extends State<ChatScreen> {
               child: StreamBuilder<List<ChatMessage>>(
                 stream: _chatService.streamMessages(widget.jobId),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      !snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
@@ -410,7 +423,8 @@ class _ChatScreenState extends State<ChatScreen> {
                         padding: const EdgeInsets.all(24),
                         child: Text(
                           'Belum ada pesan. Mulai diskusikan rincian pekerjaan di sini.',
-                          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                          style: AppTypography.bodySmall
+                              .copyWith(color: AppColors.textSecondary),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -419,7 +433,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
                   return ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
                       final msg = messages[index];
@@ -434,14 +449,24 @@ class _ChatScreenState extends State<ChatScreen> {
             if (canCreateInitialNota || canCreateRevisionNota)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 color: Colors.white,
                 child: ElevatedButton.icon(
-                  onPressed: () => _handleOpenCreateNota(isRevision: canCreateRevisionNota),
-                  icon: Icon(canCreateRevisionNota ? Icons.warning_amber_rounded : Icons.receipt_long, size: 18),
-                  label: Text(canCreateRevisionNota ? 'Ajukan Revisi Nota (BR-05)' : 'Buat Nota Digital (BR-04)'),
+                  onPressed: () =>
+                      _handleOpenCreateNota(isRevision: canCreateRevisionNota),
+                  icon: Icon(
+                      canCreateRevisionNota
+                          ? Icons.warning_amber_rounded
+                          : Icons.receipt_long,
+                      size: 18),
+                  label: Text(canCreateRevisionNota
+                      ? 'Ajukan Revisi Nota (BR-05)'
+                      : 'Buat Nota Digital (BR-04)'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: canCreateRevisionNota ? AppColors.warningAmber : AppColors.trustCobalt,
+                    backgroundColor: canCreateRevisionNota
+                        ? AppColors.warningAmber
+                        : AppColors.trustCobalt,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
@@ -473,7 +498,8 @@ class _ChatScreenState extends State<ChatScreen> {
                         hintText: 'Ketik pesan...',
                         hintStyle: TextStyle(color: Colors.grey.shade500),
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide(color: Colors.grey.shade300),
@@ -493,9 +519,11 @@ class _ChatScreenState extends State<ChatScreen> {
                           ? const SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2),
                             )
-                          : const Icon(Icons.send, color: Colors.white, size: 18),
+                          : const Icon(Icons.send,
+                              color: Colors.white, size: 18),
                       onPressed: _isSending ? null : _handleSendMessage,
                     ),
                   ),
@@ -554,7 +582,8 @@ class _ChatScreenState extends State<ChatScreen> {
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: isMe ? AppColors.trustCobalt : Colors.white,
@@ -573,7 +602,8 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         child: Column(
-          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment:
+              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             if (msg.content != null && msg.content!.isNotEmpty)
@@ -588,7 +618,9 @@ class _ChatScreenState extends State<ChatScreen> {
             Text(
               Formatters.formatDateTime(msg.createdAt),
               style: TextStyle(
-                color: isMe ? Colors.white.withValues(alpha: 0.7) : Colors.grey.shade500,
+                color: isMe
+                    ? Colors.white.withValues(alpha: 0.7)
+                    : Colors.grey.shade500,
                 fontSize: 10,
               ),
             ),

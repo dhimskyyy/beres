@@ -43,7 +43,8 @@ class ChatMessage {
 
   bool get isSystem => messageType == ChatMessageType.systemEvent;
   bool get isNotaCard => messageType == ChatMessageType.notaCard;
-  bool get isNotaRevisionAlert => messageType == ChatMessageType.notaRevisionAlert;
+  bool get isNotaRevisionAlert =>
+      messageType == ChatMessageType.notaRevisionAlert;
   bool get isImage => messageType == ChatMessageType.image;
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
@@ -51,7 +52,8 @@ class ChatMessage {
       id: json['id'] as String,
       jobId: json['job_id'] as String,
       senderId: json['sender_id'] as String,
-      messageType: ChatMessageType.fromString(json['message_type'] as String? ?? 'TEXT'),
+      messageType:
+          ChatMessageType.fromString(json['message_type'] as String? ?? 'TEXT'),
       content: json['content'] as String?,
       imageUrl: json['image_url'] as String?,
       notaId: json['nota_id'] as String?,
@@ -113,7 +115,8 @@ class JobChatContext {
     required this.negotiatingTimerSeconds,
   });
 
-  String get otherUserName => otherUser?['full_name'] as String? ?? 'Pengguna Beres';
+  String get otherUserName =>
+      otherUser?['full_name'] as String? ?? 'Pengguna Beres';
   String? get otherUserAvatar => otherUser?['avatar_url'] as String?;
   String? get otherUserPhone => otherUser?['phone'] as String?;
 
@@ -126,7 +129,9 @@ class JobChatContext {
       addressFull: json['address_full'] as String? ?? '',
       userId: json['user_id'] as String,
       lockedTukangId: json['locked_tukang_id'] as String?,
-      lockedAt: json['locked_at'] != null ? DateTime.parse(json['locked_at'] as String) : null,
+      lockedAt: json['locked_at'] != null
+          ? DateTime.parse(json['locked_at'] as String)
+          : null,
       notaApprovedAt: json['nota_approved_at'] != null
           ? DateTime.parse(json['nota_approved_at'] as String)
           : null,
@@ -141,7 +146,8 @@ class JobChatContext {
           ? Nota.fromJson(json['pending_nota'] as Map<String, dynamic>)
           : null,
       departTimerSeconds: (json['depart_timer_seconds'] as num?)?.toInt() ?? 0,
-      negotiatingTimerSeconds: (json['negotiating_timer_seconds'] as num?)?.toInt() ?? 0,
+      negotiatingTimerSeconds:
+          (json['negotiating_timer_seconds'] as num?)?.toInt() ?? 0,
     );
   }
 }

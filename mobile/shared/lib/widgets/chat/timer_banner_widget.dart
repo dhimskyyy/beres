@@ -38,8 +38,10 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
   void didUpdateWidget(covariant TimerBannerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.chatContext.status != widget.chatContext.status ||
-        oldWidget.chatContext.departTimerSeconds != widget.chatContext.departTimerSeconds ||
-        oldWidget.chatContext.negotiatingTimerSeconds != widget.chatContext.negotiatingTimerSeconds) {
+        oldWidget.chatContext.departTimerSeconds !=
+            widget.chatContext.departTimerSeconds ||
+        oldWidget.chatContext.negotiatingTimerSeconds !=
+            widget.chatContext.negotiatingTimerSeconds) {
       _timer?.cancel();
       _initTimerSeconds();
       _startTicking();
@@ -166,7 +168,8 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Pekerjaan berhasil dilepas kembali ke portal tanpa sanksi strike.'),
+            content: Text(
+                'Pekerjaan berhasil dilepas kembali ke portal tanpa sanksi strike.'),
             backgroundColor: AppColors.trustCobalt,
           ),
         );
@@ -196,7 +199,8 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            const Icon(Icons.timer_outlined, color: AppColors.warningAmber, size: 22),
+            const Icon(Icons.timer_outlined,
+                color: AppColors.warningAmber, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -237,7 +241,8 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.dangerCrimson,
                 side: const BorderSide(color: AppColors.dangerCrimson),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
@@ -256,7 +261,8 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
           children: [
             Row(
               children: [
-                const Icon(Icons.departure_board_outlined, color: AppColors.trustCobalt, size: 24),
+                const Icon(Icons.departure_board_outlined,
+                    color: AppColors.trustCobalt, size: 24),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -319,7 +325,8 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
-            const Icon(Icons.check_circle_outline, color: AppColors.successGreen, size: 18),
+            const Icon(Icons.check_circle_outline,
+                color: AppColors.successGreen, size: 18),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

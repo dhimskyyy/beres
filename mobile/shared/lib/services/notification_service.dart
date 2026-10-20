@@ -51,8 +51,7 @@ class NotificationService {
         .limit(limit);
 
     return (response as List<dynamic>)
-        .map((json) =>
-            InAppNotification.fromJson(json as Map<String, dynamic>))
+        .map((json) => InAppNotification.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 
@@ -60,8 +59,7 @@ class NotificationService {
   Future<void> markAsRead(String notificationId) async {
     await _client
         .from('notifications')
-        .update({'is_read': true})
-        .eq('id', notificationId);
+        .update({'is_read': true}).eq('id', notificationId);
   }
 
   /// Menandai seluruh notifikasi user telah dibaca

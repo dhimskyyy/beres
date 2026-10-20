@@ -92,7 +92,8 @@ class UserBidViewItem {
   factory UserBidViewItem.fromJson(Map<String, dynamic> json) {
     return UserBidViewItem(
       bidId: json['bid_id'] as String,
-      bidStatus: BidStatus.fromString(json['bid_status'] as String? ?? 'ACTIVE'),
+      bidStatus:
+          BidStatus.fromString(json['bid_status'] as String? ?? 'ACTIVE'),
       distanceKm: (json['distance_km'] as num?)?.toDouble(),
       createdAt: DateTime.parse(json['created_at'] as String),
       tukangId: json['tukang_id'] as String,

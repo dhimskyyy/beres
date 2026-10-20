@@ -110,7 +110,8 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
     const double earthRadius = 6371000;
     final double dLat = (_pinLat - _deviceLat) * (pi / 180.0);
     final double dLon = (_pinLng - _deviceLng) * (pi / 180.0);
-    final double a = sin(dLat / 2) * sin(dLat / 2) +
+    final double a =
+        sin(dLat / 2) * sin(dLat / 2) +
         cos(_deviceLat * (pi / 180.0)) *
             cos(_pinLat * (pi / 180.0)) *
             sin(dLon / 2) *
@@ -138,18 +139,78 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
     try {
       // Mock 1x1 transparent PNG bytes for cross-platform upload
       final sampleBytes = Uint8List.fromList([
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-        0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
-        0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-        0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
-        0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
+        0x89,
+        0x50,
+        0x4E,
+        0x47,
+        0x0D,
+        0x0A,
+        0x1A,
+        0x0A,
+        0x00,
+        0x00,
+        0x00,
+        0x0D,
+        0x49,
+        0x48,
+        0x44,
+        0x52,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x08,
+        0x06,
+        0x00,
+        0x00,
+        0x00,
+        0x1F,
+        0x15,
+        0xC4,
+        0x89,
+        0x00,
+        0x00,
+        0x00,
+        0x0A,
+        0x49,
+        0x44,
+        0x41,
+        0x54,
+        0x78,
+        0x9C,
+        0x63,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x05,
+        0x00,
+        0x01,
+        0x0D,
+        0x0A,
+        0x2D,
+        0xB4,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x49,
+        0x45,
+        0x4E,
+        0x44,
+        0xAE,
+        0x42,
+        0x60,
+        0x82,
       ]);
 
-      final url = await ref.read(jobServiceProvider).uploadJobPhoto(
-            sampleBytes,
-            'photo_${_photoUrls.length + 1}.png',
-          );
+      final url = await ref
+          .read(jobServiceProvider)
+          .uploadJobPhoto(sampleBytes, 'photo_${_photoUrls.length + 1}.png');
 
       if (mounted) {
         setState(() {
@@ -160,9 +221,9 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal unggah foto: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal unggah foto: $e')));
       }
     }
   }
@@ -171,7 +232,9 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih kategori pekerjaan terlebih dahulu')),
+        const SnackBar(
+          content: Text('Pilih kategori pekerjaan terlebih dahulu'),
+        ),
       );
       return;
     }
@@ -261,7 +324,11 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: Text(widget.existingJob != null ? 'Edit Pekerjaan' : 'Posting Pekerjaan Baru'),
+        title: Text(
+          widget.existingJob != null
+              ? 'Edit Pekerjaan'
+              : 'Posting Pekerjaan Baru',
+        ),
       ),
       body: _isLoadingCategories
           ? const Center(child: CircularProgressIndicator())
@@ -288,7 +355,10 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
                       ),
 
                     // 1. Kategori Pekerjaan
-                    Text('Kategori Pekerjaan', style: AppTypography.headingSmall),
+                    Text(
+                      'Kategori Pekerjaan',
+                      style: AppTypography.headingSmall,
+                    ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       initialValue: _selectedCategoryId,
@@ -309,18 +379,24 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
                     const SizedBox(height: 20),
 
                     // 2. Deskripsi Kerusakan (FR-010: Min 10 Karakter)
-                    Text('Deskripsi Kerusakan', style: AppTypography.headingSmall),
+                    Text(
+                      'Deskripsi Kerusakan',
+                      style: AppTypography.headingSmall,
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       'Jelaskan keluhan atau kerusakan secara detail (minimal 10 karakter)',
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _descriptionController,
                       maxLines: 4,
                       decoration: const InputDecoration(
-                        hintText: 'Contoh: Pipa wastafel bocor dan rembes ke lantai dapur...',
+                        hintText:
+                            'Contoh: Pipa wastafel bocor dan rembes ke lantai dapur...',
                         border: OutlineInputBorder(),
                       ),
                       validator: (val) {
@@ -336,8 +412,10 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Foto Kerusakan (${_photoUrls.length}/3)',
-                            style: AppTypography.headingSmall),
+                        Text(
+                          'Foto Kerusakan (${_photoUrls.length}/3)',
+                          style: AppTypography.headingSmall,
+                        ),
                         if (_photoUrls.length < 3)
                           TextButton.icon(
                             onPressed: _isSubmitting ? null : _addMockPhoto,
@@ -351,7 +429,10 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
                       Container(
                         height: 90,
                         decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.borderLight, style: BorderStyle.solid),
+                          border: Border.all(
+                            color: AppColors.borderLight,
+                            style: BorderStyle.solid,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                           color: Colors.white,
                         ),
@@ -359,10 +440,17 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.photo_library_outlined, color: AppColors.textSecondary),
+                              const Icon(
+                                Icons.photo_library_outlined,
+                                color: AppColors.textSecondary,
+                              ),
                               const SizedBox(height: 4),
-                              Text('Belum ada foto kerusakan',
-                                  style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                              Text(
+                                'Belum ada foto kerusakan',
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -382,9 +470,14 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
                                   height: 90,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(8),
-                                    color: AppColors.primaryNavy.withValues(alpha: 0.1),
+                                    color: AppColors.primaryNavy.withValues(
+                                      alpha: 0.1,
+                                    ),
                                   ),
-                                  child: const Icon(Icons.broken_image, color: AppColors.trustCobalt),
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    color: AppColors.trustCobalt,
+                                  ),
                                 ),
                                 Positioned(
                                   top: 4,
@@ -398,7 +491,11 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
                                         color: Colors.black54,
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(Icons.close, size: 18, color: Colors.white),
+                                      child: const Icon(
+                                        Icons.close,
+                                        size: 18,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -413,13 +510,23 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Pin Lokasi Pekerjaan', style: AppTypography.headingSmall),
+                        Text(
+                          'Pin Lokasi Pekerjaan',
+                          style: AppTypography.headingSmall,
+                        ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: isDistanceExceeded
-                                ? AppColors.dangerCrimson.withValues(alpha: 0.15)
-                                : AppColors.successGreen.withValues(alpha: 0.15),
+                                ? AppColors.dangerCrimson.withValues(
+                                    alpha: 0.15,
+                                  )
+                                : AppColors.successGreen.withValues(
+                                    alpha: 0.15,
+                                  ),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -441,7 +548,9 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isDistanceExceeded ? AppColors.dangerCrimson : AppColors.borderLight,
+                          color: isDistanceExceeded
+                              ? AppColors.dangerCrimson
+                              : AppColors.borderLight,
                           width: isDistanceExceeded ? 2 : 1,
                         ),
                       ),
@@ -495,11 +604,16 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
                     const SizedBox(height: 16),
 
                     // 5. Area Label (Kelurahan/Kecamatan via OS Geocoding HP Rp 0)
-                    Text('Kelurahan / Kecamatan (Area Label)', style: AppTypography.headingSmall),
+                    Text(
+                      'Kelurahan / Kecamatan (Area Label)',
+                      style: AppTypography.headingSmall,
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       'Nama area diambil via OS Geocoder HP (bebas limit server). Hanya data ini yang terlihat oleh tukang sebelum di-lock (BR-16).',
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -518,13 +632,17 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
                     const SizedBox(height: 16),
 
                     // 6. Alamat Lengkap
-                    Text('Alamat Lengkap & Patokan', style: AppTypography.headingSmall),
+                    Text(
+                      'Alamat Lengkap & Patokan',
+                      style: AppTypography.headingSmall,
+                    ),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _addressFullController,
                       maxLines: 2,
                       decoration: const InputDecoration(
-                        hintText: 'Nama jalan, nomor rumah, RT/RW, dan patokan pagar/pos...',
+                        hintText:
+                            'Nama jalan, nomor rumah, RT/RW, dan patokan pagar/pos...',
                         prefixIcon: Icon(Icons.home_outlined),
                         border: OutlineInputBorder(),
                       ),

@@ -223,8 +223,10 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Pekerjaan Saya (${_jobs.length})',
-                        style: AppTypography.headingSmall),
+                    Text(
+                      'Pekerjaan Saya (${_jobs.length})',
+                      style: AppTypography.headingSmall,
+                    ),
                     IconButton(
                       icon: const Icon(Icons.refresh, size: 20),
                       onPressed: _loadData,
@@ -249,16 +251,22 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                     child: Center(
                       child: Column(
                         children: [
-                          const Icon(Icons.assignment_outlined,
-                              size: 40, color: AppColors.textSecondary),
+                          const Icon(
+                            Icons.assignment_outlined,
+                            size: 40,
+                            color: AppColors.textSecondary,
+                          ),
                           const SizedBox(height: 8),
-                          Text('Belum ada pekerjaan aktif',
-                              style: AppTypography.headingSmall),
+                          Text(
+                            'Belum ada pekerjaan aktif',
+                            style: AppTypography.headingSmall,
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             'Klik tombol "Buat Pekerjaan Baru" di atas untuk mencari tukang.',
-                            style: AppTypography.bodySmall
-                                .copyWith(color: AppColors.textSecondary),
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ],
                       ),
@@ -368,8 +376,10 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: _getStatusBgColor(job.status),
                       borderRadius: BorderRadius.circular(6),
@@ -405,8 +415,11 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.location_on_outlined,
-                      size: 14, color: AppColors.trustCobalt),
+                  const Icon(
+                    Icons.location_on_outlined,
+                    size: 14,
+                    color: AppColors.trustCobalt,
+                  ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -416,8 +429,11 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                       style: AppTypography.bodySmall,
                     ),
                   ),
-                  const Icon(Icons.chevron_right,
-                      size: 18, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
                 ],
               ),
               if (job.status != JobStatus.open &&
@@ -439,8 +455,11 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.arrow_forward,
-                        size: 14, color: AppColors.trustCobalt),
+                    const Icon(
+                      Icons.arrow_forward,
+                      size: 14,
+                      color: AppColors.trustCobalt,
+                    ),
                   ],
                 ),
               ],

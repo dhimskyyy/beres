@@ -159,7 +159,8 @@ void main() {
       const double centerLat = -6.2088;
       const double centerLng = 106.8456;
 
-      double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+      double calculateDistance(
+          double lat1, double lon1, double lat2, double lon2) {
         const double earthRadius = 6371000; // meters
         final double dLat = (lat2 - lat1) * (pi / 180.0);
         final double dLon = (lon2 - lon1) * (pi / 180.0);
@@ -173,12 +174,14 @@ void main() {
       }
 
       // Titik 500 meter ke utara (+0.0045 lat)
-      final d500m = calculateDistance(centerLat, centerLng, centerLat + 0.0045, centerLng);
+      final d500m = calculateDistance(
+          centerLat, centerLng, centerLat + 0.0045, centerLng);
       expect(d500m, lessThan(1000.0));
       expect(d500m, lessThanOrEqualTo(2000.0)); // Valid FR-010
 
       // Titik 5 km ke utara (+0.045 lat)
-      final d5km = calculateDistance(centerLat, centerLng, centerLat + 0.045, centerLng);
+      final d5km =
+          calculateDistance(centerLat, centerLng, centerLat + 0.045, centerLng);
       expect(d5km, greaterThan(2000.0)); // Melebihi batas 2 km
     });
   });

@@ -86,15 +86,15 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
   Future<void> _handleToggleOnline(bool val) async {
     setState(() => _isOnline = val);
     try {
-      await ref.read(jobServiceProvider).updateTukangStatusAndLocation(
-            isOnline: val,
-          );
+      await ref
+          .read(jobServiceProvider)
+          .updateTukangStatusAndLocation(isOnline: val);
       _loadTukangProfileAndJobs();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal mengubah status: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal mengubah status: $e')));
       }
     }
   }
@@ -103,9 +103,9 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
     final int newRadius = val.round();
     setState(() => _radiusKm = newRadius);
     try {
-      await ref.read(jobServiceProvider).updateTukangStatusAndLocation(
-            radiusKm: newRadius,
-          );
+      await ref
+          .read(jobServiceProvider)
+          .updateTukangStatusAndLocation(radiusKm: newRadius);
       _loadTukangProfileAndJobs();
     } catch (_) {}
   }
@@ -144,7 +144,9 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
         setState(() => _isActionInProgress = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Lamaran berhasil diajukan! Menunggu keputusan User.'),
+            content: Text(
+              'Lamaran berhasil diajukan! Menunggu keputusan User.',
+            ),
             backgroundColor: AppColors.successGreen,
           ),
         );
@@ -219,9 +221,9 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isActionInProgress = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menarik lamaran: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal menarik lamaran: $e')));
       }
     }
   }
@@ -271,7 +273,9 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                _isOnline ? 'Status: ONLINE' : 'Status: OFFLINE',
+                                _isOnline
+                                    ? 'Status: ONLINE'
+                                    : 'Status: OFFLINE',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
@@ -324,8 +328,10 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
 
               // 2. Info Bar: Batas 5 Bid (BR-15) & KYC Status
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.userBadgeBg,
                   borderRadius: BorderRadius.circular(10),
@@ -338,8 +344,11 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.fact_check_outlined,
-                            size: 18, color: AppColors.trustCobalt),
+                        const Icon(
+                          Icons.fact_check_outlined,
+                          size: 18,
+                          color: AppColors.trustCobalt,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Lamaran Aktif: $_activeBidsCount / 5 (BR-15)',
@@ -354,7 +363,9 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
                     if (_activeBidsCount >= 5)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.dangerCrimson,
                           borderRadius: BorderRadius.circular(4),
@@ -386,8 +397,10 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
                     color: AppColors.dangerCrimson.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Text(_errorMessage!,
-                      style: TextStyle(color: AppColors.dangerCrimson)),
+                  child: Text(
+                    _errorMessage!,
+                    style: TextStyle(color: AppColors.dangerCrimson),
+                  ),
                 )
               else if (!_isOnline)
                 Container(
@@ -399,8 +412,11 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
                   child: const Center(
                     child: Column(
                       children: [
-                        Icon(Icons.cloud_off,
-                            size: 48, color: AppColors.textSecondary),
+                        Icon(
+                          Icons.cloud_off,
+                          size: 48,
+                          color: AppColors.textSecondary,
+                        ),
                         SizedBox(height: 12),
                         Text(
                           'Anda Sedang OFFLINE',
@@ -432,8 +448,11 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
                   child: Center(
                     child: Column(
                       children: [
-                        const Icon(Icons.work_outline,
-                            size: 48, color: AppColors.textSecondary),
+                        const Icon(
+                          Icons.work_outline,
+                          size: 48,
+                          color: AppColors.textSecondary,
+                        ),
                         const SizedBox(height: 12),
                         const Text(
                           'Belum Ada Pekerjaan Terbuka',
@@ -485,8 +504,8 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
           color: isLockedOnThis
               ? AppColors.successGreen
               : hasActiveBid
-                  ? AppColors.trustCobalt
-                  : AppColors.borderLight,
+              ? AppColors.trustCobalt
+              : AppColors.borderLight,
           width: (isLockedOnThis || hasActiveBid) ? 1.5 : 1,
         ),
       ),
@@ -500,8 +519,10 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.tukangBadgeBg,
                     borderRadius: BorderRadius.circular(6),
@@ -517,8 +538,11 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
                 ),
                 Row(
                   children: [
-                    const Icon(Icons.near_me_outlined,
-                        size: 14, color: AppColors.trustCobalt),
+                    const Icon(
+                      Icons.near_me_outlined,
+                      size: 14,
+                      color: AppColors.trustCobalt,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '${job.distanceKm.toStringAsFixed(1)} km',
@@ -539,18 +563,18 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
               job.description,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
 
             // Area Label (BR-16: Privasi sebelum lock)
             Row(
               children: [
-                const Icon(Icons.location_city_outlined,
-                    size: 14, color: AppColors.textSecondary),
+                const Icon(
+                  Icons.location_city_outlined,
+                  size: 14,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -644,8 +668,9 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
-                    onPressed:
-                        _isActionInProgress ? null : () => _withdrawBid(job),
+                    onPressed: _isActionInProgress
+                        ? null
+                        : () => _withdrawBid(job),
                     icon: const Icon(Icons.close, size: 16),
                     label: const Text('Tarik'),
                     style: OutlinedButton.styleFrom(
@@ -663,9 +688,11 @@ class _JobPortalScreenState extends ConsumerState<JobPortalScreen> {
                       ? null
                       : () => _submitBid(job),
                   icon: const Icon(Icons.send_outlined, size: 18),
-                  label: Text(_activeBidsCount >= 5
-                      ? 'Batas 5 Lamaran Penuh (BR-15)'
-                      : 'Lamar Pekerjaan Ini'),
+                  label: Text(
+                    _activeBidsCount >= 5
+                        ? 'Batas 5 Lamaran Penuh (BR-15)'
+                        : 'Lamar Pekerjaan Ini',
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryNavy,
                     foregroundColor: Colors.white,

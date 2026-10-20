@@ -59,18 +59,23 @@ class NotaCardWidget extends StatelessWidget {
                   : (isApproved
                       ? AppColors.successGreen.withValues(alpha: 0.12)
                       : AppColors.trustCobalt.withValues(alpha: 0.1)),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Row(
               children: [
                 Icon(
                   isApproved
                       ? Icons.lock_outline
-                      : (isRevision ? Icons.warning_amber_rounded : Icons.receipt_long_outlined),
+                      : (isRevision
+                          ? Icons.warning_amber_rounded
+                          : Icons.receipt_long_outlined),
                   size: 20,
                   color: isApproved
                       ? AppColors.successGreen
-                      : (isRevision ? AppColors.warningAmber : AppColors.trustCobalt),
+                      : (isRevision
+                          ? AppColors.warningAmber
+                          : AppColors.trustCobalt),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -82,7 +87,9 @@ class NotaCardWidget extends StatelessWidget {
                       fontSize: 14,
                       color: isApproved
                           ? AppColors.successGreen
-                          : (isRevision ? Colors.brown.shade800 : AppColors.trustCobalt),
+                          : (isRevision
+                              ? Colors.brown.shade800
+                              : AppColors.trustCobalt),
                     ),
                   ),
                 ),
@@ -101,7 +108,8 @@ class NotaCardWidget extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.info_outline, size: 16, color: Colors.orange),
+                      const Icon(Icons.info_outline,
+                          size: 16, color: Colors.orange),
                       const SizedBox(width: 6),
                       Text(
                         'Perbandingan Harga Revisi (BR-05):',
@@ -119,9 +127,11 @@ class NotaCardWidget extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Nota Sah Sebelumnya', style: AppTypography.bodySmall),
+                          Text('Nota Sah Sebelumnya',
+                              style: AppTypography.bodySmall),
                           Text(
-                            Formatters.formatCurrency(nota.previousApprovedTotal ?? 0),
+                            Formatters.formatCurrency(
+                                nota.previousApprovedTotal ?? 0),
                             style: AppTypography.bodyMedium.copyWith(
                               decoration: TextDecoration.lineThrough,
                               color: Colors.grey.shade700,
@@ -130,11 +140,13 @@ class NotaCardWidget extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const Icon(Icons.arrow_forward, size: 18, color: Colors.grey),
+                      const Icon(Icons.arrow_forward,
+                          size: 18, color: Colors.grey),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text('Pengajuan Revisi Baru', style: AppTypography.bodySmall),
+                          Text('Pengajuan Revisi Baru',
+                              style: AppTypography.bodySmall),
                           Text(
                             Formatters.formatCurrency(nota.totalAmount),
                             style: AppTypography.headingSmall.copyWith(
@@ -170,7 +182,8 @@ class NotaCardWidget extends StatelessWidget {
               children: [
                 Text(
                   'Rincian Pekerjaan & Material:',
-                  style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold),
+                  style: AppTypography.bodySmall
+                      .copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 ...nota.items.map((item) => Padding(
@@ -201,7 +214,8 @@ class NotaCardWidget extends StatelessWidget {
                   children: [
                     Text(
                       'Total Nominal:',
-                      style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                      style: AppTypography.bodyMedium
+                          .copyWith(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       Formatters.formatCurrency(nota.totalAmount),
@@ -217,7 +231,8 @@ class NotaCardWidget extends StatelessWidget {
                 // Metode Pembayaran Rencana
                 Row(
                   children: [
-                    const Icon(Icons.payment_outlined, size: 14, color: AppColors.textSecondary),
+                    const Icon(Icons.payment_outlined,
+                        size: 14, color: AppColors.textSecondary),
                     const SizedBox(width: 4),
                     Text(
                       'Rencana Pembayaran: ${nota.paymentMethod.label}',
@@ -231,12 +246,14 @@ class NotaCardWidget extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.notes_outlined, size: 14, color: AppColors.textSecondary),
+                      const Icon(Icons.notes_outlined,
+                          size: 14, color: AppColors.textSecondary),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           'Catatan: ${nota.note}',
-                          style: AppTypography.bodySmall.copyWith(fontStyle: FontStyle.italic),
+                          style: AppTypography.bodySmall
+                              .copyWith(fontStyle: FontStyle.italic),
                         ),
                       ),
                     ],
@@ -252,11 +269,13 @@ class NotaCardWidget extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: AppColors.successGreen.withValues(alpha: 0.1),
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(bottom: Radius.circular(12)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.verified, size: 16, color: AppColors.successGreen),
+                  const Icon(Icons.verified,
+                      size: 16, color: AppColors.successGreen),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -284,10 +303,12 @@ class NotaCardWidget extends StatelessWidget {
                             onPressed: () => onReject?.call(nota),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.dangerCrimson,
-                              side: const BorderSide(color: AppColors.dangerCrimson),
+                              side: const BorderSide(
+                                  color: AppColors.dangerCrimson),
                               padding: const EdgeInsets.symmetric(vertical: 10),
                             ),
-                            child: Text(isRevision ? 'Tolak Revisi' : 'Tolak Nota'),
+                            child: Text(
+                                isRevision ? 'Tolak Revisi' : 'Tolak Nota'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -299,7 +320,9 @@ class NotaCardWidget extends StatelessWidget {
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 10),
                             ),
-                            child: Text(isRevision ? 'Setujui Revisi' : 'Setujui (Nota Sah)'),
+                            child: Text(isRevision
+                                ? 'Setujui Revisi'
+                                : 'Setujui (Nota Sah)'),
                           ),
                         ),
                       ],
@@ -317,10 +340,12 @@ class NotaCardWidget extends StatelessWidget {
                         if (isRevision)
                           TextButton.icon(
                             onPressed: () => onCancelRevision?.call(nota),
-                            icon: const Icon(Icons.undo, size: 16, color: AppColors.dangerCrimson),
+                            icon: const Icon(Icons.undo,
+                                size: 16, color: AppColors.dangerCrimson),
                             label: const Text(
                               'Tarik Revisi (BR-08)',
-                              style: TextStyle(color: AppColors.dangerCrimson, fontSize: 12),
+                              style: TextStyle(
+                                  color: AppColors.dangerCrimson, fontSize: 12),
                             ),
                           ),
                       ],
@@ -372,7 +397,8 @@ class NotaCardWidget extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: text),
+        style:
+            TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: text),
       ),
     );
   }

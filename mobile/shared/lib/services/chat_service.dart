@@ -26,7 +26,8 @@ class ChatService {
         .limit(limit);
 
     return (data as List<dynamic>)
-        .map((item) => ChatMessage.fromJson(Map<String, dynamic>.from(item as Map)))
+        .map((item) =>
+            ChatMessage.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList();
   }
 
@@ -38,7 +39,8 @@ class ChatService {
         .eq('job_id', jobId)
         .order('created_at', ascending: true)
         .map((records) => records
-            .map((item) => ChatMessage.fromJson(Map<String, dynamic>.from(item)))
+            .map(
+                (item) => ChatMessage.fromJson(Map<String, dynamic>.from(item)))
             .toList());
   }
 
@@ -66,7 +68,8 @@ class ChatService {
     required String jobId,
     String reason = 'Batas waktu 30 menit / pembatalan negosiasi',
   }) async {
-    final response = await _client.rpc('rpc_cancel_negotiation_to_portal', params: {
+    final response =
+        await _client.rpc('rpc_cancel_negotiation_to_portal', params: {
       'p_job_id': jobId,
       'p_reason': reason,
     });

@@ -2,7 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:beres_shared/beres_shared.dart';
 
 void main() {
-  group('Milestone M4: Nota Sah, Revisi Nota, & Anti-Getok Harga (BR-05, BR-08)', () {
+  group(
+      'Milestone M4: Nota Sah, Revisi Nota, & Anti-Getok Harga (BR-05, BR-08)',
+      () {
     test('Nota initial (Versi 1) has valid fields and is not a revision', () {
       final json = {
         'id': 'nota-001',
@@ -37,7 +39,9 @@ void main() {
       expect(nota.paymentMethod, PaymentMethod.bankTransfer);
     });
 
-    test('Revisi Nota (Versi > 1) carries previousApprovedTotal and revisionOf (FR-015, BR-05)', () {
+    test(
+        'Revisi Nota (Versi > 1) carries previousApprovedTotal and revisionOf (FR-015, BR-05)',
+        () {
       final json = {
         'id': 'nota-002',
         'job_id': 'job-001',
@@ -125,7 +129,8 @@ void main() {
         'sender_id': 'tukang-1',
         'message_type': 'NOTA_REVISION_ALERT',
         'nota_id': 'nota-124',
-        'content': 'PERINGATAN REVISI NOTA: Rp 200.000 (Sebelumnya: Rp 150.000)',
+        'content':
+            'PERINGATAN REVISI NOTA: Rp 200.000 (Sebelumnya: Rp 150.000)',
         'created_at': DateTime.now().toIso8601String(),
       });
 
@@ -133,7 +138,8 @@ void main() {
       expect(revisionMsg.notaId, 'nota-124');
     });
 
-    test('JobChatContext parses active and pending notas, and remaining timers', () {
+    test('JobChatContext parses active and pending notas, and remaining timers',
+        () {
       final json = {
         'job_id': 'job-100',
         'status': 'NEGOTIATING',
@@ -182,7 +188,8 @@ void main() {
       expect(Formatters.formatCountdown(-10), '00:00');
     });
 
-    test('Formatters.formatCurrency and formatRupiah format currency properly', () {
+    test('Formatters.formatCurrency and formatRupiah format currency properly',
+        () {
       expect(Formatters.formatCurrency(150000), contains('150.000'));
       expect(Formatters.formatRupiah(150000), contains('150.000'));
       expect(Formatters.formatCurrency(2500000), contains('2.500.000'));

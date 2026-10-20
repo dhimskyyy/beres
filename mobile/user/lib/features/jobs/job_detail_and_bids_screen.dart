@@ -131,9 +131,7 @@ class _JobDetailAndBidsScreenState
         _loadJobAndBids();
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => ChatScreen(jobId: _job!.id),
-          ),
+          MaterialPageRoute(builder: (context) => ChatScreen(jobId: _job!.id)),
         ).then((_) => _loadJobAndBids());
       }
     } catch (e) {
@@ -259,8 +257,11 @@ class _JobDetailAndBidsScreenState
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          const Icon(Icons.location_on_outlined,
-                              size: 16, color: AppColors.trustCobalt),
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 16,
+                            color: AppColors.trustCobalt,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -303,8 +304,9 @@ class _JobDetailAndBidsScreenState
                                 width: 70,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(8),
-                                  color: AppColors.primaryNavy
-                                      .withValues(alpha: 0.1),
+                                  color: AppColors.primaryNavy.withValues(
+                                    alpha: 0.1,
+                                  ),
                                 ),
                                 child: const Icon(
                                   Icons.image,
@@ -453,15 +455,11 @@ class _JobDetailAndBidsScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        bid.tukangName,
-                        style: AppTypography.headingSmall,
-                      ),
+                      Text(bid.tukangName, style: AppTypography.headingSmall),
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          const Icon(Icons.star,
-                              size: 16, color: Colors.amber),
+                          const Icon(Icons.star, size: 16, color: Colors.amber),
                           const SizedBox(width: 4),
                           Text(
                             '${bid.ratingAvg.toStringAsFixed(1)} (${bid.ratingCount} ulasan)',
@@ -491,8 +489,11 @@ class _JobDetailAndBidsScreenState
             Row(
               children: [
                 if (bid.distanceKm != null) ...[
-                  const Icon(Icons.near_me_outlined,
-                      size: 14, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.near_me_outlined,
+                    size: 14,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${bid.distanceKm!.toStringAsFixed(1)} km dari lokasi',
@@ -500,8 +501,11 @@ class _JobDetailAndBidsScreenState
                   ),
                   const SizedBox(width: 12),
                 ],
-                const Icon(Icons.calendar_today_outlined,
-                    size: 14, color: AppColors.textSecondary),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 14,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   'Aktif ${bid.activeDays} hari',
@@ -517,8 +521,10 @@ class _JobDetailAndBidsScreenState
                 runSpacing: 4,
                 children: bid.skills.map((s) {
                   return Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.backgroundLight,
                       borderRadius: BorderRadius.circular(4),
