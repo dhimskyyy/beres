@@ -34,6 +34,8 @@ dependencies:
   flutter_riverpod: ^2.5.1
   go_router: ^14.2.0
   supabase_flutter: ^2.8.0
+  geolocator: ^14.1.2
+  image_picker: ^1.2.4
   beres_shared:
     path: ../shared
 

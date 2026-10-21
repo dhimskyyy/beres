@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
-/// Halaman FAQ & Aturan Tertulis Resmi Beres v1.4.0 (Lampiran C PRD)
-/// Wajib tampil di aplikasi User dan Tukang (menu Pusat Bantuan / Aturan & FAQ)
+/// Halaman Pusat Bantuan & Ketentuan Layanan Beres
 class FaqRulesScreen extends StatelessWidget {
   const FaqRulesScreen({super.key});
 
@@ -17,44 +16,46 @@ class FaqRulesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Aturan Resmi & FAQ Beres'),
-        backgroundColor: AppColors.trustCobalt,
-        foregroundColor: Colors.white,
+        title: const Text('Pusat Bantuan & Panduan'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Banner Pendahuluan
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade200),
+              color: AppColors.userBadgeBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.trustCobalt.withValues(alpha: 0.2),
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.gavel, color: AppColors.trustCobalt, size: 24),
-                const SizedBox(width: 10),
+                const Icon(
+                  Icons.verified_user_outlined,
+                  color: AppColors.trustCobalt,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Standar Operasional Resmi (v1.4.0)',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
+                      Text(
+                        'Transparan & Aman bagi Semua',
+                        style: AppTypography.headingSmall.copyWith(
                           color: AppColors.trustCobalt,
                           fontSize: 14,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        'Seluruh aktivitas di platform Beres tunduk pada aturan tertulis resmi di bawah ini demi melindungi hak Pelanggan dan Mitra Tukang.',
-                        style: AppTypography.bodySmall
-                            .copyWith(color: Colors.blueGrey.shade800),
+                      const Text(
+                        'Panduan ini menjelaskan cara kerja Nota Digital, pembayaran langsung, serta perlindungan bagi Pelanggan dan Mitra Tukang.',
+                        style: AppTypography.bodySmall,
                       ),
                     ],
                   ),
@@ -63,109 +64,81 @@ class FaqRulesScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-
-          // SEKSI C.1
           _buildSectionHeader(
-            icon: Icons.receipt_long,
-            title: 'C.1 Aturan Pembayaran & Kekuatan Nota Digital',
+            icon: Icons.receipt_long_outlined,
+            title: 'Pembayaran & Nota Digital',
           ),
           _buildFaqItem(
-            question: '1. Bagaimana cara pembayaran jasa tukang di Beres?',
+            question: 'Bagaimana cara pembayaran jasa tukang di Beres?',
             answer:
-                '• Aplikasi Beres tidak menyimpan saldo/uang pengguna (Zero In-App Wallet) dan tidak memotong komisi sepeser pun (0% komisi).\n'
-                '• Pembayaran jasa dan material 100% langsung dari Pelanggan ke Mitra Tukang setelah pekerjaan selesai.\n'
-                '• Metode bayar disepakati di Nota: Transfer Bank ke rekening tukang, E-Wallet tukang, atau Tunai (Cash).',
+                '• Pembayaran dilakukan 100% langsung dari Pelanggan ke Mitra Tukang setelah pekerjaan selesai tanpa potongan komisi.\n'
+                '• Anda dapat membayar melalui Transfer Bank, E-Wallet, atau Tunai sesuai kesepakatan pada Nota Digital.',
           ),
           _buildFaqItem(
-            question: '2. Apa fungsi dan kekuatan "Nota Digital"?',
+            question: 'Apa fungsi Nota Digital?',
             answer:
-                '• Nota Digital adalah bukti kesepakatan harga resmi yang mengikat kedua belah pihak secara hukum.\n'
-                '• Sebelum tukang berangkat, tukang wajib membuat Nota di ruang chat dan Pelanggan wajib menekan Setujui (Approve).\n'
-                '• Begitu disetujui, terbentuk Nota Sah yang terkunci (Immutable). Tukang dilarang keras getok harga atau mengubah harga sepihak.',
+                '• Nota Digital adalah bukti rincian biaya resmi yang disepakati sebelum tukang berangkat ke lokasi.\n'
+                '• Setelah disetujui Pelanggan, harga pada Nota Sah terkunci sehingga bebas dari biaya tersembunyi.',
           ),
           _buildFaqItem(
-            question: '3. Bagaimana jika ada kerusakan tambahan di lokasi?',
+            question: 'Bagaimana jika ada tambahan pekerjaan di lokasi?',
             answer:
-                '• Jika ada tambahan biaya di lapangan, Tukang wajib mengirimkan Revisi Nota di dalam aplikasi.\n'
-                '• Aplikasi Pelanggan akan memunculkan notifikasi khusus di ruang chat yang memperbandingkan Harga Nota Awal vs Harga Revisi Baru.\n'
-                '• Perubahan harga hanya sah jika Pelanggan menekan tombol Approve pada Revisi Nota tersebut.',
+                '• Jika terdapat kerusakan tambahan yang memerlukan biaya ekstra, Tukang akan mengirimkan Revisi Nota di ruang chat.\n'
+                '• Aplikasi menampilkan perbandingan harga lama dan harga baru secara transparan, serta hanya berlaku jika disetujui Pelanggan.',
           ),
           _buildFaqItem(
             question:
-                '4. Apa sanksinya jika pekerjaan selesai tetapi Pelanggan menolak bayar / bayar kurang?',
+                'Apa yang terjadi jika Pelanggan menolak membayar sesuai Nota Sah?',
             answer:
-                '• Tukang memiliki tombol khusus "Laporkan Masalah Pembayaran (BR-67)".\n'
-                '• Admin Beres langsung menginvestigasi bukti chat, Nota Sah, dan foto hasil kerja.\n'
-                '• Jika Pelanggan terbukti bersalah, Admin LANGSUNG memblokir (Suspend Permanen) akun Pelanggan tersebut SEKETIKA TANPA toleransi 3 kali!\n'
-                '• Banding hanya dapat diajukan melalui email resmi perusahaan.',
+                '• Mitra Tukang dapat mengirim laporan kendala pembayaran beserta bukti foto hasil kerja.\n'
+                '• Tim operasional akan meninjau bukti chat dan Nota Sah. Akun yang terbukti melanggar kesepakatan pembayaran akan dinonaktifkan secara permanen.',
             isWarning: true,
           ),
-          const SizedBox(height: 20),
-
-          // SEKSI C.2
+          const SizedBox(height: 18),
           _buildSectionHeader(
-            icon: Icons.work_history,
-            title: 'C.2 Aturan Melamar, Lock Tukang, & Chat',
-          ),
-          _buildFaqItem(
-            question: '5. Berapa banyak pekerjaan yang bisa dilamar Tukang?',
-            answer:
-                '• Tukang dapat melamar (bid) maksimal 5 pekerjaan terbuka (OPEN) sekaligus.\n'
-                '• Aturan Auto-Clear (BR-17): Begitu salah satu Pelanggan menekan "Lock Tukang", seluruh lamaran tukang di pekerjaan lain OTOMATIS ditarik/dihapus oleh sistem agar tukang fokus 100% pada 1 pekerjaan.',
+            icon: Icons.handshake_outlined,
+            title: 'Pemesanan & Diskusi Chat',
           ),
           _buildFaqItem(
             question:
-                '6. Bagaimana jika chat tidak dibalas > 30 menit saat tahap Negosiasi?',
+                'Berapa banyak pekerjaan yang dapat dilamar Mitra Tukang?',
             answer:
-                '• Jika salah satu pihak tidak membalas chat selama > 30 menit pada tahap NEGOTIATING (sebelum Nota disetujui), pekerjaan otomatis dilepas kembali ke Bursa Pekerjaan (OPEN).\n'
-                '• Pada tahap ini TIDAK ADA pihak yang terkena poin Strike, karena kedua belah pihak masih tahap penjajakan.',
+                '• Mitra Tukang dapat melamar hingga 5 pekerjaan terbuka sekaligus.\n'
+                '• Saat seorang Pelanggan memilih dan mengunci satu Mitra Tukang, lamaran mitra tersebut di pekerjaan lain otomatis ditarik agar mitra fokus penuh pada satu pesanan.',
           ),
-          const SizedBox(height: 20),
-
-          // SEKSI C.3
+          _buildFaqItem(
+            question: 'Berapa lama batas waktu respons chat saat negosiasi?',
+            answer:
+                '• Sebelum Nota disetujui, masing-masing pihak memiliki waktu 30 menit untuk membalas pesan.\n'
+                '• Jika tidak ada respons lebih dari 30 menit, pesanan otomatis dikembalikan ke bursa terbuka tanpa penalti.',
+          ),
+          const SizedBox(height: 18),
           _buildSectionHeader(
             icon: Icons.shield_outlined,
-            title: 'C.3 Keberangkatan, Pembatalan, & Strike/Suspend',
+            title: 'Keberangkatan, Pembatalan & Kedisiplinan',
           ),
           _buildFaqItem(
-            question:
-                '7. Kapan Tukang terkena Strike & Suspend Otomatis 2 Hari?',
-            answer: 'Tukang menerima 1 Strike jika:\n'
-                '1. Tidak klik "Berangkat" dalam 30 menit setelah Nota disetujui (job dilepas ke portal).\n'
-                '2. Mengajukan pembatalan saat NOTA_APPROVED, ON_THE_WAY, atau ARRIVED yang disetujui User.\n'
-                '3. Perjalanan ON_THE_WAY >= 3 jam belum tiba, dibatalkan User dan tukang tidak merespons dalam 30 menit.\n\n'
-                'Sanksi: Maksimal 3 Strike per bulan kalender. Pada Strike ke-4 (> 3x), akun OTOMATIS DIBEKUKAN selama 2 hari penuh (48 jam).',
+            question: 'Kapan Mitra Tukang menerima poin pelanggaran (Strike)?',
+            answer: 'Mitra Tukang menerima 1 poin pelanggaran apabila:\n'
+                '1. Tidak berangkat dalam 30 menit setelah Nota disetujui.\n'
+                '2. Mengajukan pembatalan setelah Nota disetujui atau saat dalam perjalanan.\n'
+                '3. Belum tiba di lokasi lebih dari 3 jam sejak berangkat dan tidak merespons pembatalan.\n\n'
+                'Akun yang mengumpulkan lebih dari 3 pelanggaran dalam satu bulan akan ditangguhkan otomatis selama 48 jam.',
             isWarning: true,
           ),
           _buildFaqItem(
-            question: '8. Kapan Pelanggan (User) terkena Strike & Suspend?',
+            question: 'Kapan Pelanggan menerima poin pelanggaran (Strike)?',
             answer:
-                '• Pelanggan menghilang / tidak membalas chat tukang > 30 menit saat tukang sudah ON_THE_WAY atau ARRIVED -> Pelanggan menerima 1 Strike (ke-4 otomatis suspend 2 hari).\n'
-                '• Pelanggan menolak bayar / bayar kurang dari Nota Sah -> Langsung Suspend Permanen oleh Admin tanpa toleransi 3 kali.',
+                '• Pelanggan menerima 1 poin pelanggaran apabila tidak dapat dihubungi atau tidak membalas chat lebih dari 30 menit saat Mitra Tukang sudah dalam perjalanan atau tiba di lokasi.',
             isWarning: true,
           ),
           _buildFaqItem(
             question:
-                '9. Apakah pekerjaan bisa dibatalkan saat perjalanan atau bekerja?',
+                'Apakah pesanan dapat dibatalkan saat pekerjaan sedang berlangsung?',
             answer:
-                '• ON_THE_WAY < 3 jam & ARRIVED: Pelanggan TIDAK BISA membatalkan sepihak. Hanya tukang yang bisa mengajukan batal (+1 Strike tukang).\n'
-                '• ON_THE_WAY >= 3 jam belum tiba: Muncul tombol Cancel bagi Pelanggan (BR-56b).\n'
-                '• WORKING: DILARANG BATAL oleh kedua belah pihak (BR-65). Tukang wajib menyelesaikan pekerjaan.',
+                '• Saat pekerjaan sudah dimulai, pembatalan sepihak dikunci untuk melindungi kedua belah pihak hingga pekerjaan selesai.',
           ),
-          const SizedBox(height: 30),
-
-          // Footer
-          Center(
-            child: Text(
-              'Beres Platform v1.4.0 — Beres, Cepat, Tanpa Ribet',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -179,16 +152,12 @@ class FaqRulesScreen extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10, top: 4),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppColors.trustCobalt),
+          Icon(icon, size: 18, color: AppColors.textPrimary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+              style: AppTypography.headingSmall.copyWith(fontSize: 14),
             ),
           ),
         ],
@@ -204,36 +173,38 @@ class FaqRulesScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isWarning
-            ? Colors.red.shade50.withValues(alpha: 0.5)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isWarning ? Colors.red.shade200 : Colors.grey.shade200,
+          color: isWarning
+              ? AppColors.dangerCrimson.withValues(alpha: 0.25)
+              : AppColors.borderLight,
         ),
       ),
       child: Theme(
         data: ThemeData(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          iconColor: isWarning ? AppColors.error : AppColors.trustCobalt,
-          collapsedIconColor: Colors.grey.shade600,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+          iconColor:
+              isWarning ? AppColors.dangerCrimson : AppColors.trustCobalt,
+          collapsedIconColor: AppColors.textMuted,
           title: Text(
             question,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 13.5,
               fontWeight: FontWeight.w600,
-              color: isWarning ? const Color(0xFF9F1239) : Colors.black87,
+              color:
+                  isWarning ? AppColors.dangerCrimson : AppColors.textPrimary,
             ),
           ),
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
               child: Text(
                 answer,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.black87,
-                  height: 1.5,
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.55,
                 ),
               ),
             ),

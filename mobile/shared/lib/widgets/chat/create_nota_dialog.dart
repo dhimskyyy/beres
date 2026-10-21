@@ -89,7 +89,6 @@ class _CreateNotaDialogState extends State<CreateNotaDialog> {
   }
 
   Future<void> _submit() async {
-    // Validasi
     final validItems = <NotaItem>[];
     for (final item in _items) {
       final name = item.nameController.text.trim();
@@ -151,66 +150,66 @@ class _CreateNotaDialogState extends State<CreateNotaDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: AppColors.surfaceWhite,
+      surfaceTintColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Container(
         constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85),
-        padding: const EdgeInsets.all(18),
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header
             Row(
               children: [
                 Icon(
                   widget.isRevision
-                      ? Icons.warning_amber_rounded
-                      : Icons.receipt_long,
+                      ? Icons.edit_note_rounded
+                      : Icons.receipt_long_outlined,
                   color: widget.isRevision
                       ? AppColors.warningAmber
                       : AppColors.trustCobalt,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     widget.isRevision
-                        ? 'Ajukan Revisi Nota (BR-05)'
-                        : 'Buat Nota Digital (BR-04)',
+                        ? 'Ajukan Revisi Nota'
+                        : 'Buat Nota Digital',
                     style: AppTypography.headingSmall,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(Icons.close_rounded, size: 20),
                   onPressed: () => Navigator.pop(context),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-
+            const SizedBox(height: 10),
             if (widget.isRevision && widget.currentApprovedTotal != null) ...[
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.amber.shade200),
+                  color: AppColors.warningLight,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.warningAmber.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Text(
-                  'Nota Sah saat ini: ${Formatters.formatCurrency(widget.currentApprovedTotal!)}. '
-                  'Masukkan total rincian keseluruhan pekerjaan yang baru.',
-                  style: AppTypography.bodySmall
-                      .copyWith(color: Colors.brown.shade900),
+                  'Nota Sah saat ini: ${Formatters.formatCurrency(widget.currentApprovedTotal!)}. Masukkan rincian keseluruhan biaya yang baru.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
             ],
-
-            const Divider(),
-
-            // Item List Form
+            const Divider(height: 16),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -219,29 +218,34 @@ class _CreateNotaDialogState extends State<CreateNotaDialog> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Rincian Item Pekerjaan & Material',
-                            style: AppTypography.bodySmall
-                                .copyWith(fontWeight: FontWeight.bold)),
+                        Text(
+                          'Rincian Pekerjaan & Material',
+                          style: AppTypography.bodySmall.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
                         TextButton.icon(
                           onPressed: _addItem,
-                          icon: const Icon(Icons.add, size: 16),
-                          label: const Text('Tambah Item',
-                              style: TextStyle(fontSize: 12)),
+                          icon: const Icon(Icons.add_rounded, size: 16),
+                          label: const Text(
+                            'Tambah Item',
+                            style: TextStyle(fontSize: 12.5),
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
-
                     ..._items.asMap().entries.map((entry) {
                       final idx = entry.key;
                       final item = entry.value;
 
                       return Container(
                         margin: const EdgeInsets.symmetric(vertical: 6),
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: AppColors.backgroundLight,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: AppColors.borderLight),
                         ),
                         child: Column(
@@ -249,24 +253,26 @@ class _CreateNotaDialogState extends State<CreateNotaDialog> {
                             Row(
                               children: [
                                 Expanded(
-                                  flex: 3,
                                   child: TextField(
                                     controller: item.nameController,
                                     decoration: const InputDecoration(
-                                      labelText: 'Nama Pekerjaan / Material',
+                                      labelText: 'Nama Jasa / Material',
                                       isDense: true,
                                       contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 8),
-                                      border: OutlineInputBorder(),
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
                                     ),
                                   ),
                                 ),
                                 if (_items.length > 1) ...[
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 8),
                                   IconButton(
-                                    icon: const Icon(Icons.delete_outline,
-                                        color: AppColors.dangerCrimson,
-                                        size: 20),
+                                    icon: const Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: AppColors.dangerCrimson,
+                                      size: 20,
+                                    ),
                                     onPressed: () => _removeItem(idx),
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
@@ -283,11 +289,12 @@ class _CreateNotaDialogState extends State<CreateNotaDialog> {
                                     controller: item.qtyController,
                                     keyboardType: TextInputType.number,
                                     decoration: const InputDecoration(
-                                      labelText: 'Qty',
+                                      labelText: 'Jumlah',
                                       isDense: true,
                                       contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 8),
-                                      border: OutlineInputBorder(),
+                                        horizontal: 10,
+                                        vertical: 10,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -301,8 +308,9 @@ class _CreateNotaDialogState extends State<CreateNotaDialog> {
                                       labelText: 'Harga Satuan (Rp)',
                                       isDense: true,
                                       contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 8),
-                                      border: OutlineInputBorder(),
+                                        horizontal: 10,
+                                        vertical: 10,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -311,8 +319,10 @@ class _CreateNotaDialogState extends State<CreateNotaDialog> {
                                   flex: 2,
                                   child: Text(
                                     Formatters.formatCurrency(item.totalPrice),
-                                    style: AppTypography.bodySmall
-                                        .copyWith(fontWeight: FontWeight.bold),
+                                    style: AppTypography.bodySmall.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                    ),
                                     textAlign: TextAlign.right,
                                   ),
                                 ),
@@ -322,89 +332,104 @@ class _CreateNotaDialogState extends State<CreateNotaDialog> {
                         ),
                       );
                     }),
-
-                    const SizedBox(height: 12),
-
-                    // Metode Bayar
-                    Text('Rencana Metode Pembayaran (BR-01):',
-                        style: AppTypography.bodySmall
-                            .copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Metode Pembayaran',
+                      style: AppTypography.bodySmall.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Expanded(
                           child: ChoiceChip(
-                            label: const Text('Transfer Bank',
-                                style: TextStyle(fontSize: 11)),
+                            label: const Text(
+                              'Transfer Bank',
+                              style: TextStyle(fontSize: 11.5),
+                            ),
                             selected:
                                 _paymentMethod == PaymentMethod.bankTransfer,
-                            onSelected: (_) => setState(() =>
-                                _paymentMethod = PaymentMethod.bankTransfer),
+                            onSelected: (_) => setState(
+                              () => _paymentMethod = PaymentMethod.bankTransfer,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: ChoiceChip(
-                            label: const Text('E-Wallet',
-                                style: TextStyle(fontSize: 11)),
+                            label: const Text(
+                              'E-Wallet',
+                              style: TextStyle(fontSize: 11.5),
+                            ),
                             selected: _paymentMethod == PaymentMethod.eWallet,
                             onSelected: (_) => setState(
-                                () => _paymentMethod = PaymentMethod.eWallet),
+                              () => _paymentMethod = PaymentMethod.eWallet,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: ChoiceChip(
-                            label: const Text('Tunai',
-                                style: TextStyle(fontSize: 11)),
+                            label: const Text(
+                              'Tunai',
+                              style: TextStyle(fontSize: 11.5),
+                            ),
                             selected: _paymentMethod == PaymentMethod.cash,
                             onSelected: (_) => setState(
-                                () => _paymentMethod = PaymentMethod.cash),
+                              () => _paymentMethod = PaymentMethod.cash,
+                            ),
                           ),
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 12),
-
-                    // Catatan
+                    const SizedBox(height: 14),
                     TextField(
                       controller: _noteController,
                       maxLines: 2,
                       decoration: const InputDecoration(
-                        labelText: 'Catatan Tambahan (Opsional)',
-                        hintText:
-                            'Misal garansi pekerjaan 7 hari, beli semen sendiri...',
-                        border: OutlineInputBorder(),
+                        labelText: 'Catatan atau Garansi (Opsional)',
+                        hintText: 'Contoh: Garansi pengerjaan 7 hari',
                         isDense: true,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     InkWell(
                       onTap: () => FaqRulesScreen.show(context),
+                      borderRadius: BorderRadius.circular(8),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(6),
+                          color: AppColors.userBadgeBg,
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.info_outline,
-                                size: 14, color: AppColors.trustCobalt),
-                            SizedBox(width: 6),
+                            Icon(
+                              Icons.info_outline_rounded,
+                              size: 15,
+                              color: AppColors.trustCobalt,
+                            ),
+                            SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Nota yang disetujui sah mengikat & terkunci. Baca Aturan (Lampiran C)',
+                                'Nota yang telah disetujui bersifat mengikat. Pelajari selengkapnya',
                                 style: TextStyle(
-                                    fontSize: 10,
-                                    color: AppColors.trustCobalt,
-                                    fontWeight: FontWeight.w600),
+                                  fontSize: 11,
+                                  color: AppColors.trustCobalt,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                            Icon(Icons.chevron_right,
-                                size: 14, color: AppColors.trustCobalt),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 16,
+                              color: AppColors.trustCobalt,
+                            ),
                           ],
                         ),
                       ),
@@ -413,22 +438,18 @@ class _CreateNotaDialogState extends State<CreateNotaDialog> {
                 ),
               ),
             ),
-
-            const Divider(),
-
-            // Summary & Submit
+            const Divider(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Total Nota', style: AppTypography.bodySmall),
+                    const Text('Total Biaya', style: AppTypography.bodySmall),
                     Text(
                       Formatters.formatCurrency(_calculatedTotal),
-                      style: AppTypography.headingSmall.copyWith(
+                      style: AppTypography.rupiahMedium.copyWith(
                         color: AppColors.trustCobalt,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
@@ -440,19 +461,20 @@ class _CreateNotaDialogState extends State<CreateNotaDialog> {
                         ? AppColors.warningAmber
                         : AppColors.trustCobalt,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                    minimumSize: const Size(150, 46),
                   ),
                   child: _isSubmitting
                       ? const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2),
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
                         )
-                      : Text(widget.isRevision
-                          ? 'Kirim Revisi Nota'
-                          : 'Kirim Nota Sah'),
+                      : Text(
+                          widget.isRevision ? 'Kirim Revisi' : 'Kirim Nota',
+                        ),
                 ),
               ],
             ),

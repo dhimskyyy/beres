@@ -30,6 +30,7 @@ export 'config/app_environment.dart';
 // Services
 export 'package:supabase_flutter/supabase_flutter.dart'
     show AuthException, Session, User, SupabaseClient;
+export 'package:image_picker/image_picker.dart' show ImageSource, XFile;
 export 'services/supabase_client_service.dart';
 export 'services/auth_service.dart';
 export 'services/tukang_service.dart';
@@ -40,6 +41,7 @@ export 'services/notification_service.dart';
 export 'services/tracking_service.dart';
 export 'services/review_service.dart';
 export 'services/cancellation_service.dart';
+export 'services/device_permission_service.dart';
 
 // Widgets
 export 'widgets/suspend_screen.dart';

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:beres_shared/beres_shared.dart';
 import '../auth/tukang_login_screen.dart';
+import '../profile/tukang_onboarding_screen.dart';
 import '../job_portal/job_portal_screen.dart';
 import '../notifications/notifications_screen.dart';
+
+final tukangJobServiceProvider = Provider((ref) => JobService());
 
 class TukangHomeScreen extends ConsumerStatefulWidget {
   const TukangHomeScreen({super.key});
@@ -15,13 +17,11 @@ class TukangHomeScreen extends ConsumerStatefulWidget {
 }
 
 class _TukangHomeScreenState extends ConsumerState<TukangHomeScreen> {
-  bool _isOnline = false;
-  int _radiusKm = 20;
-  String _kycStatus = 'PENDING';
-  int _activeBidsCount = 0;
-  int _unreadNotifsCount = 0;
-  Map<String, dynamic>? _activeJob;
+  Profile? _profile;
+  TukangProfile? _tukangProfile;
+  Job? _activeLockedJob;
   bool _isLoading = true;
+  int _selectedTabIndex = 0;
 
   @override
   void initState() {
@@ -30,58 +30,24 @@ class _TukangHomeScreenState extends ConsumerState<TukangHomeScreen> {
   }
 
   Future<void> _loadData() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
-      if (mounted) setState(() => _isLoading = false);
-      return;
-    }
+    setState(() => _isLoading = true);
+    final authService = ref.read(authServiceProvider);
+    final tukangService = ref.read(tukangServiceProvider);
+    final jobService = ref.read(tukangJobServiceProvider);
 
     try {
-      final profileRes = await Supabase.instance.client
-          .from('tukang_profiles')
-          .select('is_online, radius_km, kyc_status')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-      if (profileRes != null) {
-        _isOnline = profileRes['is_online'] as bool? ?? false;
-        _radiusKm = profileRes['radius_km'] as int? ?? 20;
-        _kycStatus = profileRes['kyc_status'] as String? ?? 'PENDING';
+      final profile = await authService.getCurrentProfile();
+      TukangProfile? tProfile;
+      Job? lockedJob;
+      if (profile != null) {
+        tProfile = await tukangService.getTukangProfile(profile.id);
+        lockedJob = await jobService.getActiveLockedJobForTukang();
       }
-
-      final bidsRes = await Supabase.instance.client
-          .from('bids')
-          .select('id, jobs!inner(status)')
-          .eq('tukang_id', user.id)
-          .eq('status', 'ACTIVE')
-          .eq('jobs.status', 'OPEN');
-
-      _activeBidsCount = (bidsRes as List<dynamic>).length;
-
-      // Ambil pekerjaan aktif tukang yang sedang berjalan (M4: Chat, Nota, Timer)
-      final activeJobRes = await Supabase.instance.client
-          .from('jobs')
-          .select('id, status, description, area_label, locked_at')
-          .eq('locked_tukang_id', user.id)
-          .inFilter('status', [
-            'NEGOTIATING',
-            'NOTA_APPROVED',
-            'ON_THE_WAY',
-            'ARRIVED',
-            'WORKING',
-          ])
-          .order('locked_at', ascending: false)
-          .limit(1)
-          .maybeSingle();
-
-      _activeJob = activeJobRes;
-
-      final notifService = ref.read(notificationServiceProvider);
-      final count = await notifService.getUnreadCount();
-
       if (mounted) {
         setState(() {
-          _unreadNotifsCount = count;
+          _profile = profile;
+          _tukangProfile = tProfile;
+          _activeLockedJob = lockedJob;
           _isLoading = false;
         });
       }
@@ -90,636 +56,777 @@ class _TukangHomeScreenState extends ConsumerState<TukangHomeScreen> {
     }
   }
 
-  Future<void> _handleToggleOnline(bool val) async {
-    setState(() => _isOnline = val);
-    try {
-      await ref
-          .read(jobServiceProvider)
-          .updateTukangStatusAndLocation(isOnline: val);
-      _loadData();
-    } catch (_) {}
+  Future<void> _handleSignOut() async {
+    final authService = ref.read(authServiceProvider);
+    await authService.signOut();
+    if (mounted) {
+      context.go('/login');
+    }
+  }
+
+  void _openChatScreen(String jobId) {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => ChatScreen(jobId: jobId)))
+        .then((_) => _loadData());
+  }
+
+  void _openTrackingScreen(String jobId) {
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (_) => TrackingScreen(
+              jobId: jobId,
+              isTukang: true,
+              trackingService: TrackingService(),
+              jobService: ref.read(tukangJobServiceProvider),
+            ),
+          ),
+        )
+        .then((_) => _loadData());
   }
 
   @override
   Widget build(BuildContext context) {
-    final authService = ref.read(authServiceProvider);
+    if (_profile != null && _profile!.isSuspended) {
+      return SuspendScreen(
+        isPermanent: _profile!.suspendType == SuspendType.manualPermanent,
+        reason: _profile!.suspendReason ?? 'Akun mitra sedang ditangguhkan.',
+        suspendedUntil: _profile!.suspendedUntil,
+        onRefresh: _loadData,
+        onSignOut: _handleSignOut,
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
+      body: IndexedStack(
+        index: _selectedTabIndex,
+        children: [
+          _buildDashboardTab(),
+          const JobPortalScreen(embedded: true),
+          const TukangNotificationsScreen(embedded: true),
+          _buildProfileTab(),
+        ],
+      ),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: AppColors.borderLight)),
+        ),
+        child: NavigationBar(
+          selectedIndex: _selectedTabIndex,
+          onDestinationSelected: (idx) {
+            setState(() => _selectedTabIndex = idx);
+            if (idx == 0 || idx == 3) {
+              _loadData();
+            }
+          },
+          destinations: [
+            NavigationDestination(
+              icon: Badge(
+                isLabelVisible: _activeLockedJob != null,
+                backgroundColor: AppColors.safetyOrange,
+                child: const Icon(Icons.dashboard_outlined),
+              ),
+              selectedIcon: Badge(
+                isLabelVisible: _activeLockedJob != null,
+                backgroundColor: AppColors.safetyOrange,
+                child: const Icon(Icons.dashboard_rounded),
+              ),
+              label: 'Beranda',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.work_outline_rounded),
+              selectedIcon: Icon(Icons.work_rounded),
+              label: 'Bursa Kerja',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.notifications_none_rounded),
+              selectedIcon: Icon(Icons.notifications_rounded),
+              label: 'Notifikasi',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.person_outline_rounded),
+              selectedIcon: Icon(Icons.person_rounded),
+              label: 'Profil',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // TAB 1: BERANDA MITRA (Active Job, Verification Status, Quick Portal Access)
+  // ===========================================================================
+  Widget _buildDashboardTab() {
+    final kycStatus = _tukangProfile?.kycStatus ?? KycStatus.pending;
+    final firstName = (_profile?.fullName ?? 'Mitra').split(' ').first.trim();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Beres Mitra'),
-        actions: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                tooltip: 'Notifikasi',
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const TukangNotificationsScreen(),
-                    ),
-                  );
-                  _loadData();
-                },
+        automaticallyImplyLeading: false,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Halo, $firstName',
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
-              if (_unreadNotifsCount > 0)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.dangerCrimson,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      _unreadNotifsCount > 9 ? '9+' : '$_unreadNotifsCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+            ),
+            Text(
+              kycStatus == KycStatus.approved
+                  ? 'Mitra Tukang Terverifikasi'
+                  : 'Lengkapi verifikasi untuk mulai melamar',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline_rounded),
+            tooltip: 'Panduan Mitra',
+            onPressed: () => FaqRulesScreen.show(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Segarkan',
+            onPressed: _loadData,
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  // Banner Verifikasi KTP (Hanya tampil jika belum APPROVED)
+                  if (kycStatus != KycStatus.approved) ...[
+                    _buildKycAlertCard(kycStatus),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Pekerjaan Aktif / Terkunci (Spotlight Utama)
+                  const Text(
+                    'Tugas Aktif Saat Ini',
+                    style: AppTypography.headingSmall,
+                  ),
+                  const SizedBox(height: 8),
+
+                  if (_activeLockedJob != null)
+                    _buildActiveJobCard(_activeLockedJob!)
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(22),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceWhite,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: AppColors.tukangBadgeBg,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.handyman_outlined,
+                              color: AppColors.safetyOrange,
+                              size: 26,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Belum Ada Tugas Berjalan',
+                            style: AppTypography.headingSmall,
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Buka Bursa Kerja untuk melihat dan melamar pekerjaan terbuka di sekitar lokasi Anda.',
+                            textAlign: TextAlign.center,
+                            style: AppTypography.bodySmall,
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () =>
+                                  setState(() => _selectedTabIndex = 1),
+                              icon: const Icon(
+                                Icons.work_outline_rounded,
+                                size: 18,
+                              ),
+                              label: const Text('Cari Pekerjaan di Bursa'),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+
+                  const SizedBox(height: 20),
+
+                  // Ringkasan Pengaturan Operasional
+                  const Text(
+                    'Pengaturan Kerja Anda',
+                    style: AppTypography.headingSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          icon: Icons.radar_rounded,
+                          label: 'Radius Jangkauan',
+                          value: '${_tukangProfile?.radiusKm ?? 20} km',
+                          onTap: () => context
+                              .push('/onboarding')
+                              .then((_) => _loadData()),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          icon: Icons.verified_user_outlined,
+                          label: 'Status Identitas',
+                          value: kycStatus == KycStatus.approved
+                              ? 'Terverifikasi'
+                              : kycStatus == KycStatus.rejected
+                              ? 'Perlu Perbaikan'
+                              : 'Ditinjau',
+                          onTap: () =>
+                              context.push('/kyc').then((_) => _loadData()),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildKycAlertCard(KycStatus kycStatus) {
+    final isRejected = kycStatus == KycStatus.rejected;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isRejected ? AppColors.dangerLight : AppColors.warningLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: (isRejected ? AppColors.dangerCrimson : AppColors.warningAmber)
+              .withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isRejected
+                    ? Icons.error_outline_rounded
+                    : Icons.verified_user_outlined,
+                color: isRejected
+                    ? AppColors.dangerCrimson
+                    : AppColors.warningAmber,
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  isRejected
+                      ? 'Verifikasi KTP Perlu Diperbaiki'
+                      : 'Selesaikan Verifikasi Identitas (KTP)',
+                  style: AppTypography.headingSmall.copyWith(
+                    fontSize: 14,
+                    color: isRejected
+                        ? AppColors.dangerCrimson
+                        : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isRejected
+                ? 'Dokumen Anda memerlukan perbaikan. Unggah ulang foto KTP dan selfie agar dapat mulai melamar pekerjaan.'
+                : 'Unggah foto KTP dan selfie Anda agar akun terverifikasi dan dapat melamar pekerjaan di Bursa Kerja.',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => context.push('/kyc').then((_) => _loadData()),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isRejected
+                    ? AppColors.dangerCrimson
+                    : AppColors.primaryNavy,
+                minimumSize: const Size.fromHeight(42),
+              ),
+              icon: const Icon(Icons.upload_file_rounded, size: 17),
+              label: Text(
+                isRejected ? 'Unggah Ulang Dokumen' : 'Verifikasi Sekarang',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveJobCard(Job job) {
+    final canTrack =
+        job.status == JobStatus.onTheWay ||
+        job.status == JobStatus.arrived ||
+        job.status == JobStatus.working ||
+        job.status == JobStatus.completed ||
+        job.status == JobStatus.cancelPending;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.safetyOrange.withValues(alpha: 0.45),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.tukangBadgeBg,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  job.status.label,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.tukangBadgeText,
+                  ),
+                ),
+              ),
+              if (job.agreedTotal != null)
+                Text(
+                  Formatters.formatCurrency(job.agreedTotal!),
+                  style: AppTypography.rupiahMedium.copyWith(
+                    color: AppColors.trustCobalt,
                   ),
                 ),
             ],
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Keluar',
-            onPressed: () async {
-              await authService.signOut();
-              if (context.mounted) {
-                context.go('/');
-              }
-            },
+          const SizedBox(height: 12),
+          Text(
+            job.description,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+              height: 1.4,
+            ),
           ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(
+                Icons.location_on_outlined,
+                size: 15,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(job.areaLabel, style: AppTypography.bodySmall),
+              ),
+            ],
+          ),
+          const Divider(height: 22),
+          if (canTrack) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _openTrackingScreen(job.id),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.successGreen,
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.navigation_outlined, size: 18),
+                label: const Text('Pelaksanaan & Peta Lokasi'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _openChatScreen(job.id),
+                icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                label: const Text('Buka Chat & Nota Digital'),
+              ),
+            ),
+          ] else ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _openChatScreen(job.id),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.trustCobalt,
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                label: const Text('Buka Diskusi & Buat Nota Digital'),
+              ),
+            ),
+          ],
         ],
       ),
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
-                onRefresh: _loadData,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(20.0),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceWhite,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(icon, size: 20, color: AppColors.safetyOrange),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: AppColors.textMuted,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(label, style: AppTypography.bodySmall),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // TAB 4: PROFIL & PENGATURAN MITRA
+  // ===========================================================================
+  Widget _buildProfileTab() {
+    final name = _profile?.fullName ?? 'Mitra Tukang';
+    final email = _profile?.email ?? '-';
+    final phone = (_profile?.phone != null && _profile!.phone!.isNotEmpty)
+        ? _profile!.phone!
+        : 'Belum diatur';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'M';
+    final kycStatus = _tukangProfile?.kycStatus ?? KycStatus.pending;
+
+    return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text('Profil Mitra'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceWhite,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderLight),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: AppColors.tukangBadgeBg,
+                  child: Text(
+                    initial,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.tukangBadgeText,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 1. Header Card Profil & Status
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 52,
-                                    height: 52,
-                                    decoration: const BoxDecoration(
-                                      color: AppColors.tukangBadgeBg,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.engineering,
-                                      size: 30,
-                                      color: AppColors.safetyOrange,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Mitra Tukang Beres',
-                                          style: AppTypography.headingSmall,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Wrap(
-                                          spacing: 6,
-                                          runSpacing: 4,
-                                          children: [
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 2,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: AppColors.tukangBadgeBg,
-                                                borderRadius:
-                                                    BorderRadius.circular(6),
-                                              ),
-                                              child: Text(
-                                                'Role: TUKANG',
-                                                style: AppTypography.bodySmall
-                                                    .copyWith(
-                                                      color: AppColors
-                                                          .tukangBadgeText,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                              ),
-                                            ),
-                                            _buildKycBadge(_kycStatus),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const Divider(height: 24),
-
-                              // Switch Online/Offline Cepat (FR-020)
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 10,
-                                        height: 10,
-                                        decoration: BoxDecoration(
-                                          color: _isOnline
-                                              ? AppColors.successGreen
-                                              : Colors.grey,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _isOnline
-                                            ? 'ONLINE (Siap Kerja)'
-                                            : 'OFFLINE',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Switch(
-                                    value: _isOnline,
-                                    activeThumbColor: AppColors.successGreen,
-                                    onChanged: _handleToggleOnline,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 2. Pekerjaan Aktif yang Sedang Berjalan (M4: FR-013, FR-014, BR-31)
-                      if (_activeJob != null) ...[
-                        Card(
-                          elevation: 3,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            side: const BorderSide(
-                              color: AppColors.trustCobalt,
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.handyman,
-                                          color: AppColors.trustCobalt,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Pekerjaan Aktif Anda',
-                                          style: AppTypography.headingSmall
-                                              .copyWith(fontSize: 15),
-                                        ),
-                                      ],
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 3,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.trustCobalt.withValues(
-                                          alpha: 0.15,
-                                        ),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        _activeJob!['status'] as String? ?? '',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.trustCobalt,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  _activeJob!['description'] as String? ?? '',
-                                  style: AppTypography.bodyMedium.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.location_on_outlined,
-                                      size: 14,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _activeJob!['area_label'] as String? ??
-                                          '',
-                                      style: AppTypography.bodySmall,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton.icon(
-                                    onPressed: () async {
-                                      await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ChatScreen(
-                                            jobId: _activeJob!['id'] as String,
-                                          ),
-                                        ),
-                                      );
-                                      _loadData();
-                                    },
-                                    icon: const Icon(
-                                      Icons.chat_outlined,
-                                      size: 18,
-                                    ),
-                                    label: const Text(
-                                      'Buka Ruang Chat & Nota Digital',
-                                    ),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.trustCobalt,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 10,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                if (_activeJob!['status'] ==
-                                    'CANCEL_PENDING') ...[
-                                  const SizedBox(height: 8),
-                                  CancelDecisionCard(
-                                    jobId: _activeJob!['id'] as String,
-                                    isTukang: true,
-                                    cancellationService: CancellationService(),
-                                    onDecisionResolved: _loadData,
-                                  ),
-                                ],
-                                if ([
-                                  'ON_THE_WAY',
-                                  'ARRIVED',
-                                  'WORKING',
-                                  'COMPLETED',
-                                  'CANCEL_PENDING',
-                                ].contains(_activeJob!['status'])) ...[
-                                  const SizedBox(height: 8),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: ElevatedButton.icon(
-                                      onPressed: () async {
-                                        await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                TrackingScreen(
-                                                  jobId:
-                                                      _activeJob!['id']
-                                                          as String,
-                                                  isTukang: true,
-                                                  trackingService:
-                                                      TrackingService(),
-                                                  jobService: ref.read(
-                                                    jobServiceProvider,
-                                                  ),
-                                                ),
-                                          ),
-                                        );
-                                        _loadData();
-                                      },
-                                      icon: const Icon(
-                                        Icons.location_on,
-                                        size: 18,
-                                      ),
-                                      label: const Text(
-                                        'Pelaksanaan & Live GPS Tracking (M5)',
-                                      ),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.safetyOrange,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 10,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-
-                      // 3. Action Banner: Bursa Pekerjaan (Job Portal)
+                      Text(name, style: AppTypography.headingSmall),
+                      const SizedBox(height: 2),
+                      Text(email, style: AppTypography.bodySmall),
+                      const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              AppColors.primaryNavy,
-                              AppColors.trustCobalt,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                          color: kycStatus == KycStatus.approved
+                              ? AppColors.successLight
+                              : AppColors.warningLight,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          kycStatus == KycStatus.approved
+                              ? 'Mitra Terverifikasi'
+                              : 'Menunggu Verifikasi KTP',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: kycStatus == KycStatus.approved
+                                ? AppColors.successGreen
+                                : AppColors.warningAmber,
                           ),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Bursa Pekerjaan',
-                                  style: AppTypography.headingMedium.copyWith(
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white24,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    'Lamaran: $_activeBidsCount/5',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Cari pekerjaan di sekitar radius $_radiusKm km, ajukan penawaran, dan dapatkan pekerjaan hari ini.',
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: Colors.white70,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: () async {
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const JobPortalScreen(),
-                                  ),
-                                );
-                                _loadData();
-                              },
-                              icon: const Icon(Icons.travel_explore),
-                              label: const Text('Buka Bursa Pekerjaan'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: AppColors.primaryNavy,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 3. Verifikasi KYC (FR-003, BR-10)
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.verified_user_outlined,
-                                    color: AppColors.trustCobalt,
-                                    size: 22,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Verifikasi KTP (KYC)',
-                                    style: AppTypography.headingSmall,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                _kycStatus == 'APPROVED'
-                                    ? 'Akun Anda sudah terverifikasi resmi oleh Admin. Anda dapat melamar semua pekerjaan yang tersedia.'
-                                    : 'Unggah Foto KTP & Selfie agar dapat mulai melamar pekerjaan di bursa (BR-10).',
-                                style: AppTypography.bodySmall,
-                              ),
-                              const SizedBox(height: 12),
-                              OutlinedButton.icon(
-                                onPressed: () async {
-                                  await context.push('/kyc');
-                                  _loadData();
-                                },
-                                icon: const Icon(Icons.upload_file),
-                                label: Text(
-                                  _kycStatus == 'APPROVED'
-                                      ? 'Lihat Berkas KYC'
-                                      : 'Kelola / Unggah Berkas KYC',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // 4. Section: Pengaturan & Kepatuhan Privasi (FR-004, BR-45)
-                      Text(
-                        'Pengaturan & Informasi Akun',
-                        style: AppTypography.headingSmall,
-                      ),
-                      const SizedBox(height: 12),
-                      Card(
-                        child: Column(
-                          children: [
-                            const ListTile(
-                              leading: Icon(
-                                Icons.shield_outlined,
-                                color: AppColors.safetyOrange,
-                              ),
-                              title: Text('Aturan 1 Email 1 Peran (BR-44)'),
-                              subtitle: Text(
-                                'Email Anda terikat khusus untuk akun Mitra Tukang',
-                              ),
-                              trailing: Icon(
-                                Icons.check_circle,
-                                color: AppColors.successGreen,
-                                size: 20,
-                              ),
-                            ),
-                            const Divider(height: 1),
-                            ListTile(
-                              leading: const Icon(
-                                Icons.menu_book_outlined,
-                                color: AppColors.trustCobalt,
-                              ),
-                              title: const Text(
-                                'Aturan & FAQ Resmi Beres (Lampiran C)',
-                              ),
-                              subtitle: const Text(
-                                'Kekuatan Nota Sah, pembayaran langsung, & sanksi',
-                              ),
-                              trailing: const Icon(Icons.chevron_right),
-                              onTap: () => FaqRulesScreen.show(context),
-                            ),
-                            const Divider(height: 1),
-                            ListTile(
-                              leading: const Icon(
-                                Icons.info_outline,
-                                color: AppColors.warningAmber,
-                              ),
-                              title: const Text(
-                                'Aturan Pelanggaran & Strike (BR-57)',
-                              ),
-                              subtitle: const Text(
-                                'Batas 3x strike per bulan kalender. Strike ke-4 = suspend 48 jam.',
-                              ),
-                              trailing: const Icon(Icons.chevron_right),
-                              onTap: () => FaqRulesScreen.show(context),
-                            ),
-                            const Divider(height: 1),
-                            ListTile(
-                              leading: const Icon(
-                                Icons.delete_forever_outlined,
-                                color: AppColors.dangerCrimson,
-                              ),
-                              title: Text(
-                                'Hapus Akun Mitra (FR-004)',
-                                style: TextStyle(
-                                  color: AppColors.dangerCrimson,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              subtitle: const Text(
-                                'Hapus data akun sesuai regulasi UU PDP (BR-45)',
-                              ),
-                              trailing: const Icon(Icons.chevron_right),
-                              onTap: () {
-                                DeleteAccountDialog.show(
-                                  context,
-                                  authService: authService,
-                                  onAccountDeleted: () {
-                                    if (context.mounted) {
-                                      context.go('/');
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Akun Mitra Anda berhasil dinonaktifkan/dihapus.',
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                );
-                              },
-                            ),
-                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-      ),
-    );
-  }
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
 
-  Widget _buildKycBadge(String status) {
-    Color bg;
-    Color text;
-    String label;
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceWhite,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderLight),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Kontak & Operasional',
+                  style: AppTypography.labelSmall,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.phone_outlined,
+                      size: 18,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Nomor Telepon / WhatsApp',
+                            style: AppTypography.bodySmall,
+                          ),
+                          Text(
+                            phone,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
 
-    switch (status) {
-      case 'APPROVED':
-        bg = AppColors.successGreen.withValues(alpha: 0.15);
-        text = AppColors.successGreen;
-        label = 'KYC: TERVERIFIKASI';
-        break;
-      case 'REJECTED':
-        bg = AppColors.dangerCrimson.withValues(alpha: 0.15);
-        text = AppColors.dangerCrimson;
-        label = 'KYC: DITOLAK';
-        break;
-      default:
-        bg = AppColors.warningAmber.withValues(alpha: 0.15);
-        text = AppColors.warningAmber;
-        label = 'KYC: PENDING';
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: AppTypography.bodySmall.copyWith(
-          color: text,
-          fontWeight: FontWeight.bold,
-        ),
+          Material(
+            color: AppColors.surfaceWhite,
+            borderRadius: BorderRadius.circular(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: AppColors.borderLight),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(
+                    Icons.build_circle_outlined,
+                    color: AppColors.safetyOrange,
+                    size: 22,
+                  ),
+                  title: const Text(
+                    'Keahlian, Radius & Rekening',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Atur kategori keahlian dan rekening penerima pembayaran',
+                    style: AppTypography.bodySmall,
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textMuted,
+                  ),
+                  onTap: () =>
+                      context.push('/onboarding').then((_) => _loadData()),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(
+                    Icons.badge_outlined,
+                    color: AppColors.trustCobalt,
+                    size: 22,
+                  ),
+                  title: const Text(
+                    'Verifikasi Identitas (KTP)',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Status dokumen KTP dan foto selfie verifikasi',
+                    style: AppTypography.bodySmall,
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textMuted,
+                  ),
+                  onTap: () => context.push('/kyc').then((_) => _loadData()),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(
+                    Icons.help_outline_rounded,
+                    color: AppColors.textPrimary,
+                    size: 22,
+                  ),
+                  title: const Text(
+                    'Pusat Bantuan & Panduan Mitra',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Panduan Nota Digital, kuota kerja, dan ketentuan',
+                    style: AppTypography.bodySmall,
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textMuted,
+                  ),
+                  onTap: () => FaqRulesScreen.show(context),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(
+                    Icons.logout_rounded,
+                    color: AppColors.textPrimary,
+                    size: 22,
+                  ),
+                  title: const Text(
+                    'Keluar dari Akun',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textMuted,
+                  ),
+                  onTap: _handleSignOut,
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.dangerCrimson,
+                    size: 22,
+                  ),
+                  title: const Text(
+                    'Hapus Akun Saya',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.dangerCrimson,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Hapus permanen data akun mitra dari sistem',
+                    style: AppTypography.bodySmall,
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textMuted,
+                  ),
+                  onTap: () {
+                    DeleteAccountDialog.show(
+                      context,
+                      authService: ref.read(authServiceProvider),
+                      onAccountDeleted: () => context.go('/login'),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

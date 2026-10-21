@@ -1,80 +1,97 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
-/// Tipografi Resmi Beres v1.4.0
-/// Plus Jakarta Sans untuk teks umum, JetBrains Mono untuk nominal Rupiah, jam, & timer
+/// Sistem Tipografi Beres (Minimalism & Swiss Style Hierarchy)
 class AppTypography {
-  static TextStyle headingLarge = GoogleFonts.plusJakartaSans(
+  AppTypography._();
+
+  static const String fontFamily = 'Inter';
+
+  static const TextStyle headingLarge = TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     letterSpacing: -0.5,
+    height: 1.25,
   );
 
-  static TextStyle headingMedium = GoogleFonts.plusJakartaSans(
-    fontSize: 20,
-    fontWeight: FontWeight.w600,
+  static const TextStyle headingMedium = TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     letterSpacing: -0.3,
+    height: 1.3,
   );
 
-  static TextStyle headingSmall = GoogleFonts.plusJakartaSans(
-    fontSize: 16,
+  static const TextStyle headingSmall = TextStyle(
+    fontSize: 15,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
+    letterSpacing: -0.2,
+    height: 1.35,
   );
 
-  static TextStyle bodyLarge = GoogleFonts.plusJakartaSans(
-    fontSize: 16,
+  static const TextStyle bodyLarge = TextStyle(
+    fontSize: 15,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
     height: 1.5,
   );
 
-  static TextStyle bodyMedium = GoogleFonts.plusJakartaSans(
+  static const TextStyle bodyMedium = TextStyle(
     fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textSecondary,
+    height: 1.45,
+  );
+
+  static const TextStyle bodySmall = TextStyle(
+    fontSize: 12,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
     height: 1.4,
   );
 
-  static TextStyle bodySmall = GoogleFonts.plusJakartaSans(
-    fontSize: 12,
-    fontWeight: FontWeight.w400,
+  static const TextStyle labelSmall = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
     color: AppColors.textMuted,
+    letterSpacing: 0.4,
   );
 
-  static TextStyle button = GoogleFonts.plusJakartaSans(
+  static const TextStyle button = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w600,
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   );
 
-  // Monospace font khusus Rupiah integer, timer countdown, & kode OTP
-  static TextStyle rupiahLarge = GoogleFonts.jetBrainsMono(
+  // Khusus Angka Nominal Rupiah, Timer, & OTP (Tabular Figures)
+  static const TextStyle rupiahLarge = TextStyle(
     fontSize: 22,
     fontWeight: FontWeight.w700,
-    color: AppColors.primaryNavy,
+    color: AppColors.textPrimary,
+    fontFeatures: [FontFeature.tabularFigures()],
   );
 
-  static TextStyle rupiahMedium = GoogleFonts.jetBrainsMono(
+  static const TextStyle rupiahMedium = TextStyle(
     fontSize: 16,
-    fontWeight: FontWeight.w600,
-    color: AppColors.primaryNavy,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textPrimary,
+    fontFeatures: [FontFeature.tabularFigures()],
   );
 
-  static TextStyle timerDisplay = GoogleFonts.jetBrainsMono(
-    fontSize: 18,
+  static const TextStyle otpCode = TextStyle(
+    fontSize: 24,
     fontWeight: FontWeight.w700,
-    color: AppColors.safetyOrange,
-    letterSpacing: 1.0,
+    letterSpacing: 6.0,
+    color: AppColors.primaryNavy,
+    fontFeatures: [FontFeature.tabularFigures()],
   );
 
-  static TextStyle otpCode = GoogleFonts.jetBrainsMono(
-    fontSize: 28,
+  static const TextStyle timerDisplay = TextStyle(
+    fontSize: 16,
     fontWeight: FontWeight.w700,
-    letterSpacing: 8.0,
-    color: AppColors.primaryNavy,
+    color: AppColors.warningAmber,
+    fontFeatures: [FontFeature.tabularFigures()],
   );
 }

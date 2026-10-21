@@ -26,6 +26,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Beres membutuhkan izin lokasi saat aplikasi digunakan untuk menentukan titik alamat pekerjaan dan mencari mitra tukang terdekat.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Beres membutuhkan akses kamera untuk mengambil foto kerusakan yang perlu diperbaiki.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Beres membutuhkan akses galeri foto untuk memilih foto kerusakan dari galeri Anda.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

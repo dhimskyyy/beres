@@ -22,7 +22,7 @@ class _TukangOnboardingScreenState
   final _accountNumberController = TextEditingController();
   final _accountHolderController = TextEditingController();
 
-  int _radiusKm = 20; // Default 20 km, rentang 0-50 km (BR-20)
+  int _radiusKm = 20;
   final Set<String> _selectedCategoryIds = {};
   List<JobCategory> _categories = [];
   bool _isLoading = true;
@@ -68,7 +68,7 @@ class _TukangOnboardingScreenState
 
     if (_selectedCategoryIds.isEmpty) {
       setState(
-        () => _errorMessage = 'Pilih minimal 1 kategori keahlian (FR-002).',
+        () => _errorMessage = 'Pilih minimal 1 kategori bidang keahlian.',
       );
       return;
     }
@@ -80,7 +80,7 @@ class _TukangOnboardingScreenState
     if (bankName.isEmpty || accNum.isEmpty || accHolder.isEmpty) {
       setState(
         () => _errorMessage =
-            'Rincian rekening / e-wallet wajib diisi lengkap untuk dicantumkan di Nota (BR-06).',
+            'Lengkapi rincian rekening atau e-wallet untuk menerima pembayaran.',
       );
       return;
     }
@@ -117,7 +117,7 @@ class _TukangOnboardingScreenState
       if (mounted) {
         setState(() {
           _isSaving = false;
-          _errorMessage = 'Gagal menyimpan profil: ${e.toString()}';
+          _errorMessage = 'Gagal menyimpan pengaturan profil.';
         });
       }
     }
@@ -127,25 +127,25 @@ class _TukangOnboardingScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      appBar: AppBar(title: const Text('Profil Keahlian Mitra')),
+      appBar: AppBar(title: const Text('Keahlian & Rekening Mitra')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20.0),
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Lengkapi Biodata Kerja (FR-002)',
+                    const Text(
+                      'Pengaturan Profil Kerja',
                       style: AppTypography.headingMedium,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Data ini membantu pelanggan mengenal keahlian Anda dan dicantumkan pada Nota Digital.',
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Informasi keahlian dan rekening pembayaran ini akan ditampilkan kepada pelanggan serta dicantumkan pada Nota Digital.',
                       style: AppTypography.bodySmall,
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
 
                     if (_errorMessage != null) ...[
                       Container(
@@ -158,6 +158,7 @@ class _TukangOnboardingScreenState
                           _errorMessage!,
                           style: AppTypography.bodySmall.copyWith(
                             color: AppColors.dangerCrimson,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -165,184 +166,199 @@ class _TukangOnboardingScreenState
                     ],
 
                     // 1. Bio Pengalaman
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Pengalaman & Keahlian',
-                              style: AppTypography.headingSmall,
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceWhite,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Ringkasan Pengalaman Kerja',
+                            style: AppTypography.headingSmall,
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _bioController,
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              hintText:
+                                  'Contoh: Berpengalaman 7 tahun dalam perbaikan instalasi listrik rumah, pompa air, dan atap...',
                             ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _bioController,
-                              maxLines: 3,
-                              decoration: const InputDecoration(
-                                hintText:
-                                    'Contoh: Berpengalaman 7 tahun dalam instalasi listrik rumah, renovasi atap, dan pengecatan...',
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
 
-                    // 2. Pilih Kategori Keahlian (Multi-select)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Bidang Keahlian',
-                                  style: AppTypography.headingSmall,
+                    // 2. Pilih Kategori Keahlian
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceWhite,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Bidang Keahlian',
+                                style: AppTypography.headingSmall,
+                              ),
+                              Text(
+                                '${_selectedCategoryIds.length} dipilih',
+                                style: AppTypography.bodySmall,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _categories.map((cat) {
+                              final isSelected = _selectedCategoryIds.contains(
+                                cat.id,
+                              );
+                              return FilterChip(
+                                label: Text(cat.name),
+                                selected: isSelected,
+                                selectedColor: AppColors.tukangBadgeBg,
+                                checkmarkColor: AppColors.safetyOrange,
+                                labelStyle: TextStyle(
+                                  color: isSelected
+                                      ? AppColors.tukangBadgeText
+                                      : AppColors.textPrimary,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
                                 ),
-                                Text(
-                                  'Pilih ≥ 1',
-                                  style: AppTypography.bodySmall,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _categories.map((cat) {
-                                final isSelected = _selectedCategoryIds
-                                    .contains(cat.id);
-                                return FilterChip(
-                                  label: Text(cat.name),
-                                  selected: isSelected,
-                                  selectedColor: AppColors.tukangBadgeBg,
-                                  checkmarkColor: AppColors.safetyOrange,
-                                  labelStyle: TextStyle(
-                                    color: isSelected
-                                        ? AppColors.safetyOrange
-                                        : AppColors.textPrimary,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                  ),
-                                  onSelected: (selected) {
-                                    setState(() {
-                                      if (selected) {
-                                        _selectedCategoryIds.add(cat.id);
-                                      } else {
-                                        _selectedCategoryIds.remove(cat.id);
-                                      }
-                                    });
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        ),
+                                onSelected: (selected) {
+                                  setState(() {
+                                    if (selected) {
+                                      _selectedCategoryIds.add(cat.id);
+                                    } else {
+                                      _selectedCategoryIds.remove(cat.id);
+                                    }
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
 
-                    // 3. Slider Radius Operasional (0 - 50 km, BR-20)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Radius Siap Bertugas',
-                                  style: AppTypography.headingSmall,
+                    // 3. Radius Jangkauan
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceWhite,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Jangkauan Radius Bertugas',
+                                style: AppTypography.headingSmall,
+                              ),
+                              Text(
+                                '$_radiusKm km',
+                                style: AppTypography.rupiahMedium.copyWith(
+                                  color: AppColors.safetyOrange,
                                 ),
-                                Text(
-                                  '$_radiusKm km',
-                                  style: AppTypography.rupiahMedium.copyWith(
-                                    color: AppColors.safetyOrange,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Jangkauan pekerjaan yang muncul di bursa (maks. 50 km di MVP - BR-20).',
-                              style: AppTypography.bodySmall,
-                            ),
-                            Slider(
-                              value: _radiusKm.toDouble(),
-                              min: 0,
-                              max: 50,
-                              divisions: 50,
-                              activeColor: AppColors.safetyOrange,
-                              onChanged: (val) {
-                                setState(() => _radiusKm = val.round());
-                              },
-                            ),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Jarak maksimal pesanan yang tampil di Bursa Pekerjaan Anda (hingga 50 km).',
+                            style: AppTypography.bodySmall,
+                          ),
+                          Slider(
+                            value: _radiusKm.toDouble(),
+                            min: 0,
+                            max: 50,
+                            divisions: 50,
+                            activeColor: AppColors.safetyOrange,
+                            onChanged: (val) {
+                              setState(() => _radiusKm = val.round());
+                            },
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
 
-                    // 4. Rekening Bank / E-Wallet (BR-06)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Rekening Penerima Pembayaran',
-                              style: AppTypography.headingSmall,
+                    // 4. Rekening Pembayaran
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceWhite,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Rekening Penerima Pembayaran',
+                            style: AppTypography.headingSmall,
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Dicantumkan otomatis pada Nota Digital agar pelanggan dapat membayar langsung ke rekening Anda.',
+                            style: AppTypography.bodySmall,
+                          ),
+                          const SizedBox(height: 14),
+                          TextField(
+                            controller: _bankNameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Nama Bank atau E-Wallet',
+                              hintText: 'Contoh: BCA / Mandiri / GoPay / DANA',
+                              prefixIcon: Icon(Icons.account_balance_outlined),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Dicantumkan otomatis pada Nota Sah pelanggan (BR-06). Pembayaran 100% langsung ke Anda.',
-                              style: AppTypography.bodySmall,
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _accountNumberController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Nomor Rekening / Nomor E-Wallet',
+                              hintText: '1234567890',
+                              prefixIcon: Icon(Icons.numbers_rounded),
                             ),
-                            const SizedBox(height: 14),
-                            TextField(
-                              controller: _bankNameController,
-                              decoration: const InputDecoration(
-                                labelText: 'Bank atau E-Wallet',
-                                hintText: 'BCA / Mandiri / GoPay / OVO / Dana',
-                              ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _accountHolderController,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: const InputDecoration(
+                              labelText: 'Nama Pemilik Rekening',
+                              hintText:
+                                  'Sesuai buku tabungan atau akun e-wallet',
+                              prefixIcon: Icon(Icons.person_outline_rounded),
                             ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _accountNumberController,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Nomor Rekening / No. HP E-Wallet',
-                                hintText: '1234567890',
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _accountHolderController,
-                              decoration: const InputDecoration(
-                                labelText: 'Nama Pemilik Rekening',
-                                hintText: 'Sesuai buku tabungan / e-wallet',
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 24),
 
                     ElevatedButton(
                       onPressed: _isSaving ? null : _handleSave,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.safetyOrange,
-                      ),
                       child: _isSaving
                           ? const SizedBox(
                               width: 20,
@@ -352,8 +368,9 @@ class _TukangOnboardingScreenState
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('Simpan & Masuk ke Beres Mitra'),
+                          : const Text('Simpan Pengaturan Mitra'),
                     ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),

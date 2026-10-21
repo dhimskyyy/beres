@@ -8,7 +8,9 @@ import '../../services/job_service.dart';
 import '../../services/tracking_service.dart';
 import '../../services/review_service.dart';
 import '../../services/cancellation_service.dart';
+import '../../services/device_permission_service.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
 import '../cancellation/tukang_cancel_flow_dialog.dart';
 import '../cancellation/user_cancel_otw_dialog.dart';
 import '../cancellation/cancel_decision_card.dart';
@@ -16,8 +18,7 @@ import 'job_completion_dialog.dart';
 import 'payment_dispute_dialog.dart';
 import 'review_dialog.dart';
 
-/// Layar Pelacakan GPS Real-time & Eksekusi Pekerjaan (M5)
-/// Mendukung alur: ON_THE_WAY -> Kedatangan 50m/200m (ARRIVED) -> WORKING -> COMPLETED
+/// Layar Pelacakan GPS Real-time & Pelaksanaan Pekerjaan
 class TrackingScreen extends StatefulWidget {
   final String jobId;
   final bool isTukang;
@@ -49,7 +50,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  // Koordinat tukang
   double? _tukangLat;
   double? _tukangLng;
   double _distanceMeters = 9999.0;
@@ -81,7 +81,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
             _tukangLat = ping.latitude;
             _tukangLng = ping.longitude;
           } else if (job != null && widget.isTukang) {
-            // Default awal tukang jika belum ada ping: geser 300m dari job
             _tukangLat = job.latitude + 0.0025;
             _tukangLng = job.longitude + 0.0025;
           }
@@ -111,7 +110,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
           _tukangLng = ping.longitude;
           _calculateDistance();
         });
-        // Refresh status job jika ada perubahan otomatis dari server
         _refreshJobStatus();
       }
     });
@@ -133,9 +131,11 @@ class _TrackingScreenState extends State<TrackingScreen> {
     _distanceMeters = dist;
   }
 
-  /// Kirim Ping Lokasi Tukang (Simulasi atau GPS HP)
-  Future<void> _sendPing(double lat, double lng,
-      {double accuracy = 10.0}) async {
+  Future<void> _sendPing(
+    double lat,
+    double lng, {
+    double accuracy = 10.0,
+  }) async {
     try {
       final res = await widget.trackingService.recordLocationPing(
         jobId: widget.jobId,
@@ -154,9 +154,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
         if (res['auto_arrived'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              backgroundColor: AppColors.success,
+              backgroundColor: AppColors.successGreen,
               content: Text(
-                  'Jarak <= 50 meter! Status otomatis menjadi ARRIVED (BR-60).'),
+                'Anda telah berada di lokasi. Status otomatis diperbarui.',
+              ),
             ),
           );
         }
@@ -165,13 +166,14 @@ class _TrackingScreenState extends State<TrackingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              backgroundColor: AppColors.error, content: Text('Error: $e')),
+            backgroundColor: AppColors.dangerCrimson,
+            content: Text('Gagal mengirim lokasi: $e'),
+          ),
         );
       }
     }
   }
 
-  /// Konfirmasi Kedatangan Manual saat <= 200 meter (BR-61)
   Future<void> _confirmManualArrival() async {
     if (_tukangLat == null || _tukangLng == null) return;
     try {
@@ -186,9 +188,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              backgroundColor: AppColors.success,
-              content: Text(
-                  'Kedatangan berhasil dikonfirmasi secara manual (BR-61).'),
+              backgroundColor: AppColors.successGreen,
+              content: Text('Kedatangan berhasil dikonfirmasi.'),
             ),
           );
         }
@@ -196,13 +197,15 @@ class _TrackingScreenState extends State<TrackingScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: AppColors.error, content: Text('$e')),
+          SnackBar(
+            backgroundColor: AppColors.dangerCrimson,
+            content: Text('$e'),
+          ),
         );
       }
     }
   }
 
-  /// Mulai Bekerja (ARRIVED -> WORKING) (BR-62)
   Future<void> _startWork() async {
     try {
       final res = await widget.trackingService.startWork(jobId: widget.jobId);
@@ -212,9 +215,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              backgroundColor: AppColors.primary,
-              content: Text(
-                  'Pekerjaan dimulai. Sesuai BR-65 pekerjaan dilarang dibatalkan.'),
+              backgroundColor: AppColors.trustCobalt,
+              content: Text('Pekerjaan dimulai. Selamat bertugas!'),
             ),
           );
         }
@@ -222,7 +224,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: AppColors.error, content: Text('$e')),
+          SnackBar(
+            backgroundColor: AppColors.dangerCrimson,
+            content: Text('$e'),
+          ),
         );
       }
     }
@@ -276,18 +281,28 @@ class _TrackingScreenState extends State<TrackingScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceWhite,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.report_problem, color: AppColors.error),
+            Icon(
+              Icons.report_problem_outlined,
+              color: AppColors.dangerCrimson,
+              size: 22,
+            ),
             SizedBox(width: 8),
-            Text('Lapor User Tidak Aktif'),
+            Expanded(
+              child: Text(
+                'Laporkan Pelanggan Tidak Aktif?',
+                style: AppTypography.headingSmall,
+              ),
+            ),
           ],
         ),
         content: const Text(
-          'Sesuai aturan BR-71:\n'
-          'Jika Anda sudah mengirim chat dan pelanggan tidak merespons selama > 30 menit saat Anda dalam perjalanan atau di lokasi, pekerjaan akan dilepas kembali ke portal dan pelanggan terkena +1 Strike.\n\n'
-          'Apakah Anda yakin ingin melaporkan?',
-          style: TextStyle(fontSize: 13, height: 1.4),
+          'Jika Anda telah mengirim pesan dan pelanggan tidak merespons lebih dari 30 menit saat Anda dalam perjalanan atau tiba di lokasi, pesanan akan dilepas kembali ke bursa.',
+          style: AppTypography.bodyMedium,
         ),
         actions: [
           TextButton(
@@ -295,10 +310,13 @@ class _TrackingScreenState extends State<TrackingScreen> {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.dangerCrimson,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(120, 42),
+            ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Ya, Laporkan',
-                style: TextStyle(color: Colors.white)),
+            child: const Text('Kirim Laporan'),
           ),
         ],
       ),
@@ -312,9 +330,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            backgroundColor: AppColors.primary,
+            backgroundColor: AppColors.primaryNavy,
             content: Text(
-                'Laporan diterima. Pekerjaan telah dilepas kembali ke portal dan User menerima 1 Strike (BR-71).'),
+              'Laporan diterima. Pesanan telah dilepas kembali ke bursa terbuka.',
+            ),
           ),
         );
         widget.onBack?.call();
@@ -323,7 +342,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: AppColors.error,
+            backgroundColor: AppColors.dangerCrimson,
             content: Text(e.toString().replaceAll('Exception: ', '')),
           ),
         );
@@ -354,8 +373,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
     if (_job == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Live Tracking')),
-        body: Center(child: Text(_errorMessage ?? 'Pekerjaan tidak ditemukan')),
+        appBar: AppBar(title: const Text('Pelacakan Lokasi')),
+        body: Center(
+          child: Text(_errorMessage ?? 'Data pekerjaan tidak ditemukan'),
+        ),
       );
     }
 
@@ -382,23 +403,27 @@ class _TrackingScreenState extends State<TrackingScreen> {
     }
 
     return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title:
-            Text(widget.isTukang ? 'Pelaksanaan Tugas' : 'Pantau Mitra Tukang'),
+        title: Text(
+          widget.isTukang ? 'Pelaksanaan Pekerjaan' : 'Pantau Lokasi Mitra',
+        ),
         leading: widget.onBack != null
             ? IconButton(
-                icon: const Icon(Icons.arrow_back), onPressed: widget.onBack)
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: widget.onBack,
+              )
             : null,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Segarkan',
             onPressed: _refreshJobStatus,
           ),
         ],
       ),
       body: Column(
         children: [
-          // 1. PETA LIVE TRACKING
           Expanded(
             flex: 5,
             child: Stack(
@@ -410,31 +435,25 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   initialZoom: 15.5,
                   markers: markers,
                 ),
-
-                // BADGE STATUS OPERASIONAL
                 Positioned(
                   top: 12,
-                  left: 12,
-                  right: 12,
+                  left: 14,
+                  right: 14,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x14000000),
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
+                      color: AppColors.surfaceWhite,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.borderLight),
                     ),
                     child: Row(
                       children: [
                         Container(
-                          width: 10,
-                          height: 10,
+                          width: 9,
+                          height: 9,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: _getStatusColor(job.status),
@@ -443,17 +462,31 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Status: ${job.status.label}',
+                            job.status.label,
                             style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 13),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                         ),
-                        Text(
-                          'Jarak: ${_distanceMeters.toStringAsFixed(0)} m',
-                          style: const TextStyle(
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.userBadgeBg,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${_distanceMeters.toStringAsFixed(0)} m',
+                            style: const TextStyle(
                               fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary),
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.trustCobalt,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -462,56 +495,58 @@ class _TrackingScreenState extends State<TrackingScreen> {
               ],
             ),
           ),
-
-          // 2. KONTROL DAN AKSI STATE MACHINE (BR-60, BR-61, BR-62, BR-65, BR-32, BR-67)
           Expanded(
             flex: 4,
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               decoration: const BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x0D000000),
-                    blurRadius: 10,
-                    offset: Offset(0, -2),
-                  ),
-                ],
+                color: AppColors.surfaceWhite,
+                border: Border(
+                  top: BorderSide(color: AppColors.borderLight),
+                ),
               ),
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // A. DETAIL JOB SINGKAT & PING INFO
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
                           child: Text(
                             job.areaLabel,
-                            style: const TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.bold),
+                            style: AppTypography.headingSmall,
                           ),
                         ),
                         if (_latestPing != null)
-                          Text(
-                            'GPS Aktif',
-                            style: TextStyle(
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.successLight,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'GPS Aktif',
+                              style: TextStyle(
                                 fontSize: 11,
-                                color: Colors.green.shade700,
-                                fontWeight: FontWeight.w600),
+                                color: AppColors.successGreen,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                       ],
                     ),
+                    const SizedBox(height: 4),
                     Text(
                       job.description,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      style: AppTypography.bodySmall,
                     ),
-                    const Divider(height: 20),
-
-                    // KARTU KEPUTUSAN PEMBATALAN (CANCEL_PENDING - BR-53, BR-55, BR-56b)
+                    const Divider(height: 22),
                     if (job.isCancelPending) ...[
                       CancelDecisionCard(
                         jobId: widget.jobId,
@@ -519,70 +554,70 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         cancellationService: widget.cancellationService,
                         onDecisionResolved: _refreshJobStatus,
                       ),
-                      const Divider(height: 20),
+                      const Divider(height: 22),
                     ],
-
-                    // B. TAMPILAN KHUSUS STATUS WORKING (BR-65: DILARANG BATAL)
                     if (job.isWorking)
                       Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(10),
+                        margin: const EdgeInsets.only(bottom: 14),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.amber.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.amber.shade300),
+                          color: AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.borderLight),
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.lock, size: 18, color: Colors.amber),
+                            Icon(
+                              Icons.lock_outline_rounded,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
                             SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Pekerjaan sedang berlangsung. Sesuai aturan BR-65, pekerjaan dilarang dibatalkan oleh siapa pun.',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87),
+                                'Pekerjaan sedang berlangsung. Pembatalan sepihak dikunci hingga pekerjaan selesai.',
+                                style: AppTypography.bodySmall,
                               ),
                             ),
                           ],
                         ),
                       ),
-
-                    // C. KONTROL KHUSUS MITRA TUKANG
                     if (widget.isTukang) ...[
-                      // 1. TAHAP ON_THE_WAY
                       if (job.isOnTheWay) ...[
-                        const Text(
-                          'Deteksi Kedatangan Tukang (BR-60 / BR-61):',
-                          style: TextStyle(
-                              fontSize: 12, fontWeight: FontWeight.bold),
+                        Text(
+                          'Konfirmasi Kedatangan di Lokasi',
+                          style: AppTypography.bodySmall.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            // Simulasi Tombol Sampai <= 50m (Auto ARRIVED)
                             Expanded(
                               child: OutlinedButton(
-                                onPressed: () {
+                                onPressed: () async {
+                                  final loc = await DevicePermissionService()
+                                      .getCurrentLocation();
                                   _sendPing(
-                                    job.latitude + 0.0001,
-                                    job.longitude + 0.0001,
+                                    loc.latitude,
+                                    loc.longitude,
                                     accuracy: 5.0,
                                   );
                                 },
-                                child: const Text('Simulasi Jarak 15m (Auto)',
-                                    style: TextStyle(fontSize: 11)),
+                                child: const Text(
+                                  'Perbarui GPS',
+                                  style: TextStyle(fontSize: 12.5),
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            // Tombol Manual Kedatangan <= 200m (BR-61)
+                            const SizedBox(width: 10),
                             Expanded(
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: _distanceMeters <= 200
-                                      ? AppColors.primary
-                                      : Colors.grey.shade400,
+                                      ? AppColors.trustCobalt
+                                      : AppColors.textMuted,
                                   foregroundColor: Colors.white,
                                 ),
                                 onPressed: _distanceMeters <= 200
@@ -592,37 +627,34 @@ class _TrackingScreenState extends State<TrackingScreen> {
                                             .showSnackBar(
                                           const SnackBar(
                                             content: Text(
-                                                'Tombol aktif saat jarak <= 200 meter (BR-61)'),
+                                              'Tombol aktif saat jarak Anda maksimal 200 meter dari titik lokasi.',
+                                            ),
                                           ),
                                         );
                                       },
-                                child: const Text('Saya Sudah Tiba',
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold)),
+                                child: const Text(
+                                  'Saya Sudah Tiba',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ],
-
-                      // 2. TAHAP ARRIVED
                       if (job.isArrived) ...[
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: AppColors.trustCobalt,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                          icon: const Icon(Icons.play_arrow),
-                          label: const Text('Mulai Bekerja (BR-62)',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 14)),
+                          icon: const Icon(Icons.play_arrow_rounded),
+                          label: const Text('Mulai Kerjakan Tugas'),
                           onPressed: _startWork,
                         ),
                       ],
-
-                      // Tombol Pembatalan & Lapor User Inaktif untuk Tukang saat OTW atau ARRIVED (BR-50 & BR-71)
                       if (job.isOnTheWay || job.isArrived) ...[
                         const SizedBox(height: 12),
                         Row(
@@ -630,18 +662,22 @@ class _TrackingScreenState extends State<TrackingScreen> {
                             Expanded(
                               child: OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.error,
-                                  side:
-                                      const BorderSide(color: AppColors.error),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 8),
+                                  foregroundColor: AppColors.dangerCrimson,
+                                  side: BorderSide(
+                                    color: AppColors.dangerCrimson.withValues(
+                                      alpha: 0.4,
+                                    ),
+                                  ),
+                                  minimumSize: const Size.fromHeight(42),
                                 ),
-                                icon:
-                                    const Icon(Icons.cancel_outlined, size: 16),
-                                label: const Text('Batalkan Tugas (BR-50)',
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold)),
+                                icon: const Icon(
+                                  Icons.cancel_outlined,
+                                  size: 16,
+                                ),
+                                label: const Text(
+                                  'Batalkan Tugas',
+                                  style: TextStyle(fontSize: 12),
+                                ),
                                 onPressed: _openTukangCancelDialog,
                               ),
                             ),
@@ -649,72 +685,78 @@ class _TrackingScreenState extends State<TrackingScreen> {
                             Expanded(
                               child: TextButton.icon(
                                 style: TextButton.styleFrom(
-                                  foregroundColor: Colors.grey.shade700,
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 8),
+                                  foregroundColor: AppColors.textSecondary,
+                                  minimumSize: const Size.fromHeight(42),
                                 ),
-                                icon: const Icon(Icons.timer_off_outlined,
-                                    size: 16),
-                                label: const Text('Lapor User Inaktif (BR-71)',
-                                    style: TextStyle(fontSize: 10)),
+                                icon: const Icon(
+                                  Icons.timer_off_outlined,
+                                  size: 16,
+                                ),
+                                label: const Text(
+                                  'Pelanggan Tidak Aktif',
+                                  style: TextStyle(fontSize: 11.5),
+                                ),
                                 onPressed: _handleReportUserUnresponsive,
                               ),
                             ),
                           ],
                         ),
                       ],
-
-                      // 3. TAHAP WORKING
                       if (job.isWorking) ...[
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.success,
+                            backgroundColor: AppColors.successGreen,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                          icon: const Icon(Icons.check_circle_outline),
-                          label: const Text('Selesaikan Tugas (BR-32)',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 14)),
+                          icon: const Icon(Icons.check_circle_outline_rounded),
+                          label: const Text('Selesaikan Pekerjaan'),
                           onPressed: _openCompletionDialog,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.error,
-                            side: const BorderSide(color: AppColors.error),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            foregroundColor: AppColors.dangerCrimson,
+                            side: BorderSide(
+                              color: AppColors.dangerCrimson.withValues(
+                                alpha: 0.4,
+                              ),
+                            ),
                           ),
-                          icon:
-                              const Icon(Icons.warning_amber_rounded, size: 18),
-                          label: const Text(
-                              'Laporkan Masalah Pembayaran (BR-67)',
-                              style: TextStyle(
-                                  fontSize: 12, fontWeight: FontWeight.bold)),
+                          icon: const Icon(
+                            Icons.warning_amber_rounded,
+                            size: 18,
+                          ),
+                          label: const Text('Laporkan Kendala Pembayaran'),
                           onPressed: _openPaymentDisputeDialog,
                         ),
                       ],
-
-                      // 4. TAHAP COMPLETED
                       if (job.isCompleted) ...[
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: const Color(0x1A15803D),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.success),
+                            color: AppColors.successLight,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.successGreen.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
                           ),
                           child: const Row(
                             children: [
-                              Icon(Icons.verified, color: AppColors.success),
-                              SizedBox(width: 8),
+                              Icon(
+                                Icons.verified_rounded,
+                                color: AppColors.successGreen,
+                              ),
+                              SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  'Pekerjaan telah selesai. Pembayaran telah diterima langsung.',
+                                  'Pekerjaan telah selesai dan pembayaran langsung telah dikonfirmasi.',
                                   style: TextStyle(
-                                      color: AppColors.success,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12),
+                                    color: AppColors.successGreen,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12.5,
+                                  ),
                                 ),
                               ),
                             ],
@@ -722,14 +764,12 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         ),
                       ],
                     ] else ...[
-                      // D. TAMPILAN KHUSUS PELANGGAN (USER)
                       if (job.isOnTheWay) ...[
                         const Text(
-                          'Tukang sedang menuju lokasi Anda. Lokasi diperbarui secara real-time.',
-                          style: TextStyle(fontSize: 12, color: Colors.black87),
+                          'Mitra tukang sedang menuju lokasi Anda. Posisi diperbarui secara otomatis.',
+                          style: AppTypography.bodySmall,
                         ),
                         const SizedBox(height: 10),
-                        // Evaluasi 3 Jam ON_THE_WAY untuk Tombol Cancel (BR-56b)
                         Builder(
                           builder: (context) {
                             final otwStartTime =
@@ -742,42 +782,39 @@ class _TrackingScreenState extends State<TrackingScreen> {
                             if (isEligibleToCancel) {
                               return ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.error,
+                                  backgroundColor: AppColors.dangerCrimson,
                                   foregroundColor: Colors.white,
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 10),
                                 ),
-                                icon: const Icon(Icons.cancel_schedule_send,
-                                    size: 18),
-                                label: const Text(
-                                  'Batalkan Pekerjaan (>= 3 Jam Belum Tiba) (BR-56b)',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold),
+                                icon: const Icon(
+                                  Icons.cancel_schedule_send_outlined,
+                                  size: 18,
                                 ),
+                                label: const Text('Ajukan Pembatalan Pesanan'),
                                 onPressed: _openUserCancelOtwDialog,
                               );
                             } else {
                               final remainingMinutes = 180 - elapsedMinutes;
                               return Container(
-                                padding: const EdgeInsets.all(8),
+                                padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(6),
-                                  border:
-                                      Border.all(color: Colors.blue.shade200),
+                                  color: AppColors.userBadgeBg,
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.info_outline,
-                                        size: 16, color: Colors.blue),
-                                    const SizedBox(width: 6),
+                                    const Icon(
+                                      Icons.info_outline_rounded,
+                                      size: 16,
+                                      color: AppColors.trustCobalt,
+                                    ),
+                                    const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'Perjalanan: $elapsedMinutes menit. Tombol batal aktif jika tukang belum tiba setelah 3 jam ($remainingMinutes menit lagi — BR-56a).',
-                                        style: const TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.blueGrey),
+                                        'Waktu perjalanan: $elapsedMinutes menit. Opsi pembatalan terbuka jika mitra belum tiba setelah 3 jam ($remainingMinutes menit lagi).',
+                                        style: AppTypography.bodySmall.copyWith(
+                                          fontSize: 11.5,
+                                          color: AppColors.textPrimary,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -791,33 +828,30 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0x1A2563EB),
-                            borderRadius: BorderRadius.circular(8),
+                            color: AppColors.userBadgeBg,
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Text(
-                            'Tukang telah tiba di lokasi Anda dan bersiap memulai pekerjaan. Sesuai aturan BR-56c, pembatalan sepihak telah ditutup.',
-                            style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary),
+                          child: Text(
+                            'Mitra tukang telah tiba di lokasi Anda dan siap memulai pengerjaan.',
+                            style: AppTypography.bodySmall.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.trustCobalt,
+                            ),
                           ),
                         ),
                       if (job.isWorking)
                         const Text(
-                          'Tukang sedang melakukan pengerjaan. Harap menunggu hingga selesai.',
-                          style: TextStyle(fontSize: 12, color: Colors.black87),
+                          'Mitra tukang sedang melakukan pengerjaan. Silakan tunggu hingga pekerjaan selesai.',
+                          style: AppTypography.bodySmall,
                         ),
                       if (job.isCompleted) ...[
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.amber.shade700,
+                            backgroundColor: AppColors.warningAmber,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                          icon: const Icon(Icons.star),
-                          label: const Text('Beri Ulasan & Bintang (FR-021)',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 13)),
+                          icon: const Icon(Icons.star_rounded),
+                          label: const Text('Beri Penilaian & Ulasan'),
                           onPressed: _openReviewDialog,
                         ),
                       ],
@@ -835,15 +869,15 @@ class _TrackingScreenState extends State<TrackingScreen> {
   Color _getStatusColor(JobStatus status) {
     switch (status) {
       case JobStatus.onTheWay:
-        return Colors.orange;
+        return AppColors.warningAmber;
       case JobStatus.arrived:
-        return Colors.blue;
+        return AppColors.trustCobalt;
       case JobStatus.working:
         return AppColors.primary;
       case JobStatus.completed:
-        return AppColors.success;
+        return AppColors.successGreen;
       default:
-        return Colors.grey;
+        return AppColors.textMuted;
     }
   }
 }

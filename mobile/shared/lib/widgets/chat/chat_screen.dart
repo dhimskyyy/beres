@@ -151,14 +151,18 @@ class _ChatScreenState extends State<ChatScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title:
-            Text(isRevision ? 'Setujui Revisi Nota?' : 'Setujui Nota Digital?'),
+        backgroundColor: AppColors.surfaceWhite,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          isRevision ? 'Setujui Revisi Nota?' : 'Setujui Nota Digital?',
+          style: AppTypography.headingSmall,
+        ),
         content: Text(
           isRevision
-              ? 'Anda akan menyetujui perubahan biaya menjadi ${Formatters.formatCurrency(nota.totalAmount)}. '
-                  'Nota ini akan menjadi Nota Sah baru yang mengikat.'
-              : 'Anda akan menyetujui Nota senilai ${Formatters.formatCurrency(nota.totalAmount)}. '
-                  'Setelah disetujui, Nota ini TERKUNCI (immutable) dan status beralih ke NOTA_APPROVED (BR-05).',
+              ? 'Anda akan menyetujui perubahan biaya menjadi ${Formatters.formatCurrency(nota.totalAmount)}. Nota ini akan menjadi Nota Sah baru yang berlaku.'
+              : 'Anda akan menyetujui Nota senilai ${Formatters.formatCurrency(nota.totalAmount)}. Setelah disetujui, harga terkunci dan mitra tukang dapat segera berangkat.',
+          style: AppTypography.bodyMedium,
         ),
         actions: [
           TextButton(
@@ -169,6 +173,7 @@ class _ChatScreenState extends State<ChatScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.successGreen,
               foregroundColor: Colors.white,
+              minimumSize: const Size(110, 42),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Setujui'),
@@ -185,9 +190,11 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isRevision
-                ? 'Revisi Nota berhasil disetujui'
-                : 'Nota Sah terbentuk (Terkunci)'),
+            content: Text(
+              isRevision
+                  ? 'Revisi Nota berhasil disetujui'
+                  : 'Nota Digital telah disetujui',
+            ),
             backgroundColor: AppColors.successGreen,
           ),
         );
@@ -209,11 +216,18 @@ class _ChatScreenState extends State<ChatScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isRevision ? 'Tolak Revisi Nota?' : 'Tolak Nota Digital?'),
+        backgroundColor: AppColors.surfaceWhite,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          isRevision ? 'Tolak Revisi Nota?' : 'Tolak Nota Digital?',
+          style: AppTypography.headingSmall,
+        ),
         content: Text(
           isRevision
-              ? 'Jika Anda menolak revisi ini, Nota Sah sebelumnya (${Formatters.formatCurrency(nota.previousApprovedTotal ?? 0)}) tetap berlaku penuh.'
-              : 'Nota akan ditolak. Anda dapat mendiskusikan kembali rincian pekerjaan atau biaya dengan tukang di ruang chat.',
+              ? 'Jika Anda menolak revisi ini, Nota Sah sebelumnya (${Formatters.formatCurrency(nota.previousApprovedTotal ?? 0)}) tetap berlaku.'
+              : 'Nota akan ditolak. Anda dapat mendiskusikan kembali rincian pekerjaan dan biaya bersama mitra tukang.',
+          style: AppTypography.bodyMedium,
         ),
         actions: [
           TextButton(
@@ -224,9 +238,10 @@ class _ChatScreenState extends State<ChatScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.dangerCrimson,
               foregroundColor: Colors.white,
+              minimumSize: const Size(110, 42),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Tolak Nota'),
+            child: const Text('Tolak'),
           ),
         ],
       ),
@@ -241,7 +256,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Nota telah ditolak'),
-            backgroundColor: AppColors.trustCobalt,
+            backgroundColor: AppColors.primaryNavy,
           ),
         );
       }
@@ -261,23 +276,30 @@ class _ChatScreenState extends State<ChatScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Tarik Revisi Nota? (BR-08)'),
+        backgroundColor: AppColors.surfaceWhite,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Tarik Revisi Nota?',
+          style: AppTypography.headingSmall,
+        ),
         content: const Text(
-          'Revisi Nota yang masih menunggu jawaban user akan ditarik kembali. '
-          'Nota Sah sebelumnya akan tetap berlaku sehingga Anda dapat melanjutkan pekerjaan.',
+          'Revisi Nota yang belum dijawab pelanggan akan dibatalkan, dan Nota Sah sebelumnya tetap berlaku.',
+          style: AppTypography.bodyMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+            child: const Text('Kembali'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.dangerCrimson,
               foregroundColor: Colors.white,
+              minimumSize: const Size(120, 42),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Tarik Revisi (BR-08)'),
+            child: const Text('Tarik Revisi'),
           ),
         ],
       ),
@@ -292,7 +314,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Revisi Nota berhasil ditarik kembali.'),
-            backgroundColor: AppColors.trustCobalt,
+            backgroundColor: AppColors.primaryNavy,
           ),
         );
       }
@@ -312,25 +334,38 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Ruang Chat')),
+        appBar: AppBar(title: const Text('Ruang Diskusi')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_contextData == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Ruang Chat')),
+        appBar: AppBar(title: const Text('Ruang Diskusi')),
         body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(_errorMessage ?? 'Gagal memuat chat'),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: _loadContext,
-                child: const Text('Coba Lagi'),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  size: 40,
+                  color: AppColors.textMuted,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _errorMessage ?? 'Gagal memuat percakapan',
+                  style: AppTypography.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadContext,
+                  child: const Text('Coba Lagi'),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -342,7 +377,6 @@ class _ChatScreenState extends State<ChatScreen> {
     final otherName = _contextData!.otherUserName;
     final otherPhone = _contextData!.otherUserPhone;
 
-    // Cek apakah tukang bisa buat Nota Awal atau Revisi
     final canCreateInitialNota = isTukang &&
         status == 'NEGOTIATING' &&
         _contextData!.pendingNota == null;
@@ -353,6 +387,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
+        titleSpacing: 0,
         title: Row(
           children: [
             CircleAvatar(
@@ -360,8 +395,8 @@ class _ChatScreenState extends State<ChatScreen> {
               backgroundColor:
                   isUser ? AppColors.tukangBadgeBg : AppColors.userBadgeBg,
               child: Icon(
-                isUser ? Icons.handyman : Icons.person,
-                size: 20,
+                isUser ? Icons.handyman_outlined : Icons.person_outline_rounded,
+                size: 18,
                 color: isUser
                     ? AppColors.tukangBadgeText
                     : AppColors.userBadgeText,
@@ -376,14 +411,19 @@ class _ChatScreenState extends State<ChatScreen> {
                   Text(
                     otherName,
                     style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.bold),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     _contextData!.areaLabel,
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.8)),
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.textSecondary,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -395,16 +435,16 @@ class _ChatScreenState extends State<ChatScreen> {
           if (otherPhone != null && otherPhone.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.phone_outlined),
-              tooltip: 'Hubungi Telepon',
+              tooltip: 'Kontak Telepon',
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Nomor kontak: $otherPhone')),
+                  SnackBar(content: Text('Kontak: $otherPhone')),
                 );
               },
             ),
           IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Perbarui Status',
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Segarkan',
             onPressed: _loadContext,
           ),
         ],
@@ -412,16 +452,13 @@ class _ChatScreenState extends State<ChatScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // 1. Timer Banner (BR-70, BR-31)
             TimerBannerWidget(
               chatContext: _contextData!,
               onRefreshNeeded: _loadContext,
             ),
-
-            // Kartu Keputusan Pembatalan (CANCEL_PENDING - BR-53, BR-55)
             if (_contextData?.status == 'CANCEL_PENDING')
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
                 child: CancelDecisionCard(
                   jobId: widget.jobId,
                   isTukang: _contextData!.isTukang,
@@ -429,8 +466,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   onDecisionResolved: _loadContext,
                 ),
               ),
-
-            // 2. Chat Message Stream
             Expanded(
               child: StreamBuilder<List<ChatMessage>>(
                 stream: _chatService.streamMessages(widget.jobId),
@@ -445,12 +480,37 @@ class _ChatScreenState extends State<ChatScreen> {
                   if (messages.isEmpty) {
                     return Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          'Belum ada pesan. Mulai diskusikan rincian pekerjaan di sini.',
-                          style: AppTypography.bodySmall
-                              .copyWith(color: AppColors.textSecondary),
-                          textAlign: TextAlign.center,
+                        padding: const EdgeInsets.all(28),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceWhite,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.borderLight,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.forum_outlined,
+                                size: 28,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Mulai Diskusi Pekerjaan',
+                              style: AppTypography.headingSmall,
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Diskusikan keluhan, jadwal pengerjaan, dan rincian biaya Nota Digital di ruang ini.',
+                              style: AppTypography.bodySmall,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -459,7 +519,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   return ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
                       final msg = messages[index];
@@ -469,66 +531,68 @@ class _ChatScreenState extends State<ChatScreen> {
                 },
               ),
             ),
-
-            // 3. Quick Action Button for Tukang (Create Nota / Create Revision)
             if (canCreateInitialNota || canCreateRevisionNota)
               Container(
                 width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                color: Colors.white,
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+                decoration: const BoxDecoration(
+                  color: AppColors.surfaceWhite,
+                  border: Border(
+                    top: BorderSide(color: AppColors.borderLight),
+                  ),
+                ),
                 child: ElevatedButton.icon(
                   onPressed: () =>
                       _handleOpenCreateNota(isRevision: canCreateRevisionNota),
                   icon: Icon(
-                      canCreateRevisionNota
-                          ? Icons.warning_amber_rounded
-                          : Icons.receipt_long,
-                      size: 18),
-                  label: Text(canCreateRevisionNota
-                      ? 'Ajukan Revisi Nota (BR-05)'
-                      : 'Buat Nota Digital (BR-04)'),
+                    canCreateRevisionNota
+                        ? Icons.edit_note_rounded
+                        : Icons.receipt_long_outlined,
+                    size: 18,
+                  ),
+                  label: Text(
+                    canCreateRevisionNota
+                        ? 'Ajukan Revisi Nota'
+                        : 'Buat Nota Digital',
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: canCreateRevisionNota
                         ? AppColors.warningAmber
                         : AppColors.trustCobalt,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    minimumSize: const Size.fromHeight(44),
                   ),
                 ),
               ),
-
-            // Tombol Batalkan Tugas untuk Tukang saat NOTA_APPROVED (BR-50)
             if (_contextData?.status == 'NOTA_APPROVED' &&
                 _contextData!.isTukang)
               Container(
                 width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                color: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
+                color: AppColors.surfaceWhite,
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
+                    foregroundColor: AppColors.dangerCrimson,
+                    side: BorderSide(
+                      color: AppColors.dangerCrimson.withValues(alpha: 0.4),
+                    ),
+                    minimumSize: const Size.fromHeight(42),
                   ),
                   icon: const Icon(Icons.cancel_outlined, size: 16),
-                  label: const Text('Batalkan Tugas Sebelum Berangkat (BR-50)'),
+                  label: const Text('Ajukan Pembatalan Tugas'),
                   onPressed: _openTukangCancelDialog,
                 ),
               ),
-
-            // 4. Input Bar
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: const BoxDecoration(
+                color: AppColors.surfaceWhite,
+                border: Border(
+                  top: BorderSide(color: AppColors.borderLight),
+                ),
               ),
               child: Row(
                 children: [
@@ -539,14 +603,30 @@ class _ChatScreenState extends State<ChatScreen> {
                       maxLines: 4,
                       minLines: 1,
                       decoration: InputDecoration(
-                        hintText: 'Ketik pesan...',
-                        hintStyle: TextStyle(color: Colors.grey.shade500),
+                        hintText: 'Tulis pesan...',
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
+                          horizontal: 16,
+                          vertical: 11,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: const BorderSide(
+                            color: AppColors.borderLight,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: const BorderSide(
+                            color: AppColors.borderLight,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: const BorderSide(
+                            color: AppColors.trustCobalt,
+                            width: 1.5,
+                          ),
                         ),
                         filled: true,
                         fillColor: AppColors.backgroundLight,
@@ -554,21 +634,33 @@ class _ChatScreenState extends State<ChatScreen> {
                       onSubmitted: (_) => _handleSendMessage(),
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  CircleAvatar(
-                    backgroundColor: AppColors.trustCobalt,
-                    radius: 22,
-                    child: IconButton(
-                      icon: _isSending
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2),
-                            )
-                          : const Icon(Icons.send,
-                              color: Colors.white, size: 18),
-                      onPressed: _isSending ? null : _handleSendMessage,
+                  const SizedBox(width: 8),
+                  Material(
+                    color: AppColors.trustCobalt,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: _isSending ? null : _handleSendMessage,
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Center(
+                          child: _isSending
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.send_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -581,26 +673,29 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageItem(ChatMessage msg) {
-    // 1. Pesan System Event
     if (msg.isSystem) {
       return Center(
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 8),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(12),
+            color: AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.borderLight),
           ),
           child: Text(
             msg.content ?? '',
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade800),
+            style: const TextStyle(
+              fontSize: 11.5,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
             textAlign: TextAlign.center,
           ),
         ),
       );
     }
 
-    // 2. Pesan Nota Card / Nota Revision Alert
     if (msg.isNotaCard || msg.isNotaRevisionAlert) {
       final nota = _contextData?.pendingNota?.id == msg.notaId
           ? _contextData?.pendingNota
@@ -617,7 +712,6 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
 
-    // 3. Pesan Bubble Biasa (Text / Image)
     final isMe = _contextData!.isUser
         ? (msg.senderId == _contextData!.userId)
         : (msg.senderId == _contextData!.lockedTukangId);
@@ -626,24 +720,19 @@ class _ChatScreenState extends State<ChatScreen> {
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
-        constraints:
-            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.76,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isMe ? AppColors.trustCobalt : Colors.white,
+          color: isMe ? AppColors.primaryNavy : AppColors.surfaceWhite,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
             bottomLeft: Radius.circular(isMe ? 16 : 4),
             bottomRight: Radius.circular(isMe ? 4 : 16),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-          ],
+          border: isMe ? null : Border.all(color: AppColors.borderLight),
         ),
         child: Column(
           crossAxisAlignment:
@@ -654,8 +743,9 @@ class _ChatScreenState extends State<ChatScreen> {
               Text(
                 msg.content!,
                 style: TextStyle(
-                  color: isMe ? Colors.white : Colors.black87,
+                  color: isMe ? Colors.white : AppColors.textPrimary,
                   fontSize: 14,
+                  height: 1.4,
                 ),
               ),
             const SizedBox(height: 4),
@@ -663,9 +753,9 @@ class _ChatScreenState extends State<ChatScreen> {
               Formatters.formatDateTime(msg.createdAt),
               style: TextStyle(
                 color: isMe
-                    ? Colors.white.withValues(alpha: 0.7)
-                    : Colors.grey.shade500,
-                fontSize: 10,
+                    ? Colors.white.withValues(alpha: 0.65)
+                    : AppColors.textMuted,
+                fontSize: 10.5,
               ),
             ),
           ],

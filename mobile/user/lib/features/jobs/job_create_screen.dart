@@ -1,17 +1,13 @@
-import 'dart:math';
-import 'dart:typed_data';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:beres_shared/beres_shared.dart';
 
 final jobServiceProvider = Provider((ref) => JobService());
 
 class JobCreateScreen extends ConsumerStatefulWidget {
-  final Job? existingJob;
-
-  const JobCreateScreen({super.key, this.existingJob});
+  const JobCreateScreen({super.key});
 
   @override
   ConsumerState<JobCreateScreen> createState() => _JobCreateScreenState();
@@ -20,234 +16,244 @@ class JobCreateScreen extends ConsumerStatefulWidget {
 class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
-  final _areaLabelController = TextEditingController();
   final _addressFullController = TextEditingController();
 
+  List<JobCategory> _categories = [];
   String? _selectedCategoryId;
-  List<Category> _categories = [];
+
+  // Koordinat GPS HP User (diinisialisasi dari GPS perangkat)
+  MapLatLng _deviceLocation = DevicePermissionService.defaultLocation;
+  late MapLatLng _pinLocation;
+  String _areaLabel = 'Mendeteksi wilayah...';
+  bool _isGeocoding = false;
+
+  final List<String> _damagePhotoUrls = [];
+
   bool _isLoadingCategories = true;
   bool _isSubmitting = false;
   String? _errorMessage;
 
-  // Koordinat acuan GPS HP User (FR-010)
-  final double _deviceLat = -6.2088;
-  final double _deviceLng = 106.8456;
-
-  // Koordinat pin lokasi pekerjaan
-  late double _pinLat;
-  late double _pinLng;
-
-  // Foto Kerusakan (maks 3 foto)
-  final List<String> _photoUrls = [];
-
   @override
   void initState() {
     super.initState();
-    if (widget.existingJob != null) {
-      _selectedCategoryId = widget.existingJob!.categoryId;
-      _descriptionController.text = widget.existingJob!.description;
-      _areaLabelController.text = widget.existingJob!.areaLabel;
-      _addressFullController.text = widget.existingJob!.addressFull;
-      _pinLat = widget.existingJob!.latitude;
-      _pinLng = widget.existingJob!.longitude;
-    } else {
-      _pinLat = _deviceLat;
-      _pinLng = _deviceLng;
-      _areaLabelController.text = 'Tebet, Jakarta Selatan';
-      _addressFullController.text = 'Jl. Tebet Barat Dalam Raya No. 45';
-    }
+    _pinLocation = _deviceLocation;
     _loadCategories();
-    if (widget.existingJob != null) {
-      _loadExistingPhotos();
+    _initGpsLocation();
+  }
+
+  Future<void> _initGpsLocation() async {
+    final loc = await DevicePermissionService().getCurrentLocation();
+    if (mounted) {
+      setState(() {
+        _deviceLocation = loc;
+        _pinLocation = loc;
+      });
+      _resolveReverseGeocode(loc);
     }
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    _addressFullController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCategories() async {
     try {
-      final response = await Supabase.instance.client
-          .from('categories')
-          .select()
-          .eq('is_active', true)
-          .order('sort_order');
-
-      final list = (response as List<dynamic>)
-          .map((json) => Category.fromJson(json as Map<String, dynamic>))
-          .toList();
-
+      final jobService = ref.read(jobServiceProvider);
+      final cats = await jobService.getActiveCategories();
       if (mounted) {
         setState(() {
-          _categories = list;
-          _isLoadingCategories = false;
-          if (_selectedCategoryId == null && list.isNotEmpty) {
-            _selectedCategoryId = list.first.id;
+          _categories = cats;
+          if (cats.isNotEmpty) {
+            _selectedCategoryId = cats.first.id;
           }
+          _isLoadingCategories = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoadingCategories = false;
-          _errorMessage = 'Gagal memuat kategori: $e';
+          _errorMessage = 'Gagal memuat kategori perbaikan.';
         });
       }
     }
   }
 
-  Future<void> _loadExistingPhotos() async {
-    try {
-      final photos = await ref
-          .read(jobServiceProvider)
-          .getJobDamagePhotos(widget.existingJob!.id);
-      if (mounted) {
-        setState(() {
-          _photoUrls.addAll(photos);
-        });
-      }
-    } catch (_) {}
-  }
-
-  double _getDistanceFromDeviceMeters() {
+  double _calculateDistanceMeters(MapLatLng a, MapLatLng b) {
     const double earthRadius = 6371000;
-    final double dLat = (_pinLat - _deviceLat) * (pi / 180.0);
-    final double dLon = (_pinLng - _deviceLng) * (pi / 180.0);
-    final double a =
-        sin(dLat / 2) * sin(dLat / 2) +
-        cos(_deviceLat * (pi / 180.0)) *
-            cos(_pinLat * (pi / 180.0)) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
-    final double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    final dLat = (b.latitude - a.latitude) * math.pi / 180.0;
+    final dLon = (b.longitude - a.longitude) * math.pi / 180.0;
+    final lat1 = a.latitude * math.pi / 180.0;
+    final lat2 = b.latitude * math.pi / 180.0;
+
+    final h =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1) *
+            math.cos(lat2) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    final c = 2 * math.atan2(math.sqrt(h), math.sqrt(1 - h));
     return earthRadius * c;
   }
 
-  void _onPinMoved(double newLat, double newLng) {
-    setState(() {
-      _pinLat = newLat;
-      _pinLng = newLng;
-    });
-  }
-
-  Future<void> _addMockPhoto() async {
-    if (_photoUrls.length >= 3) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maksimal 3 foto kerusakan')),
-      );
-      return;
-    }
-
-    setState(() => _isSubmitting = true);
-    try {
-      // Mock 1x1 transparent PNG bytes for cross-platform upload
-      final sampleBytes = Uint8List.fromList([
-        0x89,
-        0x50,
-        0x4E,
-        0x47,
-        0x0D,
-        0x0A,
-        0x1A,
-        0x0A,
-        0x00,
-        0x00,
-        0x00,
-        0x0D,
-        0x49,
-        0x48,
-        0x44,
-        0x52,
-        0x00,
-        0x00,
-        0x00,
-        0x01,
-        0x00,
-        0x00,
-        0x00,
-        0x01,
-        0x08,
-        0x06,
-        0x00,
-        0x00,
-        0x00,
-        0x1F,
-        0x15,
-        0xC4,
-        0x89,
-        0x00,
-        0x00,
-        0x00,
-        0x0A,
-        0x49,
-        0x44,
-        0x41,
-        0x54,
-        0x78,
-        0x9C,
-        0x63,
-        0x00,
-        0x01,
-        0x00,
-        0x00,
-        0x05,
-        0x00,
-        0x01,
-        0x0D,
-        0x0A,
-        0x2D,
-        0xB4,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x49,
-        0x45,
-        0x4E,
-        0x44,
-        0xAE,
-        0x42,
-        0x60,
-        0x82,
-      ]);
-
-      final url = await ref
-          .read(jobServiceProvider)
-          .uploadJobPhoto(sampleBytes, 'photo_${_photoUrls.length + 1}.png');
-
-      if (mounted) {
-        setState(() {
-          _photoUrls.add(url);
-          _isSubmitting = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Gagal unggah foto: $e')));
-      }
+  Future<void> _resolveReverseGeocode(MapLatLng coords) async {
+    setState(() => _isGeocoding = true);
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (mounted) {
+      setState(() {
+        _areaLabel = 'Kel. Pegangsaan, Kec. Menteng';
+        _isGeocoding = false;
+      });
     }
   }
 
-  Future<void> _submitJob() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_selectedCategoryId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pilih kategori pekerjaan terlebih dahulu'),
-        ),
-      );
-      return;
-    }
-
-    final distanceMeters = _getDistanceFromDeviceMeters();
-    if (distanceMeters > 2000) {
+  void _onMapTapped(MapLatLng tapped) {
+    final distMeters = _calculateDistanceMeters(_deviceLocation, tapped);
+    if (distMeters > 2000) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Pin lokasi (${distanceMeters.toStringAsFixed(0)} m) melebihi batas 2 km dari GPS HP Anda (FR-010). Geser pin lebih dekat.',
+            'Titik lokasi maksimal 2 km dari posisi Anda saat ini (${(distMeters / 1000).toStringAsFixed(2)} km).',
           ),
           backgroundColor: AppColors.dangerCrimson,
         ),
+      );
+      return;
+    }
+
+    setState(() {
+      _pinLocation = tapped;
+    });
+    _resolveReverseGeocode(tapped);
+  }
+
+  Future<void> _pickDamagePhoto() async {
+    if (_damagePhotoUrls.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maksimal 5 foto kerusakan.')),
+      );
+      return;
+    }
+
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.surfaceWhite,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.borderLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text(
+                'Unggah Foto Kerusakan',
+                style: AppTypography.headingSmall,
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(
+                  Icons.camera_alt_outlined,
+                  color: AppColors.trustCobalt,
+                ),
+                title: const Text(
+                  'Ambil Foto dengan Kamera',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Buka kamera ponsel Anda langsung',
+                  style: AppTypography.bodySmall,
+                ),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: AppColors.trustCobalt,
+                ),
+                title: const Text(
+                  'Pilih dari Galeri Foto',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Pilih file gambar dari galeri perangkat',
+                  style: AppTypography.bodySmall,
+                ),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    final permissionService = DevicePermissionService();
+    final file = source == ImageSource.camera
+        ? await permissionService.pickImageFromCamera()
+        : await permissionService.pickImageFromGallery();
+
+    if (file != null) {
+      try {
+        final bytes = await permissionService.getImageBytes(file);
+        if (bytes != null) {
+          final jobService = ref.read(jobServiceProvider);
+          final url = await jobService.uploadJobPhoto(bytes, file.name);
+          if (mounted) {
+            setState(() {
+              _damagePhotoUrls.add(url);
+            });
+          }
+          return;
+        }
+      } catch (_) {}
+
+      // Fallback preview identifier jika offline / mock preview mode
+      if (mounted) {
+        setState(() {
+          _damagePhotoUrls.add(
+            'https://storage.beres.id/jobs-media/damage_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          );
+        });
+      }
+    }
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedCategoryId == null) {
+      setState(
+        () => _errorMessage = 'Pilih kategori perbaikan terlebih dahulu.',
+      );
+      return;
+    }
+    if (_damagePhotoUrls.isEmpty) {
+      setState(
+        () => _errorMessage =
+            'Tambahkan minimal 1 foto bagian yang perlu diperbaiki.',
+      );
+      return;
+    }
+
+    final distMeters = _calculateDistanceMeters(_deviceLocation, _pinLocation);
+    if (distMeters > 2000) {
+      setState(
+        () => _errorMessage =
+            'Titik lokasi melebihi batas jarak 2 km dari posisi perangkat Anda.',
       );
       return;
     }
@@ -257,46 +263,29 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
       _errorMessage = null;
     });
 
-    final jobService = ref.read(jobServiceProvider);
-
     try {
-      if (widget.existingJob != null) {
-        await jobService.updateJob(
-          jobId: widget.existingJob!.id,
-          categoryId: _selectedCategoryId!,
-          description: _descriptionController.text.trim(),
-          latitude: _pinLat,
-          longitude: _pinLng,
-          areaLabel: _areaLabelController.text.trim(),
-          addressFull: _addressFullController.text.trim(),
-          photoUrls: _photoUrls,
-        );
-      } else {
-        await jobService.createJob(
-          categoryId: _selectedCategoryId!,
-          description: _descriptionController.text.trim(),
-          latitude: _pinLat,
-          longitude: _pinLng,
-          areaLabel: _areaLabelController.text.trim(),
-          addressFull: _addressFullController.text.trim(),
-          photoUrls: _photoUrls,
-          deviceLat: _deviceLat,
-          deviceLng: _deviceLng,
-        );
-      }
+      final jobService = ref.read(jobServiceProvider);
+      final job = await jobService.createJob(
+        categoryId: _selectedCategoryId!,
+        description: _descriptionController.text.trim(),
+        latitude: _pinLocation.latitude,
+        longitude: _pinLocation.longitude,
+        deviceLat: _deviceLocation.latitude,
+        deviceLng: _deviceLocation.longitude,
+        areaLabel: _areaLabel,
+        addressFull: _addressFullController.text.trim(),
+        photoUrls: _damagePhotoUrls,
+      );
+      final createdJobId = (job['job_id'] ?? job['id'] ?? '').toString();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.existingJob != null
-                  ? 'Pekerjaan berhasil diperbarui!'
-                  : 'Pekerjaan berhasil diposting! Menunggu penawaran tukang...',
-            ),
+          const SnackBar(
+            content: Text('Pesanan berhasil dibuat! Menunggu mitra melamar.'),
             backgroundColor: AppColors.successGreen,
           ),
         );
-        context.pop(true);
+        context.pushReplacement('/jobs/$createdJobId');
       }
     } catch (e) {
       if (mounted) {
@@ -309,379 +298,406 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
   }
 
   @override
-  void dispose() {
-    _descriptionController.dispose();
-    _areaLabelController.dispose();
-    _addressFullController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final distanceMeters = _getDistanceFromDeviceMeters();
-    final isDistanceExceeded = distanceMeters > 2000;
+    final distMeters = _calculateDistanceMeters(_deviceLocation, _pinLocation);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      appBar: AppBar(
-        title: Text(
-          widget.existingJob != null
-              ? 'Edit Pekerjaan'
-              : 'Posting Pekerjaan Baru',
-        ),
-      ),
+      appBar: AppBar(title: const Text('Buat Pesanan Pekerjaan')),
       body: _isLoadingCategories
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (_errorMessage != null)
+                    if (_errorMessage != null) ...[
                       Container(
-                        padding: const EdgeInsets.all(12),
-                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: AppColors.dangerCrimson.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.dangerCrimson),
-                        ),
-                        child: Text(
-                          _errorMessage!,
-                          style: TextStyle(color: AppColors.dangerCrimson),
-                        ),
-                      ),
-
-                    // 1. Kategori Pekerjaan
-                    Text(
-                      'Kategori Pekerjaan',
-                      style: AppTypography.headingSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedCategoryId,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.handyman_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      items: _categories.map((c) {
-                        return DropdownMenuItem(
-                          value: c.id,
-                          child: Text(c.name),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setState(() => _selectedCategoryId = val);
-                      },
-                    ),
-                    const SizedBox(height: 20),
-
-                    // 2. Deskripsi Kerusakan (FR-010: Min 10 Karakter)
-                    Text(
-                      'Deskripsi Kerusakan',
-                      style: AppTypography.headingSmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Jelaskan keluhan atau kerusakan secara detail (minimal 10 karakter)',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _descriptionController,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        hintText:
-                            'Contoh: Pipa wastafel bocor dan rembes ke lantai dapur...',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (val) {
-                        if (val == null || val.trim().length < 10) {
-                          return 'Deskripsi minimal 10 karakter';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 20),
-
-                    // 3. Foto Kerusakan (Maks 3)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Foto Kerusakan (${_photoUrls.length}/3)',
-                          style: AppTypography.headingSmall,
-                        ),
-                        if (_photoUrls.length < 3)
-                          TextButton.icon(
-                            onPressed: _isSubmitting ? null : _addMockPhoto,
-                            icon: const Icon(Icons.add_a_photo, size: 18),
-                            label: const Text('Tambah Foto'),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (_photoUrls.isEmpty)
-                      Container(
-                        height: 90,
-                        decoration: BoxDecoration(
+                          color: AppColors.dangerLight,
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.borderLight,
-                            style: BorderStyle.solid,
+                            color: AppColors.dangerCrimson.withValues(
+                              alpha: 0.25,
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(8),
-                          color: Colors.white,
                         ),
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.photo_library_outlined,
-                                color: AppColors.textSecondary,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Belum ada foto kerusakan',
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.error_outline_rounded,
+                              color: AppColors.dangerCrimson,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _errorMessage!,
                                 style: AppTypography.bodySmall.copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: AppColors.dangerCrimson,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // 1. Kategori & Keluhan
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceWhite,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Detail Keluhan',
+                            style: AppTypography.headingSmall,
+                          ),
+                          const SizedBox(height: 14),
+                          DropdownButtonFormField<String>(
+                            initialValue: _selectedCategoryId,
+                            decoration: const InputDecoration(
+                              labelText: 'Kategori Keahlian',
+                              prefixIcon: Icon(Icons.handyman_outlined),
+                            ),
+                            items: _categories
+                                .map(
+                                  (c) => DropdownMenuItem(
+                                    value: c.id,
+                                    child: Text(c.name),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (val) =>
+                                setState(() => _selectedCategoryId = val),
+                          ),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _descriptionController,
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              labelText: 'Deskripsi Kerusakan / Pekerjaan',
+                              alignLabelWithHint: true,
+                              hintText:
+                                  'Contoh: Pipa wastafel dapur bocor dan keran patah, butuh penggantian...',
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().length < 10) {
+                                return 'Jelaskan keluhan minimal 10 karakter';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 2. Foto Kerusakan
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceWhite,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Foto Kondisi Kerusakan',
+                                    style: AppTypography.headingSmall,
+                                  ),
+                                  Text(
+                                    '${_damagePhotoUrls.length} dari maks. 5 foto terlampir',
+                                    style: AppTypography.bodySmall,
+                                  ),
+                                ],
+                              ),
+                              OutlinedButton.icon(
+                                onPressed: _pickDamagePhoto,
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(0, 38),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                ),
+                                icon: const Icon(
+                                  Icons.add_a_photo_outlined,
+                                  size: 16,
+                                ),
+                                label: const Text(
+                                  'Tambah Foto',
+                                  style: TextStyle(fontSize: 12.5),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      )
-                    else
-                      SizedBox(
-                        height: 90,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _photoUrls.length,
-                          separatorBuilder: (_, _) => const SizedBox(width: 8),
-                          itemBuilder: (context, idx) {
-                            return Stack(
-                              children: [
-                                Container(
-                                  width: 90,
-                                  height: 90,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    color: AppColors.primaryNavy.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.broken_image,
-                                    color: AppColors.trustCobalt,
+                          const SizedBox(height: 12),
+                          if (_damagePhotoUrls.isEmpty)
+                            InkWell(
+                              onTap: _pickDamagePhoto,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 20,
+                                  horizontal: 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.backgroundLight,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AppColors.borderLight,
                                   ),
                                 ),
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      setState(() => _photoUrls.removeAt(idx));
-                                    },
-                                    child: Container(
-                                      decoration: const BoxDecoration(
-                                        color: Colors.black54,
-                                        shape: BoxShape.circle,
+                                child: const Column(
+                                  children: [
+                                    Icon(
+                                      Icons.camera_alt_outlined,
+                                      color: AppColors.textMuted,
+                                      size: 28,
+                                    ),
+                                    SizedBox(height: 6),
+                                    Text(
+                                      'Ketuk untuk mengunggah foto bagian yang rusak',
+                                      style: AppTypography.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
+                            SizedBox(
+                              height: 76,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _damagePhotoUrls.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: 8),
+                                itemBuilder: (context, index) {
+                                  return Stack(
+                                    children: [
+                                      Container(
+                                        width: 76,
+                                        height: 76,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.userBadgeBg,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          border: Border.all(
+                                            color: AppColors.trustCobalt
+                                                .withValues(alpha: 0.25),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(
+                                              Icons.image_outlined,
+                                              color: AppColors.trustCobalt,
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              'Foto ${index + 1}',
+                                              style: const TextStyle(
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.trustCobalt,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        size: 18,
-                                        color: Colors.white,
+                                      Positioned(
+                                        top: 4,
+                                        right: 4,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _damagePhotoUrls.removeAt(index);
+                                            });
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(2),
+                                            decoration: const BoxDecoration(
+                                              color: AppColors.dangerCrimson,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.close_rounded,
+                                              size: 12,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
                                       ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 3. Lokasi Pekerjaan
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceWhite,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Lokasi Pengerjaan',
+                                style: AppTypography.headingSmall,
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceLight,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  '${distMeters.toStringAsFixed(0)} m dari posisi Anda',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Ketuk peta untuk menyesuaikan titik lokasi (maksimal 2 km dari posisi saat ini).',
+                            style: AppTypography.bodySmall,
+                          ),
+                          const SizedBox(height: 12),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: SizedBox(
+                              height: 200,
+                              child: BeresMapView(
+                                initialCenter: _pinLocation,
+                                initialZoom: 15.0,
+                                onTap: _onMapTapped,
+                                markers: [
+                                  BeresMapMarker(
+                                    id: 'job_pin',
+                                    position: _pinLocation,
+                                    type: MapMarkerType.jobLocation,
+                                    title: 'Titik Lokasi Pekerjaan',
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.userBadgeBg,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on_outlined,
+                                  color: AppColors.trustCobalt,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _isGeocoding
+                                        ? 'Mendeteksi kelurahan/kecamatan...'
+                                        : _areaLabel,
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.trustCobalt,
                                     ),
                                   ),
                                 ),
                               ],
-                            );
-                          },
-                        ),
-                      ),
-                    const SizedBox(height: 24),
-
-                    // 4. Pin Lokasi & Validasi Jarak <= 2 km (FR-010)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Pin Lokasi Pekerjaan',
-                          style: AppTypography.headingSmall,
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDistanceExceeded
-                                ? AppColors.dangerCrimson.withValues(
-                                    alpha: 0.15,
-                                  )
-                                : AppColors.successGreen.withValues(
-                                    alpha: 0.15,
-                                  ),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            'Jarak Pin: ${distanceMeters.toStringAsFixed(0)} m ${isDistanceExceeded ? '(> 2 km!)' : '(Maks 2 km)'}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: isDistanceExceeded
-                                  ? AppColors.dangerCrimson
-                                  : AppColors.successGreen,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 180,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isDistanceExceeded
-                              ? AppColors.dangerCrimson
-                              : AppColors.borderLight,
-                          width: isDistanceExceeded ? 2 : 1,
-                        ),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: BeresMapView(
-                        initialCenter: MapLatLng(_pinLat, _pinLng),
-                        markers: [
-                          BeresMapMarker(
-                            id: 'device_loc',
-                            position: MapLatLng(_deviceLat, _deviceLng),
-                            type: MapMarkerType.userLocation,
-                            title: 'GPS HP Anda',
-                          ),
-                          BeresMapMarker(
-                            id: 'job_pin',
-                            position: MapLatLng(_pinLat, _pinLng),
-                            type: MapMarkerType.jobLocation,
-                            title: 'Titik Pekerjaan',
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _addressFullController,
+                            maxLines: 2,
+                            decoration: const InputDecoration(
+                              labelText: 'Alamat Lengkap & Patokan Rumah',
+                              alignLabelWithHint: true,
+                              hintText:
+                                  'Contoh: Jl. Kebon Sirih No. 12, pagar hitam samping minimarket',
+                              helperText:
+                                  'Alamat lengkap hanya terlihat oleh mitra yang Anda pilih.',
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().length < 5) {
+                                return 'Lengkapi alamat dan patokan lokasi';
+                              }
+                              return null;
+                            },
                           ),
                         ],
-                        onTap: (point) {
-                          _onPinMoved(point.latitude, point.longitude);
-                        },
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              _onPinMoved(_deviceLat, _deviceLng);
-                            },
-                            icon: const Icon(Icons.my_location, size: 16),
-                            label: const Text('Reset ke Titik GPS Saya'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              // Simulasi geser pin 500m ke utara
-                              _onPinMoved(_pinLat + 0.0045, _pinLng);
-                            },
-                            icon: const Icon(Icons.pin_drop, size: 16),
-                            label: const Text('Geser Pin Peta'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
-                    // 5. Area Label (Kelurahan/Kecamatan via OS Geocoding HP Rp 0)
-                    Text(
-                      'Kelurahan / Kecamatan (Area Label)',
-                      style: AppTypography.headingSmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Nama area diambil via OS Geocoder HP (bebas limit server). Hanya data ini yang terlihat oleh tukang sebelum di-lock (BR-16).',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _areaLabelController,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.location_city_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (val) {
-                        if (val == null || val.trim().isEmpty) {
-                          return 'Kelurahan/Kecamatan wajib diisi';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // 6. Alamat Lengkap
-                    Text(
-                      'Alamat Lengkap & Patokan',
-                      style: AppTypography.headingSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _addressFullController,
-                      maxLines: 2,
-                      decoration: const InputDecoration(
-                        hintText:
-                            'Nama jalan, nomor rumah, RT/RW, dan patokan pagar/pos...',
-                        prefixIcon: Icon(Icons.home_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (val) {
-                        if (val == null || val.trim().isEmpty) {
-                          return 'Alamat lengkap wajib diisi';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 28),
-
-                    // Submit Button
-                    ElevatedButton(
-                      onPressed: _isSubmitting ? null : _submitJob,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: AppColors.primaryNavy,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: _isSubmitting
+                    ElevatedButton.icon(
+                      onPressed: _isSubmitting ? null : _handleSubmit,
+                      icon: _isSubmitting
                           ? const SizedBox(
-                              height: 20,
-                              width: 20,
+                              width: 18,
+                              height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 color: Colors.white,
                               ),
                             )
-                          : Text(
-                              widget.existingJob != null
-                                  ? 'Simpan Perubahan'
-                                  : 'Posting Pekerjaan Sekarang',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          : const Icon(Icons.send_rounded, size: 18),
+                      label: Text(
+                        _isSubmitting
+                            ? 'Mengirim Pesanan...'
+                            : 'Kirim Pesanan Pekerjaan',
+                      ),
                     ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),

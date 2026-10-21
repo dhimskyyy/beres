@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../services/cancellation_service.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
 
-/// Kartu Keputusan Pembatalan (CANCEL_PENDING)
-/// Ditampilkan saat ada pengajuan pembatalan aktif yang menunggu tanggapan (BR-53, BR-55, BR-56b)
+/// Kartu Keputusan Pembatalan
 class CancelDecisionCard extends StatefulWidget {
   final String jobId;
   final bool isTukang;
@@ -128,53 +128,60 @@ class _CancelDecisionCardState extends State<CancelDecisionCard> {
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.shade300, width: 1.5),
+        color: AppColors.dangerLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.dangerCrimson.withValues(alpha: 0.35),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              const Icon(Icons.warning_amber_rounded,
-                  color: AppColors.error, size: 24),
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.dangerCrimson,
+                size: 22,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   isRequester
-                      ? 'Menunggu Tanggapan Pembatalan'
-                      : 'Permintaan Pembatalan Pekerjaan',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF9F1239),
+                      ? 'Menunggu Konfirmasi Pembatalan'
+                      : 'Permintaan Pembatalan Pesanan',
+                  style: AppTypography.headingSmall.copyWith(
+                    fontSize: 13.5,
+                    color: AppColors.dangerCrimson,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red.shade100),
+              color: AppColors.surfaceWhite,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.borderLight),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Kategori: $reasonCategory',
+                  reasonCategory,
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 13),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
                 if (reasonText.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    'Alasan: "$reasonText"',
-                    style: const TextStyle(fontSize: 12, color: Colors.black87),
+                    reasonText,
+                    style: AppTypography.bodySmall,
                   ),
                 ],
               ],
@@ -184,27 +191,23 @@ class _CancelDecisionCardState extends State<CancelDecisionCard> {
             const SizedBox(height: 8),
             Text(
               _errorMessage!,
-              style: const TextStyle(color: AppColors.error, fontSize: 12),
+              style: const TextStyle(
+                color: AppColors.dangerCrimson,
+                fontSize: 12,
+              ),
             ),
           ],
           const SizedBox(height: 12),
-
-          // Jika saya adalah pemohon (menunggu pihak lain)
           if (isRequester)
             const Text(
-              'Pengajuan pembatalan telah dikirim. Menunggu konfirmasi dari pihak lawan (Maks 30 menit).',
-              style: TextStyle(
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                  color: Colors.black54),
+              'Pengajuan pembatalan telah dikirim. Menunggu tanggapan dalam waktu maksimal 30 menit.',
+              style: AppTypography.bodySmall,
               textAlign: TextAlign.center,
             )
-          // Jika User yang menerima pembatalan dari Tukang (BR-55)
           else if (!widget.isTukang && requesterRole == 'TUKANG') ...[
             const Text(
-              'Aturan: Jika disetujui, pekerjaan kembali ke Bursa & Tukang terkena 1 Strike. Jika ditolak, Tukang wajib melanjutkan pekerjaan (BR-55).',
-              style:
-                  TextStyle(fontSize: 11, color: Colors.black87, height: 1.3),
+              'Jika disetujui, pesanan akan dibuka kembali di bursa agar Anda dapat memilih mitra lain.',
+              style: AppTypography.bodySmall,
             ),
             const SizedBox(height: 10),
             Row(
@@ -212,20 +215,24 @@ class _CancelDecisionCardState extends State<CancelDecisionCard> {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.error,
-                      side: const BorderSide(color: AppColors.error),
+                      foregroundColor: AppColors.dangerCrimson,
+                      side: BorderSide(
+                        color: AppColors.dangerCrimson.withValues(alpha: 0.4),
+                      ),
+                      minimumSize: const Size.fromHeight(42),
                     ),
                     onPressed:
                         _isActing ? null : () => _handleUserDecision(false),
-                    child: const Text('Tolak Batal'),
+                    child: const Text('Tolak'),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
+                      backgroundColor: AppColors.successGreen,
                       foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(42),
                     ),
                     onPressed:
                         _isActing ? null : () => _handleUserDecision(true),
@@ -234,37 +241,40 @@ class _CancelDecisionCardState extends State<CancelDecisionCard> {
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2),
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
                         : const Text('Setujui Batal'),
                   ),
                 ),
               ],
             ),
-          ]
-          // Jika Tukang yang menerima pembatalan 3 jam OTW dari User (BR-56b)
-          else if (widget.isTukang && requesterRole == 'USER') ...[
+          ] else if (widget.isTukang && requesterRole == 'USER') ...[
             const Text(
-              'Aturan BR-56b: Pelanggan mengajukan batal karena perjalanan >= 3 jam. Harap tanggapi dalam 30 menit (tanpa respons = auto-cancel & +1 Strike).',
-              style:
-                  TextStyle(fontSize: 11, color: Colors.black87, height: 1.3),
+              'Pelanggan mengajukan pembatalan karena waktu perjalanan melebihi 3 jam. Harap tanggapi dalam 30 menit.',
+              style: AppTypography.bodySmall,
             ),
             const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(42),
+                    ),
                     onPressed:
                         _isActing ? null : () => _handleTukangDecision(false),
-                    child: const Text('Tolak (Lanjut)'),
+                    child: const Text('Lanjut Bertugas'),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.error,
+                      backgroundColor: AppColors.dangerCrimson,
                       foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(42),
                     ),
                     onPressed:
                         _isActing ? null : () => _handleTukangDecision(true),
@@ -273,7 +283,9 @@ class _CancelDecisionCardState extends State<CancelDecisionCard> {
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2),
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
                         : const Text('Setujui Batal'),
                   ),

@@ -8,5 +8,6 @@ void main() {
   ) async {
     await tester.pumpWidget(const ProviderScope(child: BeresTukangApp()));
     expect(find.text('Masuk Mitra Tukang'), findsOneWidget);
+    expect(find.text('Daftar Mitra Baru'), findsOneWidget);
   });
 }

@@ -8,5 +8,6 @@ void main() {
   ) async {
     await tester.pumpWidget(const ProviderScope(child: BeresUserApp()));
     expect(find.text('Masuk sebagai Pelanggan'), findsOneWidget);
+    expect(find.text('Daftar Sekarang'), findsOneWidget);
   });
 }

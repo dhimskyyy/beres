@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../services/tracking_service.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
 
-/// Dialog Pelaporan Masalah Pembayaran oleh Tukang (BR-67, FR-025)
-/// Untuk situasi di mana User menolak membayar atau membayar kurang saat status WORKING.
-/// Melepas ikatan job aktif tukang sementara agar dapat menerima order lain.
+/// Dialog Pelaporan Kendala Pembayaran oleh Mitra Tukang
 class PaymentDisputeDialog extends StatefulWidget {
   final String jobId;
   final TrackingService trackingService;
@@ -56,7 +55,7 @@ class _PaymentDisputeDialogState extends State<PaymentDisputeDialog> {
     final desc = _descController.text.trim();
     if (desc.length < 10) {
       setState(() {
-        _errorMessage = 'Kronologi kendala pembayaran minimal 10 karakter.';
+        _errorMessage = 'Jelaskan kronologi kendala minimal 10 karakter.';
       });
       return;
     }
@@ -64,7 +63,7 @@ class _PaymentDisputeDialogState extends State<PaymentDisputeDialog> {
     if (_workPhotos.isEmpty) {
       setState(() {
         _errorMessage =
-            'Wajib melampirkan minimal 1 Foto Bukti Hasil Kerja bahwa pekerjaan telah Anda selesaikan.';
+            'Lampirkan minimal 1 foto bukti bahwa pekerjaan telah diselesaikan.';
       });
       return;
     }
@@ -88,9 +87,9 @@ class _PaymentDisputeDialogState extends State<PaymentDisputeDialog> {
           widget.onReportSubmitted();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              backgroundColor: AppColors.primary,
+              backgroundColor: AppColors.primaryNavy,
               content: Text(
-                'Laporan Prioritas telah dikirim ke Tim Admin. Ikatan job Anda telah dilepas sementara (BR-67).',
+                'Laporan telah dikirim ke tim operasional. Anda kini dapat mengambil pekerjaan lain.',
               ),
             ),
           );
@@ -115,7 +114,9 @@ class _PaymentDisputeDialogState extends State<PaymentDisputeDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: AppColors.surfaceWhite,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500, maxHeight: 680),
         child: Padding(
@@ -129,111 +130,114 @@ class _PaymentDisputeDialogState extends State<PaymentDisputeDialog> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.warning_amber_rounded,
-                          color: AppColors.error, size: 28),
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppColors.dangerCrimson,
+                        size: 24,
+                      ),
                       const SizedBox(width: 10),
                       const Expanded(
                         child: Text(
-                          'Laporkan Masalah Pembayaran (BR-67)',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
+                          'Laporkan Kendala Pembayaran',
+                          style: AppTypography.headingSmall,
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close),
+                        icon: const Icon(Icons.close_rounded, size: 20),
                         onPressed: () => Navigator.of(context).pop(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
                     ],
                   ),
-                  const Divider(height: 20),
-
-                  // Informasi Aturan BR-67
+                  const Divider(height: 22),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.shade200),
+                      color: AppColors.dangerLight,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: AppColors.dangerCrimson.withValues(alpha: 0.25),
+                      ),
                     ),
-                    child: const Text(
-                      'Perhatian (BR-67): Gunakan fitur ini jika Pelanggan menolak membayar atau membayar kurang dari Nota Sah. '
-                      'Laporan ini akan langsung masuk ke Antrean Investigasi Prioritas Admin. '
-                      'Ikatan job Anda akan dilepas sementara agar Anda bisa mengambil pekerjaan lain. '
-                      'Jika terbukti wanprestasi, akun Pelanggan akan langsung di-suspend permanen.',
-                      style: TextStyle(
-                          fontSize: 12, color: Color(0xFF991B1B), height: 1.4),
+                    child: Text(
+                      'Gunakan formulir ini jika pelanggan menolak membayar atau membayar kurang dari Nota Sah. Laporan akan ditinjau langsung oleh tim operasional dan ikatan pekerjaan Anda dilepas sementara.',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
                   if (_errorMessage != null)
                     Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0x1AB91C1C),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.error),
+                        color: AppColors.dangerLight,
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         _errorMessage!,
-                        style: const TextStyle(
-                            color: AppColors.error, fontSize: 12),
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.dangerCrimson,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-
-                  // 1. KRONOLOGI KENDALA
-                  const Text(
-                    'Kronologi Kejadian (Wajib >= 10 karakter)*',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  Text(
+                    'Kronologi Kejadian',
+                    style: AppTypography.bodySmall.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _descController,
                     maxLines: 3,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText:
-                          'Jelaskan alasan user menolak bayar, respon user, dll...',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.all(12),
+                          'Jelaskan kendala pembayaran yang terjadi di lapangan...',
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
-                  // 2. FOTO BUKTI PEKERJAAN TELAH SELESAI
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Bukti Hasil Kerja Selesai (Wajib >= 1)*',
-                        style: TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.bold),
+                      Text(
+                        'Foto Bukti Pekerjaan Selesai',
+                        style: AppTypography.bodySmall.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       TextButton.icon(
-                        icon: const Icon(Icons.add_a_photo, size: 16),
-                        label:
-                            const Text('Foto', style: TextStyle(fontSize: 12)),
+                        icon: const Icon(
+                          Icons.add_a_photo_outlined,
+                          size: 16,
+                        ),
+                        label: const Text(
+                          'Tambah Foto',
+                          style: TextStyle(fontSize: 12),
+                        ),
                         onPressed: _addMockWorkPhoto,
                       ),
                     ],
                   ),
                   if (_workPhotos.isEmpty)
                     const Text(
-                      'Wajib melampirkan foto fisik hasil kerja yang sudah Anda selesaikan.',
-                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                      'Lampirkan minimal 1 foto hasil pekerjaan yang telah Anda selesaikan.',
+                      style: AppTypography.bodySmall,
                     )
                   else
                     Wrap(
                       spacing: 8,
                       children: _workPhotos.map((url) {
                         return Container(
-                          width: 60,
-                          height: 60,
+                          width: 64,
+                          height: 64,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                             image: DecorationImage(
                               image: NetworkImage(url),
                               fit: BoxFit.cover,
@@ -242,22 +246,23 @@ class _PaymentDisputeDialogState extends State<PaymentDisputeDialog> {
                         );
                       }).toList(),
                     ),
-
                   const SizedBox(height: 16),
-
-                  // 3. FOTO BUKTI PENDUKUNG (OPSIONAL)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Bukti Pendukung Tambahan (Opsional)',
-                        style: TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.bold),
+                      Text(
+                        'Bukti Tambahan (Opsional)',
+                        style: AppTypography.bodySmall.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       TextButton.icon(
-                        icon: const Icon(Icons.attachment, size: 16),
-                        label: const Text('Lampirkan',
-                            style: TextStyle(fontSize: 12)),
+                        icon: const Icon(Icons.attachment_rounded, size: 16),
+                        label: const Text(
+                          'Lampirkan',
+                          style: TextStyle(fontSize: 12),
+                        ),
                         onPressed: _addMockEvidencePhoto,
                       ),
                     ],
@@ -267,10 +272,10 @@ class _PaymentDisputeDialogState extends State<PaymentDisputeDialog> {
                       spacing: 8,
                       children: _evidencePhotos.map((url) {
                         return Container(
-                          width: 60,
-                          height: 60,
+                          width: 64,
+                          height: 64,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                             image: DecorationImage(
                               image: NetworkImage(url),
                               fit: BoxFit.cover,
@@ -279,16 +284,11 @@ class _PaymentDisputeDialogState extends State<PaymentDisputeDialog> {
                         );
                       }).toList(),
                     ),
-
                   const SizedBox(height: 20),
-
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.error,
+                      backgroundColor: AppColors.dangerCrimson,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
                     ),
                     onPressed: _isSubmitting ? null : _submit,
                     child: _isSubmitting
@@ -296,13 +296,11 @@ class _PaymentDisputeDialogState extends State<PaymentDisputeDialog> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
-                        : const Text(
-                            'Kirim Laporan Prioritas ke Admin',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
+                        : const Text('Kirim Laporan'),
                   ),
                 ],
               ),

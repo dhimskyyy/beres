@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:beres_shared/beres_shared.dart';
@@ -23,7 +24,6 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
   String? _rejectionReason;
   DateTime? _kycApprovedAt;
 
-  // Mock / picked image indicators
   bool _hasKtpImage = false;
   bool _hasSelfieImage = false;
   String _ktpFileName = '';
@@ -69,31 +69,113 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
     }
   }
 
-  void _simulatePickKtp() {
-    final prefix = _effectiveTukangId.length >= 5
-        ? _effectiveTukangId.substring(0, 5)
-        : _effectiveTukangId;
-    setState(() {
-      _hasKtpImage = true;
-      _ktpFileName = 'ktp_original_$prefix.jpg';
-    });
+  Uint8List? _ktpBytes;
+  Uint8List? _selfieBytes;
+
+  Future<void> _pickKtpImage() async {
+    final source = await _showImageSourceSheet('Pilih Foto KTP');
+    if (source == null) return;
+
+    final permissionService = DevicePermissionService();
+    final file = source == ImageSource.camera
+        ? await permissionService.pickImageFromCamera()
+        : await permissionService.pickImageFromGallery();
+
+    if (file != null) {
+      final bytes = await permissionService.getImageBytes(file);
+      setState(() {
+        _hasKtpImage = true;
+        _ktpFileName = file.name;
+        _ktpBytes = bytes;
+      });
+    }
   }
 
-  void _simulatePickSelfie() {
-    final prefix = _effectiveTukangId.length >= 5
-        ? _effectiveTukangId.substring(0, 5)
-        : _effectiveTukangId;
-    setState(() {
-      _hasSelfieImage = true;
-      _selfieFileName = 'selfie_ktp_$prefix.jpg';
-    });
+  Future<void> _pickSelfieImage() async {
+    final source = await _showImageSourceSheet('Pilih Foto Selfie + KTP');
+    if (source == null) return;
+
+    final permissionService = DevicePermissionService();
+    final file = source == ImageSource.camera
+        ? await permissionService.pickImageFromCamera()
+        : await permissionService.pickImageFromGallery();
+
+    if (file != null) {
+      final bytes = await permissionService.getImageBytes(file);
+      setState(() {
+        _hasSelfieImage = true;
+        _selfieFileName = file.name;
+        _selfieBytes = bytes;
+      });
+    }
+  }
+
+  Future<ImageSource?> _showImageSourceSheet(String title) {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.surfaceWhite,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.borderLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Text(title, style: AppTypography.headingSmall),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(
+                  Icons.camera_alt_outlined,
+                  color: AppColors.safetyOrange,
+                ),
+                title: const Text(
+                  'Ambil Foto dengan Kamera',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Buka kamera ponsel Anda langsung',
+                  style: AppTypography.bodySmall,
+                ),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: AppColors.safetyOrange,
+                ),
+                title: const Text(
+                  'Pilih dari Galeri Foto',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Pilih file gambar dari galeri perangkat',
+                  style: AppTypography.bodySmall,
+                ),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _handleSubmitKyc() async {
     if (!_hasKtpImage || !_hasSelfieImage) {
       setState(() {
         _errorMessage =
-            'Foto KTP dan Foto Selfie memegang KTP wajib diunggah keduanya (FR-003).';
+            'Unggah Foto KTP dan Foto Selfie memegang KTP terlebih dahulu.';
       });
       return;
     }
@@ -107,27 +189,24 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
     try {
       final tukangService = ref.read(tukangServiceProvider);
 
-      // Simulasikan byte file gambar untuk diunggah ke bucket privat kyc-private
-      final dummyKtpBytes = utf8.encode(
-        'DUMMY_KTP_IMAGE_CONTENT_${DateTime.now()}',
-      );
-      final dummySelfieBytes = utf8.encode(
-        'DUMMY_SELFIE_IMAGE_CONTENT_${DateTime.now()}',
-      );
+      final ktpBytes =
+          _ktpBytes ?? utf8.encode('DUMMY_KTP_IMAGE_CONTENT_${DateTime.now()}');
+      final selfieBytes =
+          _selfieBytes ??
+          utf8.encode('DUMMY_SELFIE_IMAGE_CONTENT_${DateTime.now()}');
 
       final ktpStoragePath = await tukangService.uploadKycFile(
         tukangId: _effectiveTukangId,
         fileName: _ktpFileName,
-        fileBytes: dummyKtpBytes,
+        fileBytes: ktpBytes,
       );
 
       final selfieStoragePath = await tukangService.uploadKycFile(
         tukangId: _effectiveTukangId,
         fileName: _selfieFileName,
-        fileBytes: dummySelfieBytes,
+        fileBytes: selfieBytes,
       );
 
-      // Submit ke tabel kyc_documents & set kyc_status = PENDING
       await tukangService.submitKycDocument(
         tukangId: _effectiveTukangId,
         ktpStoragePath: ktpStoragePath,
@@ -139,7 +218,7 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
           _isSubmitting = false;
           _currentStatus = KycStatus.pending;
           _successMessage =
-              'Dokumen KYC berhasil dikirim ke Admin untuk diverifikasi.';
+              'Dokumen berhasil dikirim dan sedang ditinjau oleh tim verifikasi.';
           _hasKtpImage = false;
           _hasSelfieImage = false;
         });
@@ -148,7 +227,7 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
       if (mounted) {
         setState(() {
           _isSubmitting = false;
-          _errorMessage = 'Gagal mengirim berkas KYC: ${e.toString()}';
+          _errorMessage = 'Gagal mengirim dokumen verifikasi.';
         });
       }
     }
@@ -158,18 +237,17 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      appBar: AppBar(title: const Text('Verifikasi Identitas (KYC)')),
+      appBar: AppBar(title: const Text('Verifikasi Identitas Mitra')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20.0),
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Status Badge Card
                     _buildStatusBanner(),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
 
                     if (_errorMessage != null) ...[
                       Container(
@@ -181,7 +259,7 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
                         child: Row(
                           children: [
                             const Icon(
-                              Icons.error_outline,
+                              Icons.error_outline_rounded,
                               color: AppColors.dangerCrimson,
                               size: 20,
                             ),
@@ -191,6 +269,7 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
                                 _errorMessage!,
                                 style: AppTypography.bodySmall.copyWith(
                                   color: AppColors.dangerCrimson,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -210,7 +289,7 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
                         child: Row(
                           children: [
                             const Icon(
-                              Icons.check_circle_outline,
+                              Icons.check_circle_outline_rounded,
                               color: AppColors.successGreen,
                               size: 20,
                             ),
@@ -220,6 +299,7 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
                                 _successMessage!,
                                 style: AppTypography.bodySmall.copyWith(
                                   color: AppColors.successGreen,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -229,142 +309,144 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
                       const SizedBox(height: 16),
                     ],
 
-                    // Form Upload Hanya Ditampilkan jika REJECTED atau PENDING pertama kali
                     if (_currentStatus != KycStatus.approved) ...[
-                      Text(
-                        'Unggah Berkas Identitas (FR-003)',
+                      const Text(
+                        'Unggah Dokumen KTP',
                         style: AppTypography.headingSmall,
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        'Data KTP disimpan di server privat terenkripsi dan hanya digunakan Admin untuk verifikasi keamanan.',
+                      const Text(
+                        'Data identitas disimpan secara terenkripsi untuk menjamin keamanan dan kepercayaan pelanggan.',
                         style: AppTypography.bodySmall,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
 
-                      // 1. Upload KTP
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.credit_card,
-                                        color: AppColors.safetyOrange,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Foto KTP Asli',
-                                        style: AppTypography.headingSmall,
-                                      ),
-                                    ],
-                                  ),
-                                  if (_hasKtpImage)
-                                    const Icon(
-                                      Icons.check_circle,
-                                      color: AppColors.successGreen,
+                      // 1. Foto KTP
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceWhite,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.borderLight),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.credit_card_rounded,
+                                      color: AppColors.safetyOrange,
                                       size: 20,
                                     ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Pastikan seluruh tulisan, NIK, nama lengkap, dan foto pada KTP terbaca jelas (tidak blur/terpotong).',
-                                style: AppTypography.bodySmall,
-                              ),
-                              const SizedBox(height: 14),
-                              OutlinedButton.icon(
-                                onPressed: _isSubmitting
-                                    ? null
-                                    : _simulatePickKtp,
-                                icon: Icon(
-                                  _hasKtpImage
-                                      ? Icons.restart_alt
-                                      : Icons.camera_alt_outlined,
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Foto KTP Asli',
+                                      style: AppTypography.headingSmall,
+                                    ),
+                                  ],
                                 ),
-                                label: Text(
-                                  _hasKtpImage
-                                      ? 'Ganti Foto KTP ($_ktpFileName)'
-                                      : 'Ambil / Pilih Foto KTP',
-                                ),
+                                if (_hasKtpImage)
+                                  const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: AppColors.successGreen,
+                                    size: 20,
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Pastikan NIK, nama lengkap, dan foto pada kartu KTP terlihat jelas serta tidak terpotong.',
+                              style: AppTypography.bodySmall,
+                            ),
+                            const SizedBox(height: 14),
+                            OutlinedButton.icon(
+                              onPressed: _isSubmitting ? null : _pickKtpImage,
+                              icon: Icon(
+                                _hasKtpImage
+                                    ? Icons.refresh_rounded
+                                    : Icons.camera_alt_outlined,
+                                size: 18,
                               ),
-                            ],
-                          ),
+                              label: Text(
+                                _hasKtpImage
+                                    ? 'Ganti Foto KTP ($_ktpFileName)'
+                                    : 'Ambil / Pilih Foto KTP',
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
 
-                      // 2. Upload Selfie Memegang KTP
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.face_retouching_natural,
-                                        color: AppColors.safetyOrange,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Selfie Memegang KTP',
-                                        style: AppTypography.headingSmall,
-                                      ),
-                                    ],
-                                  ),
-                                  if (_hasSelfieImage)
-                                    const Icon(
-                                      Icons.check_circle,
-                                      color: AppColors.successGreen,
+                      // 2. Selfie + KTP
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceWhite,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.borderLight),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.face_retouching_natural_rounded,
+                                      color: AppColors.safetyOrange,
                                       size: 20,
                                     ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Pegang KTP di samping wajah Anda. Pastikan wajah dan kartu KTP Anda terlihat jelas tanpa tertutup kacamata/masker.',
-                                style: AppTypography.bodySmall,
-                              ),
-                              const SizedBox(height: 14),
-                              OutlinedButton.icon(
-                                onPressed: _isSubmitting
-                                    ? null
-                                    : _simulatePickSelfie,
-                                icon: Icon(
-                                  _hasSelfieImage
-                                      ? Icons.restart_alt
-                                      : Icons.camera_alt_outlined,
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Foto Selfie Memegang KTP',
+                                      style: AppTypography.headingSmall,
+                                    ),
+                                  ],
                                 ),
-                                label: Text(
-                                  _hasSelfieImage
-                                      ? 'Ganti Foto Selfie ($_selfieFileName)'
-                                      : 'Ambil Foto Selfie + KTP',
-                                ),
+                                if (_hasSelfieImage)
+                                  const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: AppColors.successGreen,
+                                    size: 20,
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Pegang KTP di samping wajah Anda tanpa menggunakan masker atau kacamata hitam.',
+                              style: AppTypography.bodySmall,
+                            ),
+                            const SizedBox(height: 14),
+                            OutlinedButton.icon(
+                              onPressed: _isSubmitting
+                                  ? null
+                                  : _pickSelfieImage,
+                              icon: Icon(
+                                _hasSelfieImage
+                                    ? Icons.refresh_rounded
+                                    : Icons.camera_alt_outlined,
+                                size: 18,
                               ),
-                            ],
-                          ),
+                              label: Text(
+                                _hasSelfieImage
+                                    ? 'Ganti Foto Selfie ($_selfieFileName)'
+                                    : 'Ambil Foto Selfie + KTP',
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 24),
 
                       ElevatedButton(
                         onPressed: _isSubmitting ? null : _handleSubmitKyc,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.safetyOrange,
-                        ),
                         child: _isSubmitting
                             ? const SizedBox(
                                 width: 20,
@@ -374,37 +456,9 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('Kirim Dokumen ke Admin'),
+                            : const Text('Kirim Dokumen Verifikasi'),
                       ),
                     ],
-
-                    const SizedBox(height: 24),
-                    // Info Aturan BR-10
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.borderLight),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.gavel_outlined,
-                            color: AppColors.trustCobalt,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Aturan Beres (BR-10): Mitra yang belum lolos verifikasi KYC dilarang melihat daftar pekerjaan dan dilarang melamar (bid) demi integritas & perlindungan pelanggan.',
-                              style: AppTypography.bodySmall,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -427,9 +481,9 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
           child: Row(
             children: [
               const Icon(
-                Icons.verified,
+                Icons.verified_rounded,
                 color: AppColors.successGreen,
-                size: 36,
+                size: 34,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -437,25 +491,25 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Akun Terverifikasi (APPROVED)',
+                      'Identitas Terverifikasi',
                       style: AppTypography.headingSmall.copyWith(
                         color: AppColors.successGreen,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Identitas Anda telah disetujui. Bursa pekerjaan dan fitur lamar (bid) aktif penuh (BR-10).',
+                      'Akun mitra Anda telah terverifikasi dan dapat melamar pekerjaan di Bursa Kerja.',
                       style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.successGreen,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     if (_kycApprovedAt != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'Disetujui pada: ${BeresFormatters.formatDateTime(_kycApprovedAt!)}',
+                        'Disetujui pada ${BeresFormatters.formatDateTime(_kycApprovedAt!)}',
                         style: AppTypography.bodySmall.copyWith(
                           color: AppColors.successGreen,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -482,13 +536,13 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
               Row(
                 children: [
                   const Icon(
-                    Icons.cancel,
+                    Icons.cancel_rounded,
                     color: AppColors.dangerCrimson,
-                    size: 32,
+                    size: 26,
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    'Verifikasi KYC Ditolak',
+                    'Verifikasi Perlu Diperbaiki',
                     style: AppTypography.headingSmall.copyWith(
                       color: AppColors.dangerCrimson,
                     ),
@@ -497,15 +551,15 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Alasan dari Admin: ${_rejectionReason ?? "Dokumen tidak terbaca jelas atau tidak sesuai ketentuan."}',
+                'Catatan: ${_rejectionReason ?? "Dokumen kurang jelas atau belum sesuai panduan."}',
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.dangerCrimson,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Silakan ambil ulang foto KTP dan foto selfie Anda sesuai instruksi di bawah lalu kirim kembali.',
+              const SizedBox(height: 4),
+              const Text(
+                'Silakan unggah ulang foto KTP dan selfie Anda di bawah ini.',
                 style: AppTypography.bodySmall,
               ),
             ],
@@ -525,9 +579,9 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
           child: Row(
             children: [
               const Icon(
-                Icons.schedule,
+                Icons.schedule_rounded,
                 color: AppColors.warningAmber,
-                size: 36,
+                size: 32,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -535,16 +589,16 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Menunggu Verifikasi Admin',
+                      'Menunggu Verifikasi Identitas',
                       style: AppTypography.headingSmall.copyWith(
                         color: AppColors.warningAmber,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Dokumen Anda sedang dalam antrean pemeriksaan oleh tim operasional Beres (maks. 1x24 jam).',
+                      'Unggah dokumen di bawah jika belum mengirim, atau tunggu proses peninjauan oleh tim operasional (maksimal 1x24 jam).',
                       style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.warningAmber,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ],

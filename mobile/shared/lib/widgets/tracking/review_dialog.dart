@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../services/review_service.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
 
-/// Dialog Penilaian & Ulasan Pekerjaan oleh User (FR-021)
+/// Dialog Penilaian & Ulasan Pekerjaan oleh Pelanggan
 class ReviewDialog extends StatefulWidget {
   final String jobId;
   final ReviewService reviewService;
@@ -52,8 +53,8 @@ class _ReviewDialogState extends State<ReviewDialog> {
           widget.onReviewSubmitted();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              backgroundColor: AppColors.success,
-              content: Text('Terima kasih atas ulasan & penilaian Anda!'),
+              backgroundColor: AppColors.successGreen,
+              content: Text('Terima kasih atas penilaian dan ulasan Anda!'),
             ),
           );
         } else {
@@ -76,7 +77,9 @@ class _ReviewDialogState extends State<ReviewDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: AppColors.surfaceWhite,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
         child: Padding(
@@ -87,54 +90,59 @@ class _ReviewDialogState extends State<ReviewDialog> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.star, color: Colors.amber, size: 28),
+                  const Icon(
+                    Icons.star_rounded,
+                    color: AppColors.warningAmber,
+                    size: 26,
+                  ),
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(
-                      'Beri Ulasan Pekerjaan (FR-021)',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      'Beri Penilaian Mitra',
+                      style: AppTypography.headingSmall,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(Icons.close_rounded, size: 20),
                     onPressed: () => Navigator.of(context).pop(),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
-              const Divider(height: 20),
+              const Divider(height: 22),
               if (_errorMessage != null)
                 Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0x1AB91C1C),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.error),
+                    color: AppColors.dangerLight,
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     _errorMessage!,
-                    style:
-                        const TextStyle(color: AppColors.error, fontSize: 12),
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.dangerCrimson,
+                    ),
                   ),
                 ),
               const Text(
-                'Bagaimana kepuasan Anda terhadap hasil kerja Mitra Tukang?',
+                'Bagaimana kepuasan Anda terhadap hasil kerja mitra tukang?',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.black87),
+                style: AppTypography.bodyMedium,
               ),
-              const SizedBox(height: 16),
-
-              // Bintang 1 - 5
+              const SizedBox(height: 14),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(5, (index) {
                   final starVal = index + 1;
                   return IconButton(
                     icon: Icon(
-                      starVal <= _rating ? Icons.star : Icons.star_border,
-                      color: Colors.amber,
-                      size: 36,
+                      starVal <= _rating
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      color: AppColors.warningAmber,
+                      size: 38,
                     ),
                     onPressed: () {
                       setState(() {
@@ -146,34 +154,29 @@ class _ReviewDialogState extends State<ReviewDialog> {
               ),
               Center(
                 child: Text(
-                  '$_rating Bintang',
+                  '$_rating dari 5 Bintang',
                   style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.amber),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.warningAmber,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _commentController,
                 maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: 'Komentar / Ulasan (Opsional)',
+                decoration: const InputDecoration(
+                  labelText: 'Ulasan (Opsional)',
                   hintText:
-                      'Tukang datang tepat waktu, kerjaan rapi dan bersih...',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  contentPadding: const EdgeInsets.all(12),
+                      'Ceritakan pengalaman Anda menggunakan jasa mitra ini...',
                 ),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.trustCobalt,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
                 ),
                 onPressed: _isSubmitting ? null : _submit,
                 child: _isSubmitting
@@ -181,13 +184,11 @@ class _ReviewDialogState extends State<ReviewDialog> {
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
-                    : const Text(
-                        'Kirim Penilaian',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold),
-                      ),
+                    : const Text('Kirim Ulasan'),
               ),
             ],
           ),

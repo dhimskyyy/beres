@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models/nota.dart';
+import '../../services/device_permission_service.dart';
 import '../../services/tracking_service.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
 
-/// Dialog Form Penyelesaian Tugas oleh Mitra Tukang (FR-025, BR-32)
-/// Menegakkan:
-/// 1. Unggah >= 1 Foto Hasil Kerja (maks 5)
-/// 2. Pemilihan Metode Bayar Aktual (CASH, BANK_TRANSFER, E_WALLET)
-/// 3. Wajib centang "User sudah membayar sesuai Nota Sah"
-/// 4. Wajib unggah Bukti Bayar jika metode non-tunai (Transfer / E-Wallet)
+/// Dialog Form Penyelesaian Pekerjaan oleh Mitra Tukang
 class JobCompletionDialog extends StatefulWidget {
   final String jobId;
   final TrackingService trackingService;
@@ -42,31 +40,130 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
     super.dispose();
   }
 
-  void _addMockWorkPhoto() {
+  Future<void> _pickWorkPhoto() async {
     if (_workPhotoUrls.length >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Maksimal 5 foto hasil kerja')),
       );
       return;
     }
-    setState(() {
-      _workPhotoUrls.add(
-        'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
-      );
-    });
+
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.surfaceWhite,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(
+                  Icons.camera_alt_outlined,
+                  color: AppColors.safetyOrange,
+                ),
+                title: const Text(
+                  'Ambil Foto dengan Kamera',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: AppColors.safetyOrange,
+                ),
+                title: const Text(
+                  'Pilih dari Galeri',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    final permissionService = DevicePermissionService();
+    final file = source == ImageSource.camera
+        ? await permissionService.pickImageFromCamera()
+        : await permissionService.pickImageFromGallery();
+
+    if (file != null && mounted) {
+      setState(() {
+        _workPhotoUrls.add(
+          'https://storage.beres.id/jobs-media/work_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        );
+      });
+    }
   }
 
-  void _addMockProofPhoto() {
-    setState(() {
-      _paymentProofPhotoUrl =
-          'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80';
-    });
+  Future<void> _pickProofPhoto() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.surfaceWhite,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(
+                  Icons.camera_alt_outlined,
+                  color: AppColors.safetyOrange,
+                ),
+                title: const Text(
+                  'Ambil Foto Kamera',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: AppColors.safetyOrange,
+                ),
+                title: const Text(
+                  'Pilih dari Galeri / Screenshot',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    final permissionService = DevicePermissionService();
+    final file = source == ImageSource.camera
+        ? await permissionService.pickImageFromCamera()
+        : await permissionService.pickImageFromGallery();
+
+    if (file != null && mounted) {
+      setState(() {
+        _paymentProofPhotoUrl =
+            'https://storage.beres.id/jobs-media/proof_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      });
+    }
   }
 
   Future<void> _submit() async {
     if (_workPhotoUrls.isEmpty) {
       setState(() {
-        _errorMessage = 'Wajib mengunggah minimal 1 Foto Hasil Kerja (BR-32)';
+        _errorMessage = 'Unggah minimal 1 foto hasil pekerjaan.';
       });
       return;
     }
@@ -74,7 +171,7 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
     if (!_userPaidConfirmed) {
       setState(() {
         _errorMessage =
-            'Anda wajib mencentang konfirmasi pembayaran pelanggan (BR-32)';
+            'Centang konfirmasi bahwa pelanggan telah melakukan pembayaran.';
       });
       return;
     }
@@ -83,7 +180,7 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
         (_paymentProofPhotoUrl == null || _paymentProofPhotoUrl!.isEmpty)) {
       setState(() {
         _errorMessage =
-            'Wajib melampirkan Screenshot Bukti Bayar untuk metode non-tunai (BR-32)';
+            'Lampirkan bukti pembayaran untuk metode transfer atau e-wallet.';
       });
       return;
     }
@@ -111,8 +208,8 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
           widget.onCompleted();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              backgroundColor: AppColors.success,
-              content: Text('Selamat! Pekerjaan berhasil diselesaikan.'),
+              backgroundColor: AppColors.successGreen,
+              content: Text('Pekerjaan berhasil diselesaikan.'),
             ),
           );
         } else {
@@ -138,7 +235,9 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
     final isNonCash = _selectedPaymentMethod != PaymentMethod.cash;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: AppColors.surfaceWhite,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500, maxHeight: 680),
         child: Padding(
@@ -152,19 +251,23 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.check_circle,
-                          color: AppColors.success, size: 28),
+                      const Icon(
+                        Icons.check_circle_outline_rounded,
+                        color: AppColors.successGreen,
+                        size: 24,
+                      ),
                       const SizedBox(width: 10),
                       const Expanded(
                         child: Text(
-                          'Selesaikan Pekerjaan (BR-32)',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
+                          'Selesaikan Pekerjaan',
+                          style: AppTypography.headingSmall,
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close),
+                        icon: const Icon(Icons.close_rounded, size: 20),
                         onPressed: () => Navigator.of(context).pop(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
                     ],
                   ),
@@ -174,33 +277,37 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0x1AB91C1C),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.error),
+                        color: AppColors.dangerLight,
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         _errorMessage!,
-                        style: const TextStyle(
-                            color: AppColors.error,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500),
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.dangerCrimson,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-
-                  // 1. FOTO HASIL KERJA (>= 1, MAKS 5)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        '1. Foto Hasil Kerja (Wajib >= 1)*',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold),
+                      Text(
+                        'Foto Hasil Pekerjaan',
+                        style: AppTypography.bodySmall.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       TextButton.icon(
-                        icon: const Icon(Icons.add_a_photo, size: 18),
-                        label: const Text('Tambah Foto',
-                            style: TextStyle(fontSize: 12)),
-                        onPressed: _addMockWorkPhoto,
+                        icon: const Icon(
+                          Icons.add_a_photo_outlined,
+                          size: 16,
+                        ),
+                        label: const Text(
+                          'Tambah Foto',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        onPressed: _pickWorkPhoto,
                       ),
                     ],
                   ),
@@ -209,14 +316,15 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey.shade300),
+                        color: AppColors.backgroundLight,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.borderLight),
                       ),
                       child: const Center(
                         child: Text(
-                          'Belum ada foto. Klik "Tambah Foto" di atas.',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                          'Unggah minimal 1 foto hasil pekerjaan yang telah selesai.',
+                          style: AppTypography.bodySmall,
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     )
@@ -228,10 +336,10 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
                         return Stack(
                           children: [
                             Container(
-                              width: 70,
-                              height: 70,
+                              width: 72,
+                              height: 72,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(10),
                                 image: DecorationImage(
                                   image: NetworkImage(url),
                                   fit: BoxFit.cover,
@@ -239,8 +347,8 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
                               ),
                             ),
                             Positioned(
-                              top: 2,
-                              right: 2,
+                              top: 4,
+                              right: 4,
                               child: GestureDetector(
                                 onTap: () {
                                   setState(() {
@@ -249,12 +357,15 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
                                 },
                                 child: Container(
                                   decoration: const BoxDecoration(
-                                    color: Colors.red,
+                                    color: AppColors.dangerCrimson,
                                     shape: BoxShape.circle,
                                   ),
-                                  padding: const EdgeInsets.all(2),
-                                  child: const Icon(Icons.close,
-                                      size: 14, color: Colors.white),
+                                  padding: const EdgeInsets.all(3),
+                                  child: const Icon(
+                                    Icons.close_rounded,
+                                    size: 13,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
@@ -262,23 +373,17 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
                         );
                       }).toList(),
                     ),
-
                   const SizedBox(height: 16),
-
-                  // 2. METODE PEMBAYARAN AKTUAL
-                  const Text(
-                    '2. Metode Bayar Aktual*',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  Text(
+                    'Metode Pembayaran Aktual',
+                    style: AppTypography.bodySmall.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<PaymentMethod>(
                     initialValue: _selectedPaymentMethod,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                    ),
                     items: const [
                       DropdownMenuItem(
                         value: PaymentMethod.cash,
@@ -301,47 +406,57 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
                       }
                     },
                   ),
-
-                  // 3. UPLOAD BUKTI BAYAR JIKA NON-TUNAI
                   if (isNonCash) ...[
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Bukti Transfer / Screenshot*',
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary),
+                        Text(
+                          'Bukti Pembayaran Non-Tunai',
+                          style: AppTypography.bodySmall.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.trustCobalt,
+                          ),
                         ),
                         TextButton.icon(
-                          icon: const Icon(Icons.upload_file, size: 16),
-                          label: const Text('Unggah Bukti',
-                              style: TextStyle(fontSize: 12)),
-                          onPressed: _addMockProofPhoto,
+                          icon: const Icon(Icons.upload_file_rounded, size: 16),
+                          label: const Text(
+                            'Unggah Bukti',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                          onPressed: _pickProofPhoto,
                         ),
                       ],
                     ),
                     if (_paymentProofPhotoUrl != null)
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0x142563EB),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.primary),
+                          color: AppColors.userBadgeBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppColors.trustCobalt.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.check_circle,
-                                size: 18, color: AppColors.primary),
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              size: 18,
+                              color: AppColors.trustCobalt,
+                            ),
                             const SizedBox(width: 8),
                             const Expanded(
-                              child: Text('Screenshot bukti bayar terlampir',
-                                  style: TextStyle(fontSize: 12)),
+                              child: Text(
+                                'Bukti pembayaran terlampir',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.close, size: 16),
+                              icon: const Icon(Icons.close_rounded, size: 16),
                               onPressed: () {
                                 setState(() {
                                   _paymentProofPhotoUrl = null;
@@ -353,31 +468,29 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
                       )
                     else
                       const Text(
-                        'Wajib melampirkan foto screenshot transfer bank / mutasi e-wallet.',
-                        style: TextStyle(fontSize: 11, color: Colors.orange),
+                        'Lampirkan tangkapan layar bukti transfer atau pembayaran e-wallet.',
+                        style: AppTypography.bodySmall,
                       ),
                   ],
-
                   const SizedBox(height: 16),
-
-                  // 4. CHECKBOX KONFIRMASI PEMBAYARAN
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.amber.shade400),
+                  Material(
+                    color: AppColors.backgroundLight,
+                    borderRadius: BorderRadius.circular(10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: const BorderSide(color: AppColors.borderLight),
                     ),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    clipBehavior: Clip.antiAlias,
                     child: CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                       value: _userPaidConfirmed,
                       title: const Text(
-                        'Saya menyatakan Pelanggan telah membayar lunas sesuai Nota Sah (BR-32)*',
+                        'Pelanggan telah membayar lunas sesuai Nota Sah',
                         style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       onChanged: (val) {
                         setState(() {
@@ -387,32 +500,21 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
                       controlAffinity: ListTileControlAffinity.leading,
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
-                  // 5. CATATAN PENYELESAIAN (OPSIONAL)
                   TextFormField(
                     controller: _noteController,
                     maxLines: 2,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'Catatan Penyelesaian (Opsional)',
                       hintText:
-                          'Contoh: Pipa bocor telah ditambal dan dites 15 menit lancar.',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.all(12),
+                          'Contoh: Perbaikan telah diuji coba dan berjalan normal.',
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
+                      backgroundColor: AppColors.successGreen,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
                     ),
                     onPressed: _isSubmitting ? null : _submit,
                     child: _isSubmitting
@@ -420,13 +522,11 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
-                        : const Text(
-                            'Selesaikan Tugas & Terima Pembayaran',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
+                        : const Text('Konfirmasi Selesai'),
                   ),
                 ],
               ),

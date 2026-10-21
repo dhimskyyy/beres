@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/category.dart';
 import '../models/job.dart';
 import '../models/job_feed_item.dart';
+import 'tukang_service.dart';
 
 /// Service untuk Manajemen Pekerjaan, Penawaran (Bid), dan Atomic Lock Tukang
 /// (Milestone M3: FR-010, FR-011, FR-012, FR-020, FR-022, FR-027, BR-15, BR-16, BR-17, BR-21)
@@ -10,6 +12,48 @@ class JobService {
 
   JobService({SupabaseClient? client})
       : _client = client ?? Supabase.instance.client;
+
+  /// Mengambil daftar kategori pekerjaan aktif
+  Future<List<JobCategory>> getActiveCategories() {
+    return TukangService().getActiveCategories();
+  }
+
+  /// Mengambil pekerjaan aktif yang sedang dikunci untuk Mitra Tukang
+  Future<Job?> getActiveLockedJobForTukang({String? tukangId}) async {
+    final effectiveTukangId = tukangId ?? _client.auth.currentUser?.id;
+    if (effectiveTukangId == null) return null;
+
+    final response = await _client
+        .from('jobs')
+        .select()
+        .eq('locked_tukang_id', effectiveTukangId)
+        .inFilter('status', [
+          'NEGOTIATING',
+          'NOTA_APPROVED',
+          'ON_THE_WAY',
+          'ARRIVED',
+          'WORKING',
+          'CANCEL_PENDING',
+        ])
+        .order('created_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return Job.fromJson(response);
+  }
+
+  /// Membatalkan pekerjaan berstatus OPEN oleh Pelanggan
+  Future<void> cancelOpenJobByUser(String jobId) async {
+    await _client
+        .from('jobs')
+        .update({
+          'status': 'CANCELLED',
+          'cancelled_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', jobId)
+        .eq('status', 'OPEN');
+  }
 
   /// Memposting pekerjaan baru oleh User (FR-010, BR-16)
   /// Mendukung validasi pin lokasi maksimal 2 km dari GPS HP User

@@ -111,7 +111,7 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Status diubah ke ON_THE_WAY. Live GPS aktif.'),
+            content: Text('Status diperbarui menjadi Menuju Lokasi.'),
             backgroundColor: AppColors.successGreen,
           ),
         );
@@ -120,7 +120,7 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mengubah status: $e'),
+            content: Text('Gagal memperbarui status: $e'),
             backgroundColor: AppColors.dangerCrimson,
           ),
         );
@@ -134,23 +134,30 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Lepas ke Job Portal?'),
+        backgroundColor: AppColors.surfaceWhite,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Akhiri Diskusi & Lepas Pesanan?',
+          style: AppTypography.headingSmall,
+        ),
         content: const Text(
-          'Pekerjaan akan dikembalikan ke status OPEN di portal agar dapat dilamar tukang lain. '
-          'Sesuai aturan BR-70, TIDAK ADA STRIKE bagi pihak mana pun.',
+          'Pesanan akan dikembalikan ke bursa terbuka agar dapat dilamar oleh mitra tukang lain tanpa penalti.',
+          style: AppTypography.bodyMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
+            child: const Text('Kembali'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.dangerCrimson,
               foregroundColor: Colors.white,
+              minimumSize: const Size(120, 42),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Lepas ke Portal (BR-70)'),
+            child: const Text('Lepas Pesanan'),
           ),
         ],
       ),
@@ -168,9 +175,8 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-                'Pekerjaan berhasil dilepas kembali ke portal tanpa sanksi strike.'),
-            backgroundColor: AppColors.trustCobalt,
+            content: Text('Pesanan telah dikembalikan ke bursa terbuka.'),
+            backgroundColor: AppColors.primaryNavy,
           ),
         );
       }
@@ -178,7 +184,7 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal melepas pekerjaan: $e'),
+            content: Text('Gagal melepas pesanan: $e'),
             backgroundColor: AppColors.dangerCrimson,
           ),
         );
@@ -195,12 +201,20 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
 
     if (status == 'NEGOTIATING') {
       return Container(
-        color: AppColors.warningAmber.withValues(alpha: 0.12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: const BoxDecoration(
+          color: AppColors.warningLight,
+          border: Border(
+            bottom: BorderSide(color: AppColors.borderLight),
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           children: [
-            const Icon(Icons.timer_outlined,
-                color: AppColors.warningAmber, size: 22),
+            const Icon(
+              Icons.schedule_rounded,
+              color: AppColors.warningAmber,
+              size: 20,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -210,43 +224,50 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
                   Row(
                     children: [
                       Text(
-                        'Timer Negosiasi (BR-70): ',
+                        'Batas Waktu Diskusi: ',
                         style: AppTypography.bodySmall.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.brown.shade800,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       Text(
                         _formatTimer(_remainingSeconds),
                         style: AppTypography.bodySmall.copyWith(
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                           color: AppColors.dangerCrimson,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Jika tidak aktif > 30 mnt, job kembali ke portal tanpa Strike.',
-                    style: AppTypography.bodySmall.copyWith(
+                  const Text(
+                    'Otomatis dilepas ke bursa jika tidak ada balasan 30 menit.',
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Colors.brown.shade700,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             OutlinedButton(
               onPressed: _isActionLoading ? null : _handleCancelNegotiation,
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.dangerCrimson,
-                side: const BorderSide(color: AppColors.dangerCrimson),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                minimumSize: Size.zero,
+                side: BorderSide(
+                  color: AppColors.dangerCrimson.withValues(alpha: 0.4),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                minimumSize: const Size(0, 34),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text('Batal', style: TextStyle(fontSize: 12)),
+              child: const Text(
+                'Ganti Mitra',
+                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+              ),
             ),
           ],
         ),
@@ -255,14 +276,22 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
 
     if (status == 'NOTA_APPROVED') {
       return Container(
-        color: AppColors.trustCobalt.withValues(alpha: 0.12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: const BoxDecoration(
+          color: AppColors.userBadgeBg,
+          border: Border(
+            bottom: BorderSide(color: AppColors.borderLight),
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Column(
           children: [
             Row(
               children: [
-                const Icon(Icons.departure_board_outlined,
-                    color: AppColors.trustCobalt, size: 24),
+                const Icon(
+                  Icons.directions_run_rounded,
+                  color: AppColors.trustCobalt,
+                  size: 20,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -271,27 +300,29 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
                       Row(
                         children: [
                           Text(
-                            'Waktu Berangkat (BR-31): ',
+                            'Batas Waktu Berangkat: ',
                             style: AppTypography.bodySmall.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.trustCobalt,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           Text(
                             _formatTimer(_remainingSeconds),
                             style: AppTypography.bodySmall.copyWith(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                               color: AppColors.dangerCrimson,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 2),
                       Text(
                         isTukang
-                            ? 'Wajib klik Berangkat dalam 30 mnt (+1 Strike jika lewat)'
-                            : 'Menunggu mitra tukang menekan Berangkat ke Lokasi...',
-                        style: AppTypography.bodySmall.copyWith(fontSize: 11),
+                            ? 'Segera tekan tombol berangkat sebelum batas waktu habis.'
+                            : 'Menunggu mitra tukang berangkat menuju lokasi Anda.',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -299,17 +330,17 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
               ],
             ),
             if (isTukang) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: _isActionLoading ? null : _handleDepartJob,
                   icon: const Icon(Icons.navigation_outlined, size: 18),
-                  label: const Text('Berangkat ke Lokasi Sekarang (BR-31)'),
+                  label: const Text('Berangkat ke Lokasi Sekarang'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.trustCobalt,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    minimumSize: const Size.fromHeight(42),
                   ),
                 ),
               ),
@@ -321,20 +352,28 @@ class _TimerBannerWidgetState extends State<TimerBannerWidget> {
 
     if (status == 'ON_THE_WAY' || status == 'ARRIVED' || status == 'WORKING') {
       return Container(
-        color: AppColors.successGreen.withValues(alpha: 0.1),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: const BoxDecoration(
+          color: AppColors.successLight,
+          border: Border(
+            bottom: BorderSide(color: AppColors.borderLight),
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         child: Row(
           children: [
-            const Icon(Icons.check_circle_outline,
-                color: AppColors.successGreen, size: 18),
+            const Icon(
+              Icons.check_circle_outline_rounded,
+              color: AppColors.successGreen,
+              size: 18,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 status == 'ON_THE_WAY'
-                    ? 'Tukang sedang dalam perjalanan ke lokasi.'
+                    ? 'Mitra tukang sedang menuju lokasi Anda.'
                     : status == 'ARRIVED'
-                        ? 'Tukang telah sampai di lokasi pekerjaan.'
-                        : 'Pekerjaan sedang berlangsung (Dilarang membatalkan BR-65).',
+                        ? 'Mitra tukang telah tiba di lokasi.'
+                        : 'Pekerjaan sedang berlangsung.',
                 style: AppTypography.bodySmall.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.successGreen,
