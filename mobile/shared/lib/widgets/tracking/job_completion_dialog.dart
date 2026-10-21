@@ -475,7 +475,6 @@ class _JobCompletionDialogState extends State<JobCompletionDialog> {
                   const SizedBox(height: 16),
                   Material(
                     color: AppColors.backgroundLight,
-                    borderRadius: BorderRadius.circular(10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                       side: const BorderSide(color: AppColors.borderLight),

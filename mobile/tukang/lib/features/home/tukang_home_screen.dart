@@ -688,7 +688,6 @@ class _TukangHomeScreenState extends ConsumerState<TukangHomeScreen> {
 
           Material(
             color: AppColors.surfaceWhite,
-            borderRadius: BorderRadius.circular(16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: const BorderSide(color: AppColors.borderLight),
