@@ -28,50 +28,9 @@ interface StrikeRecord {
   job_description?: string;
 }
 
-const mockAccounts: AccountRow[] = [
-  {
-    id: 'usr-1',
-    email: 'hendra.gunawan@gmail.com',
-    role: 'USER',
-    fullName: 'Hendra Gunawan',
-    phone: '081234567890',
-    strikes: 1,
-    suspendType: 'NONE',
-  },
-  {
-    id: 'tkg-1',
-    email: 'budi.santoso@gmail.com',
-    role: 'TUKANG',
-    fullName: 'Budi Santoso',
-    phone: '081298765432',
-    strikes: 2,
-    suspendType: 'NONE',
-  },
-  {
-    id: 'tkg-2',
-    email: 'rudi.hartono@gmail.com',
-    role: 'TUKANG',
-    fullName: 'Rudi Hartono',
-    phone: '081311223344',
-    strikes: 4,
-    suspendType: 'AUTO_2_DAYS',
-    suspendedUntil: '2026-10-21T14:30:00Z',
-    suspendReason: 'Terkena sanksi otomatis 2 hari karena telah melampaui 3x strike dalam bulan ini (BR-42b).',
-  },
-  {
-    id: 'usr-2',
-    email: 'farhan.badpay@gmail.com',
-    role: 'USER',
-    fullName: 'Farhan Maulana',
-    phone: '081988776655',
-    strikes: 0,
-    suspendType: 'MANUAL_PERMANENT',
-    suspendReason: 'Vonis bersalah laporan masalah pembayaran (BR-67). Menolak membayar hasil kerja tukang.',
-  },
-];
-
 export default function AccountsManagementPage() {
-  const [accounts, setAccounts] = useState<AccountRow[]>(mockAccounts);
+  const [accounts, setAccounts] = useState<AccountRow[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<'ALL' | 'USER' | 'TUKANG'>('ALL');
   const [selectedSuspend, setSelectedSuspend] = useState<'ALL' | 'SUSPENDED' | 'ACTIVE'>('ALL');
@@ -85,13 +44,14 @@ export default function AccountsManagementPage() {
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
   const fetchAccounts = useCallback(async () => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, email, role, full_name, phone, suspend_type, suspended_until, suspend_reason')
         .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         // Ambil jumlah strike aktif dari tabel strikes
         const { data: strikesData } = await supabase
           .from('strikes')
@@ -128,7 +88,9 @@ export default function AccountsManagementPage() {
         setAccounts(mapped);
       }
     } catch {
-      // Fallback ke mock
+      setAccounts([]);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -319,7 +281,23 @@ export default function AccountsManagementPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 text-slate-300">
-              {filtered.map((acc) => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      <span>Memuat data akun real-time...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-500">
+                    Tidak ada akun yang sesuai dengan kriteria pencarian.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((acc) => (
                 <tr key={acc.id} className="hover:bg-slate-800/40 transition-colors">
                   <td className="py-3.5 px-4">
                     <div className="font-semibold text-white">{acc.fullName}</div>
@@ -405,7 +383,8 @@ export default function AccountsManagementPage() {
                     )}
                   </td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </div>

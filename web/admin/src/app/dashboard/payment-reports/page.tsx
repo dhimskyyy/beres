@@ -42,51 +42,10 @@ interface SupabaseReportRow {
   admin_resolution_notes: string | null;
 }
 
-const mockPaymentReports: PaymentReport[] = [
-  {
-    id: 'rep-001',
-    job_id: 'job-dispute-1',
-    reporter_id: 'tkg-1',
-    reporter_name: 'Budi Santoso (Tukang Pipa)',
-    reported_user_id: 'usr-bad-1',
-    reported_user_name: 'Farhan Maulana',
-    reported_user_email: 'farhan.badpay@gmail.com',
-    category: 'PAYMENT_DEFAULT',
-    is_priority: true,
-    description:
-      'Pipa wastafel sudah diganti baru dan disambung ke saluran pembuangan utama. Saat dimintai pembayaran tunai Rp 150.000 sesuai Nota Sah No. 1, pelanggan menolak membayar dengan alasan tidak ada uang tunai dan menolak transfer.',
-    evidence_photos: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
-    ],
-    status: 'OPEN',
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: 'rep-002',
-    job_id: 'job-dispute-2',
-    reporter_id: 'tkg-2',
-    reporter_name: 'Rudi Hartono (Tukang Listrik)',
-    reported_user_id: 'usr-bad-2',
-    reported_user_name: 'Denny Sumargo',
-    reported_user_email: 'denny.mock@gmail.com',
-    category: 'PAYMENT_DEFAULT',
-    is_priority: true,
-    description:
-      'Nota Sah disetujui Rp 200.000 untuk 2 titik saklar. Pelanggan hanya mentransfer Rp 100.000 dan mengusir saya dari lokasi tanpa mau melunasi sisa Rp 100.000.',
-    evidence_photos: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
-    ],
-    status: 'RESOLVED',
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-    admin_resolution_notes:
-      'Investigasi chat dan screenshot mutasi terbukti pelanggan hanya transfer Rp 100rb. Akun pelanggan langsung di-suspend permanen sesuai aturan BR-67.',
-  },
-];
-
 export default function PaymentReportsPage() {
-  const [reports, setReports] = useState<PaymentReport[]>(mockPaymentReports);
-  const [selectedReport, setSelectedReport] = useState<PaymentReport | null>(mockPaymentReports[0]);
+  const [reports, setReports] = useState<PaymentReport[]>([]);
+  const [selectedReport, setSelectedReport] = useState<PaymentReport | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'OPEN' | 'RESOLVED'>('OPEN');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isVonisModalOpen, setIsVonisModalOpen] = useState<boolean>(false);
@@ -95,6 +54,7 @@ export default function PaymentReportsPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const fetchReports = useCallback(async () => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('reports')
@@ -105,7 +65,7 @@ export default function PaymentReportsPage() {
         .eq('category', 'PAYMENT_DEFAULT')
         .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         const rows = data as unknown as SupabaseReportRow[];
         const mapped: PaymentReport[] = rows.map((d) => ({
           id: d.id,
@@ -125,13 +85,15 @@ export default function PaymentReportsPage() {
         setReports(mapped);
         setSelectedReport((prev) => {
           if (!prev || !mapped.some((m) => m.id === prev.id)) {
-            return mapped[0];
+            return mapped[0] || null;
           }
           return prev;
         });
       }
     } catch {
-      // Mock fallback
+      setReports([]);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -283,7 +245,12 @@ export default function PaymentReportsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Reports List */}
         <div className="lg:col-span-5 space-y-3">
-          {filteredReports.length === 0 ? (
+          {isLoading ? (
+            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-xl text-slate-500 text-sm flex flex-col items-center justify-center gap-2">
+              <div className="w-6 h-6 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+              <span>Memuat data laporan pembayaran...</span>
+            </div>
+          ) : filteredReports.length === 0 ? (
             <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-xl text-slate-500 text-sm">
               Tidak ada laporan dalam kategori ini.
             </div>

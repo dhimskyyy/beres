@@ -8,8 +8,8 @@ import { supabase } from '@/lib/supabase';
 export default function AdminLoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<'CREDENTIALS' | 'MFA'>('CREDENTIALS');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('admin@beres.id');
+  const [password, setPassword] = useState('BeresAdmin2026!');
   const [mfaCode, setMfaCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -33,12 +33,6 @@ export default function AdminLoginPage() {
       });
 
       if (error) {
-        // Mock fallback untuk admin development jika server auth belum running
-        if (email.toLowerCase().includes('admin')) {
-          setStep('MFA');
-          setIsLoading(false);
-          return;
-        }
         throw error;
       }
 

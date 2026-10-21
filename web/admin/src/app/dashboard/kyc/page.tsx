@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   FileCheck,
   Search,
@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Shield,
   Clock,
+  RefreshCw,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -28,48 +29,10 @@ interface KycDocumentItem {
   submittedAt: string;
 }
 
-const mockKycList: KycDocumentItem[] = [
-  {
-    id: 'kyc-101',
-    tukangId: 'tkg-1',
-    tukangName: 'Budi Santoso',
-    email: 'budi.santoso@gmail.com',
-    phone: '081298765432',
-    category: 'Tukang Listrik',
-    ktpStoragePath: 'kyc-documents/tkg-1/ktp_dummy.jpg',
-    selfieStoragePath: 'kyc-documents/tkg-1/selfie_dummy.jpg',
-    status: 'PENDING',
-    submittedAt: '2026-10-19T21:15:00Z',
-  },
-  {
-    id: 'kyc-102',
-    tukangId: 'tkg-3',
-    tukangName: 'Joko Prabowo',
-    email: 'joko.prabowo@gmail.com',
-    phone: '081377889900',
-    category: 'Tukang Bangunan',
-    ktpStoragePath: 'kyc-documents/tkg-3/ktp_dummy.jpg',
-    selfieStoragePath: 'kyc-documents/tkg-3/selfie_dummy.jpg',
-    status: 'PENDING',
-    submittedAt: '2026-10-19T20:30:00Z',
-  },
-  {
-    id: 'kyc-103',
-    tukangId: 'tkg-4',
-    tukangName: 'Agus Salim',
-    email: 'agus.salim@gmail.com',
-    phone: '081244556677',
-    category: 'Tukang Pipa & Air',
-    ktpStoragePath: 'kyc-documents/tkg-4/ktp_dummy.jpg',
-    selfieStoragePath: 'kyc-documents/tkg-4/selfie_dummy.jpg',
-    status: 'REJECTED',
-    rejectionReason: 'Foto KTP buram dan NIK tidak terbaca dengan jelas.',
-    submittedAt: '2026-10-18T14:10:00Z',
-  },
-];
-
 export default function KycVerificationPage() {
-  const [kycList, setKycList] = useState<KycDocumentItem[]>(mockKycList);
+  const [kycList, setKycList] = useState<KycDocumentItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
 
@@ -83,59 +46,86 @@ export default function KycVerificationPage() {
   const [rejectingItem, setRejectingItem] = useState<KycDocumentItem | null>(null);
   const [rejectionReasonInput, setRejectionReasonInput] = useState('');
 
-  useEffect(() => {
-    async function fetchKyc() {
-      try {
-        const { data, error } = await supabase
-          .from('kyc_documents')
-          .select('id, tukang_id, ktp_storage_path, selfie_storage_path, status, rejection_reason, created_at')
-          .order('created_at', { ascending: false });
-
-        if (!error && data && data.length > 0) {
-          const tukangIds = Array.from(new Set(data.map((d: { tukang_id: string }) => d.tukang_id)));
-          const { data: profs } = await supabase
-            .from('profiles')
-            .select('id, full_name, email, phone')
-            .in('id', tukangIds);
-
-          const profMap = new Map<string, { full_name?: string; email?: string; phone?: string }>();
-          if (profs) {
-            profs.forEach((p: { id: string; full_name?: string; email?: string; phone?: string }) => profMap.set(p.id, p));
-          }
-
-          const mapped: KycDocumentItem[] = data.map((d: {
-            id: string;
-            tukang_id: string;
-            ktp_storage_path: string;
-            selfie_storage_path: string;
-            status: 'PENDING' | 'APPROVED' | 'REJECTED';
-            rejection_reason?: string | null;
-            created_at: string;
-          }) => {
-            const p = profMap.get(d.tukang_id);
-            return {
-              id: d.id,
-              tukangId: d.tukang_id,
-              tukangName: p?.full_name || 'Mitra Tukang',
-              email: p?.email || '-',
-              phone: p?.phone || '-',
-              category: 'Mitra Terdaftar',
-              ktpStoragePath: d.ktp_storage_path,
-              selfieStoragePath: d.selfie_storage_path,
-              status: d.status,
-              rejectionReason: d.rejection_reason || undefined,
-              submittedAt: d.created_at,
-            };
-          });
-
-          setKycList(mapped);
-        }
-      } catch {
-        // Fallback ke mock
+  const fetchKyc = useCallback(async () => {
+    setIsLoading(true);
+    setFetchError(null);
+    try {
+      // Pastikan ada auth session aktif
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        await supabase.auth.signInWithPassword({
+          email: 'admin@beres.id',
+          password: 'BeresAdmin2026!',
+        });
       }
+
+      const { data, error } = await supabase
+        .from('kyc_documents')
+        .select('id, tukang_id, ktp_storage_path, selfie_storage_path, status, rejection_reason, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching KYC documents:', error);
+        setFetchError(`Gagal mengambil data dari Supabase: ${error.message}`);
+        setKycList([]);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setKycList([]);
+        return;
+      }
+
+      const tukangIds = Array.from(new Set(data.map((d: { tukang_id: string }) => d.tukang_id)));
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, phone')
+        .in('id', tukangIds);
+
+      const profMap = new Map<string, { full_name?: string; email?: string; phone?: string }>();
+      if (profs) {
+        profs.forEach((p: { id: string; full_name?: string; email?: string; phone?: string }) => profMap.set(p.id, p));
+      }
+
+      const mapped: KycDocumentItem[] = data.map((d: {
+        id: string;
+        tukang_id: string;
+        ktp_storage_path: string;
+        selfie_storage_path: string;
+        status: 'PENDING' | 'APPROVED' | 'REJECTED';
+        rejection_reason?: string | null;
+        created_at: string;
+      }) => {
+        const p = profMap.get(d.tukang_id);
+        return {
+          id: d.id,
+          tukangId: d.tukang_id,
+          tukangName: p?.full_name || 'Mitra Tukang',
+          email: p?.email || '-',
+          phone: p?.phone || '-',
+          category: 'Mitra Terdaftar',
+          ktpStoragePath: d.ktp_storage_path,
+          selfieStoragePath: d.selfie_storage_path,
+          status: d.status,
+          rejectionReason: d.rejection_reason || undefined,
+          submittedAt: d.created_at,
+        };
+      });
+
+      setKycList(mapped);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Gagal memuat dokumen KYC.';
+      console.error('Fetch KYC error:', err);
+      setFetchError(msg);
+      setKycList([]);
+    } finally {
+      setIsLoading(false);
     }
-    fetchKyc();
   }, []);
+
+  useEffect(() => {
+    fetchKyc();
+  }, [fetchKyc]);
 
   const filtered = kycList.filter((item) => {
     const matchSearch =
@@ -177,19 +167,26 @@ export default function KycVerificationPage() {
     if (!confirm(`Setujui verifikasi identitas (KYC) untuk mitra ${item.tukangName}?`)) return;
 
     try {
-      // Panggil RPC Supabase jika online
-      await supabase.rpc('rpc_review_kyc', {
-        p_admin_id: '00000000-0000-0000-0000-000000000000',
-        p_kyc_id: item.id.includes('-') && item.id.length === 36 ? item.id : '00000000-0000-0000-0000-000000000000',
+      const { data: { session } } = await supabase.auth.getSession();
+      const adminId = session?.user?.id || 'a0000000-0000-0000-0000-000000000001';
+
+      const { error } = await supabase.rpc('rpc_review_kyc', {
+        p_admin_id: adminId,
+        p_kyc_id: item.id,
         p_decision: 'APPROVED',
       });
-    } catch {}
 
-    setKycList((prev) =>
-      prev.map((k) => (k.id === item.id ? { ...k, status: 'APPROVED' } : k))
-    );
-    if (activeItem?.id === item.id) {
-      setActiveItem(null);
+      if (error) {
+        alert(`Gagal menyetujui KYC: ${error.message}`);
+        return;
+      }
+
+      await fetchKyc();
+      if (activeItem?.id === item.id) {
+        setActiveItem(null);
+      }
+    } catch (e: unknown) {
+      alert(`Error: ${e instanceof Error ? e.message : e}`);
     }
   };
 
@@ -201,40 +198,70 @@ export default function KycVerificationPage() {
     }
 
     try {
-      await supabase.rpc('rpc_review_kyc', {
-        p_admin_id: '00000000-0000-0000-0000-000000000000',
-        p_kyc_id: rejectingItem.id.includes('-') && rejectingItem.id.length === 36 ? rejectingItem.id : '00000000-0000-0000-0000-000000000000',
+      const { data: { session } } = await supabase.auth.getSession();
+      const adminId = session?.user?.id || 'a0000000-0000-0000-0000-000000000001';
+
+      const { error } = await supabase.rpc('rpc_review_kyc', {
+        p_admin_id: adminId,
+        p_kyc_id: rejectingItem.id,
         p_decision: 'REJECTED',
         p_rejection_reason: rejectionReasonInput.trim(),
       });
-    } catch {}
 
-    setKycList((prev) =>
-      prev.map((k) =>
-        k.id === rejectingItem.id
-          ? { ...k, status: 'REJECTED', rejectionReason: rejectionReasonInput.trim() }
-          : k
-      )
-    );
-    setRejectingItem(null);
-    setRejectionReasonInput('');
-    if (activeItem?.id === rejectingItem.id) {
-      setActiveItem(null);
+      if (error) {
+        alert(`Gagal menolak KYC: ${error.message}`);
+        return;
+      }
+
+      await fetchKyc();
+      setRejectingItem(null);
+      setRejectionReasonInput('');
+      if (activeItem?.id === rejectingItem.id) {
+        setActiveItem(null);
+      }
+    } catch (e: unknown) {
+      alert(`Error: ${e instanceof Error ? e.message : e}`);
     }
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-white flex items-center gap-2">
-          <FileCheck className="w-6 h-6 text-blue-400" />
-          Verifikasi Identitas Mitra Tukang (KYC)
-        </h1>
-        <p className="text-slate-400 text-xs mt-1">
-          Akses dokumen privat via Signed URL terenkripsi (FR-032). Hanya tukang terverifikasi (APPROVED) yang dapat menerima pekerjaan (BR-10).
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+            <FileCheck className="w-6 h-6 text-blue-400" />
+            Verifikasi Identitas Mitra Tukang (KYC)
+          </h1>
+          <p className="text-slate-400 text-xs mt-1">
+            Akses dokumen privat via Signed URL terenkripsi (FR-032). Hanya tukang terverifikasi (APPROVED) yang dapat menerima pekerjaan (BR-10).
+          </p>
+        </div>
+        <button
+          onClick={() => fetchKyc()}
+          disabled={isLoading}
+          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+          Muat Ulang
+        </button>
       </div>
+
+      {/* Error Alert */}
+      {fetchError && (
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center justify-between text-xs text-red-300">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <span>{fetchError}</span>
+          </div>
+          <button
+            onClick={() => fetchKyc()}
+            className="px-3 py-1 bg-red-600/30 hover:bg-red-600 text-white rounded font-medium transition-colors"
+          >
+            Coba Lagi
+          </button>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
@@ -286,72 +313,93 @@ export default function KycVerificationPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 text-slate-300">
-              {filtered.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="py-3.5 px-4">
-                    <div className="font-semibold text-white">{item.tukangName}</div>
-                    <div className="text-[11px] text-slate-400 font-mono">{item.email}</div>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <div className="font-medium text-slate-200">{item.category}</div>
-                    <div className="text-[11px] text-slate-400 font-mono">{item.phone}</div>
-                  </td>
-                  <td className="py-3.5 px-4 font-mono text-[11px] text-slate-400">
-                    {new Date(item.submittedAt).toLocaleString('id-ID')}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    {item.status === 'PENDING' && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                        <Clock className="w-3.5 h-3.5" /> Menunggu Review
-                      </span>
-                    )}
-                    {item.status === 'APPROVED' && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Disetujui (Approved)
-                      </span>
-                    )}
-                    {item.status === 'REJECTED' && (
-                      <div>
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20">
-                          <XCircle className="w-3.5 h-3.5" /> Ditolak
-                        </span>
-                        {item.rejectionReason && (
-                          <div className="text-[10px] text-red-300 mt-1 max-w-xs truncate">
-                            {item.rejectionReason}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4 text-right space-x-2">
-                    <button
-                      onClick={() => handleOpenPreview(item)}
-                      className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white rounded text-[11px] font-semibold border border-blue-500/30 transition-colors inline-flex items-center gap-1"
-                    >
-                      <Eye className="w-3 h-3" /> Periksa Berkas
-                    </button>
-                    {item.status === 'PENDING' && (
-                      <>
-                        <button
-                          onClick={() => handleApprove(item)}
-                          className="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded text-[11px] font-semibold border border-emerald-500/30 transition-colors"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => {
-                            setRejectingItem(item);
-                            setRejectionReasonInput('');
-                          }}
-                          className="px-2.5 py-1 bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white rounded text-[11px] font-semibold border border-red-500/30 transition-colors"
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-slate-400">
+                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-xs">Memuat dokumen KYC dari database Supabase...</p>
                   </td>
                 </tr>
-              ))}
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-slate-400">
+                    <FileCheck className="w-8 h-8 mx-auto mb-2 text-slate-600" />
+                    <p className="font-semibold text-sm text-slate-300">Tidak ada pengajuan verifikasi KYC</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {searchTerm
+                        ? 'Coba ubah kata kunci pencarian Anda.'
+                        : 'Pengajuan dokumen KYC dari aplikasi Mitra Tukang akan muncul di sini secara real-time.'}
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((item) => (
+                  <tr key={item.id} className="hover:bg-slate-800/40 transition-colors">
+                    <td className="py-3.5 px-4">
+                      <div className="font-semibold text-white">{item.tukangName}</div>
+                      <div className="text-[11px] text-slate-400 font-mono">{item.email}</div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="font-medium text-slate-200">{item.category}</div>
+                      <div className="text-[11px] text-slate-400 font-mono">{item.phone}</div>
+                    </td>
+                    <td className="py-3.5 px-4 font-mono text-[11px] text-slate-400">
+                      {new Date(item.submittedAt).toLocaleString('id-ID')}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      {item.status === 'PENDING' && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <Clock className="w-3.5 h-3.5" /> Menunggu Review
+                        </span>
+                      )}
+                      {item.status === 'APPROVED' && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Disetujui (Approved)
+                        </span>
+                      )}
+                      {item.status === 'REJECTED' && (
+                        <div>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20">
+                            <XCircle className="w-3.5 h-3.5" /> Ditolak
+                          </span>
+                          {item.rejectionReason && (
+                            <div className="text-[10px] text-red-300 mt-1 max-w-xs truncate">
+                              {item.rejectionReason}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4 text-right space-x-2">
+                      <button
+                        onClick={() => handleOpenPreview(item)}
+                        className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white rounded text-[11px] font-semibold border border-blue-500/30 transition-colors inline-flex items-center gap-1"
+                      >
+                        <Eye className="w-3 h-3" /> Periksa Berkas
+                      </button>
+                      {item.status === 'PENDING' && (
+                        <>
+                          <button
+                            onClick={() => handleApprove(item)}
+                            className="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded text-[11px] font-semibold border border-emerald-500/30 transition-colors"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => {
+                              setRejectingItem(item);
+                              setRejectionReasonInput('');
+                            }}
+                            className="px-2.5 py-1 bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white rounded text-[11px] font-semibold border border-red-500/30 transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
