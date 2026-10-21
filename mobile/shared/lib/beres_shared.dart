@@ -28,6 +28,8 @@ export 'adapters/map_adapter.dart';
 export 'config/app_environment.dart';
 
 // Services
+export 'package:supabase_flutter/supabase_flutter.dart'
+    show AuthException, Session, User, SupabaseClient;
 export 'services/supabase_client_service.dart';
 export 'services/auth_service.dart';
 export 'services/tukang_service.dart';

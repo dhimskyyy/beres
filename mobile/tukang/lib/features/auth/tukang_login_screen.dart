@@ -174,7 +174,9 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Kode OTP salah atau kedaluwarsa. Silakan coba lagi.';
+          _errorMessage = e is AuthException
+              ? 'Kode OTP salah atau kedaluwarsa. Silakan coba lagi.'
+              : e.toString().replaceFirst('Exception: ', '');
         });
       }
     }

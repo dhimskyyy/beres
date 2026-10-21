@@ -100,7 +100,7 @@ BEGIN
   -- Validasi ganda 1 Email = 1 Peran di database
   SELECT * INTO v_existing_profile FROM profiles WHERE id = p_user_id OR LOWER(email) = LOWER(p_email) LIMIT 1;
 
-  IF v_existing_profile IS NOT NULL THEN
+  IF v_existing_profile.id IS NOT NULL THEN
     IF v_existing_profile.role <> p_role THEN
       RAISE EXCEPTION 'ROLE_CONFLICT: 1 Email hanya boleh untuk 1 peran (BR-44). Akun terdaftar sebagai %', v_existing_profile.role;
     END IF;
