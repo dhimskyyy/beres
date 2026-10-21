@@ -80,8 +80,8 @@ Dokumen ini adalah daftar periksa (*checklist*) tahapan pembangunan ekosistem **
 ---
 
 ## Milestone M8: Hardening, Pengujian Konkurensi/Negatif, & Persiapan Rilis
-- [ ] Penulisan & eksekusi **Test Negatif** dan **Test Konkurensi** sesuai Bagian 16 `PRD.md` (*Definition of Done*).
-- [ ] Penyiapan dokumen Kebijakan Privasi (UU PDP), Syarat & Ketentuan, serta penjelasan izin *Background Location* untuk review Google Play Store dan Apple App Store.
+- [x] Penulisan & eksekusi **Test Negatif** dan **Test Konkurensi** sesuai Bagian 16 `PRD.md` (*Definition of Done*).
+- [x] Penyiapan dokumen Kebijakan Privasi (UU PDP), Syarat & Ketentuan, serta penjelasan izin *Background Location* untuk review Google Play Store dan Apple App Store.
 
 ---
 
