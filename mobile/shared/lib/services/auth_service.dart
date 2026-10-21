@@ -76,6 +76,111 @@ class AuthService {
     }
   }
 
+  /// Masuk dengan Email dan Password tradisional
+  Future<Profile> signInWithPassword({
+    required String email,
+    required String password,
+    required UserRole expectedRole,
+  }) async {
+    final response = await _client.auth.signInWithPassword(
+      email: email.trim().toLowerCase(),
+      password: password,
+    );
+    final user = response.user;
+    if (user == null) {
+      throw Exception('Login gagal. Periksa kembali email dan password Anda.');
+    }
+
+    final rpcRes = await _client.rpc(
+      'rpc_sync_profile_after_auth',
+      params: {
+        'p_user_id': user.id,
+        'p_email': user.email ?? email.trim().toLowerCase(),
+        'p_role': expectedRole.value,
+        'p_full_name':
+            (user.userMetadata?['full_name'] as String?) ?? 'Pengguna Beres',
+      },
+    );
+
+    if (rpcRes is Map && rpcRes['profile'] != null) {
+      return Profile.fromJson(
+          Map<String, dynamic>.from(rpcRes['profile'] as Map));
+    }
+
+    final current = await getCurrentProfile();
+    if (current != null) return current;
+
+    return Profile(
+      id: user.id,
+      email: user.email ?? email.trim().toLowerCase(),
+      role: expectedRole,
+      fullName:
+          (user.userMetadata?['full_name'] as String?) ?? 'Pengguna Beres',
+      createdAt: DateTime.now(),
+    );
+  }
+
+  /// Mendaftar dengan Email dan Password tradisional
+  Future<Profile> signUpWithPassword({
+    required String email,
+    required String password,
+    required String fullName,
+    String? phone,
+    required UserRole role,
+  }) async {
+    final response = await _client.auth.signUp(
+      email: email.trim().toLowerCase(),
+      password: password,
+      data: {
+        'full_name': fullName.trim(),
+        'role': role.value,
+      },
+    );
+
+    final user = response.user;
+    if (user == null) {
+      throw Exception('Pendaftaran gagal. Silakan coba kembali.');
+    }
+
+    final rpcRes = await _client.rpc(
+      'rpc_sync_profile_after_auth',
+      params: {
+        'p_user_id': user.id,
+        'p_email': email.trim().toLowerCase(),
+        'p_role': role.value,
+        'p_full_name': fullName.trim(),
+        'p_phone': phone?.trim(),
+      },
+    );
+
+    if (rpcRes is Map && rpcRes['profile'] != null) {
+      return Profile.fromJson(
+          Map<String, dynamic>.from(rpcRes['profile'] as Map));
+    }
+
+    return Profile(
+      id: user.id,
+      email: email.trim().toLowerCase(),
+      role: role,
+      fullName: fullName.trim(),
+      phone: phone?.trim(),
+      createdAt: DateTime.now(),
+    );
+  }
+
+  /// Mengirim email tautan atur ulang password (Lupa Password)
+  Future<void> resetPasswordForEmail({required String email}) async {
+    await _client.auth.resetPasswordForEmail(email.trim().toLowerCase());
+  }
+
+  /// Masuk dengan Google OAuth
+  Future<bool> signInWithGoogle() async {
+    return await _client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: 'beres://auth-callback',
+    );
+  }
+
   /// Mengirim kode OTP 6-digit ke email melalui Supabase Auth / Custom SMTP (FR-001)
   Future<void> sendEmailOtp({required String email}) async {
     await _client.auth.signInWithOtp(

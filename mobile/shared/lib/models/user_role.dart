@@ -2,7 +2,8 @@
 enum UserRole {
   user('USER', 'Pelanggan'),
   tukang('TUKANG', 'Mitra Tukang'),
-  admin('ADMIN', 'Admin Operasional');
+  admin('ADMIN', 'Admin Operasional'),
+  both('BOTH', 'Pelanggan & Mitra');
 
   final String value;
   final String label;
