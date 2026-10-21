@@ -224,10 +224,11 @@ class _TukangKycScreenState extends ConsumerState<TukangKycScreen> {
         });
       }
     } catch (e) {
+      debugPrint('Error submitting KYC documents: $e');
       if (mounted) {
         setState(() {
           _isSubmitting = false;
-          _errorMessage = 'Gagal mengirim dokumen verifikasi.';
+          _errorMessage = 'Gagal mengirim dokumen verifikasi: ${e.toString().replaceAll('Exception: ', '')}';
         });
       }
     }
