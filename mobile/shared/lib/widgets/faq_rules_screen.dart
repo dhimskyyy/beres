@@ -170,45 +170,48 @@ class FaqRulesScreen extends StatelessWidget {
     required String answer,
     bool isWarning = false,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
         color: AppColors.surfaceWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isWarning
-              ? AppColors.dangerCrimson.withValues(alpha: 0.25)
-              : AppColors.borderLight,
-        ),
-      ),
-      child: Theme(
-        data: ThemeData(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-          iconColor:
-              isWarning ? AppColors.dangerCrimson : AppColors.trustCobalt,
-          collapsedIconColor: AppColors.textMuted,
-          title: Text(
-            question,
-            style: TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w600,
-              color:
-                  isWarning ? AppColors.dangerCrimson : AppColors.textPrimary,
-            ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: isWarning
+                ? AppColors.dangerCrimson.withValues(alpha: 0.25)
+                : AppColors.borderLight,
           ),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              child: Text(
-                answer,
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                  height: 1.55,
-                ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Theme(
+          data: ThemeData(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+            iconColor:
+                isWarning ? AppColors.dangerCrimson : AppColors.trustCobalt,
+            collapsedIconColor: AppColors.textMuted,
+            title: Text(
+              question,
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color:
+                    isWarning ? AppColors.dangerCrimson : AppColors.textPrimary,
               ),
             ),
-          ],
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                child: Text(
+                  answer,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.55,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
