@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:beres_shared/beres_shared.dart';
@@ -150,11 +151,19 @@ class _UserRegisterScreenState extends ConsumerState<UserRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final heroHeight = (screenHeight * 0.25).clamp(180.0, 220.0);
+    final heroHeight = (screenHeight * 0.28).clamp(210.0, 250.0);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      body: Stack(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarBrightness: Brightness.dark, // iOS: Light (white) text and icons
+        statusBarIconBrightness: Brightness.light, // Android: White icons
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0F172A),
+        body: Stack(
         children: [
           // 1. Hero Workshop & Logo Area with Back Button
           Positioned(
@@ -433,6 +442,7 @@ class _UserRegisterScreenState extends ConsumerState<UserRegisterScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 }
