@@ -305,7 +305,7 @@ class _UserLoginScreenState extends ConsumerState<UserLoginScreen> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final heroHeight = (screenHeight * 0.30).clamp(220.0, 260.0);
+    final heroHeight = (screenHeight * 0.32).clamp(230.0, 270.0);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
