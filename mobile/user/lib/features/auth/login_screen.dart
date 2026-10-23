@@ -33,11 +33,8 @@ class _UserLoginScreenState extends ConsumerState<UserLoginScreen> {
     super.dispose();
   }
 
-  String _cleanMessage(String raw) {
-    return raw
-        .replaceAll(RegExp(r'\s*\((BR|FR)-[0-9a-zA-Z]+\)'), '')
-        .replaceFirst('Exception: ', '')
-        .replaceFirst('AuthException: ', '');
+  String _cleanMessage(dynamic raw) {
+    return BeresFormatters.formatAuthError(raw);
   }
 
   Future<void> _handleLogin() async {

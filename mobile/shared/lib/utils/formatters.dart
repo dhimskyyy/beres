@@ -44,4 +44,90 @@ class BeresFormatters {
   static String formatDistance(double km) {
     return '${km.toStringAsFixed(1)} km';
   }
+
+  /// Format pesan error autentikasi & sistem ke bahasa Indonesia yang ramah pengguna
+  static String formatAuthError(dynamic error) {
+    if (error == null) return '';
+
+    final raw = error.toString();
+    final lower = raw.toLowerCase();
+
+    // 1. Password salah / Invalid login credentials
+    if (lower.contains('invalid login credentials') ||
+        lower.contains('invalid_credentials') ||
+        lower.contains('invalid username or password')) {
+      return 'Email atau password yang Anda masukkan salah. Silakan periksa kembali.';
+    }
+
+    // 2. Akun tidak ditemukan
+    if (lower.contains('user not found') ||
+        lower.contains('user_not_found')) {
+      return 'Akun dengan email ini tidak ditemukan.';
+    }
+
+    // 3. Email belum konfirmasi
+    if (lower.contains('email not confirmed')) {
+      return 'Email belum dikonfirmasi. Silakan periksa kotak masuk atau spam email Anda.';
+    }
+
+    // 4. Rate limit / Terlalu banyak percobaan
+    if (lower.contains('rate limit') ||
+        lower.contains('over_email_send_rate_limit') ||
+        lower.contains('too many requests')) {
+      return 'Terlalu banyak permintaan dalam waktu singkat. Silakan tunggu beberapa saat.';
+    }
+
+    // 5. OTP kadaluwarsa / salah
+    if (lower.contains('token has expired') ||
+        lower.contains('token is invalid') ||
+        lower.contains('otp_expired') ||
+        lower.contains('invalid token')) {
+      return 'Kode OTP tidak valid atau telah kedaluwarsa. Silakan minta kode baru.';
+    }
+
+    // 6. Email sudah terdaftar
+    if (lower.contains('already registered') ||
+        lower.contains('user already exists') ||
+        lower.contains('user_already_exists')) {
+      return 'Email ini sudah terdaftar. Silakan masuk menggunakan akun Anda.';
+    }
+
+    // 7. Password lemah
+    if (lower.contains('weak password') ||
+        lower.contains('password should be at least')) {
+      return 'Password terlalu lemah. Gunakan minimal 6 karakter.';
+    }
+
+    // 8. Password baru sama dengan lama
+    if (lower.contains('same_password') ||
+        lower.contains('should be different from the old password')) {
+      return 'Password baru tidak boleh sama dengan password sebelumnya.';
+    }
+
+    // 9. Jaringan / Koneksi Internet
+    if (lower.contains('socketexception') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('networkrequestfailed') ||
+        lower.contains('clientexception')) {
+      return 'Koneksi internet bermasalah. Periksa jaringan Anda dan coba lagi.';
+    }
+
+    // 10. Jika ada AuthApiException(message: ...) ambil message-nya
+    final apiMatch = RegExp(r'message:\s*([^,\)]+)').firstMatch(raw);
+    if (apiMatch != null) {
+      final msg = apiMatch.group(1)?.trim();
+      if (msg != null && msg.isNotEmpty) {
+        return msg;
+      }
+    }
+
+    // 11. Bersihkan prefix teknis umum
+    return raw
+        .replaceAll(RegExp(r'\s*\((BR|FR)-[0-9a-zA-Z]+\)'), '')
+        .replaceAll(RegExp(r'AuthApiException\([^)]*\)'), '')
+        .replaceFirst('AuthApiException: ', '')
+        .replaceFirst('AuthException: ', '')
+        .replaceFirst('Exception: ', '')
+        .trim();
+  }
 }

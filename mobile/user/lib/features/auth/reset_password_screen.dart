@@ -38,11 +38,8 @@ class _UserResetPasswordScreenState
     super.dispose();
   }
 
-  String _cleanMessage(String raw) {
-    return raw
-        .replaceAll(RegExp(r'\s*\((BR|FR)-[0-9a-zA-Z]+\)'), '')
-        .replaceFirst('Exception: ', '')
-        .replaceFirst('AuthException: ', '');
+  String _cleanMessage(dynamic raw) {
+    return BeresFormatters.formatAuthError(raw);
   }
 
   // Step 1: Kirim Kode OTP 6 Digit ke Email

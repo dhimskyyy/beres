@@ -30,10 +30,8 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
     super.dispose();
   }
 
-  String _cleanMessage(String raw) {
-    return raw
-        .replaceAll(RegExp(r'\s*\((BR|FR)-[0-9a-zA-Z]+\)'), '')
-        .replaceFirst('Exception: ', '');
+  String _cleanMessage(dynamic raw) {
+    return BeresFormatters.formatAuthError(raw);
   }
 
   Future<void> _handleSendOtp() async {
