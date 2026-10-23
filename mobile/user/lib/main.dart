@@ -6,6 +6,7 @@ import 'package:beres_shared/beres_shared.dart';
 
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
+import 'features/auth/reset_password_screen.dart';
 import 'features/home/user_home_screen.dart';
 import 'features/jobs/job_create_screen.dart';
 import 'features/jobs/job_detail_and_bids_screen.dart';
@@ -42,6 +43,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/register',
       builder: (context, state) => const UserRegisterScreen(),
+    ),
+    GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const UserResetPasswordScreen(),
     ),
     GoRoute(path: '/home', builder: (context, state) => const UserHomeScreen()),
     GoRoute(

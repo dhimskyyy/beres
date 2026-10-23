@@ -168,6 +168,79 @@ class AuthService {
     );
   }
 
+  /// Mengirim kode OTP 6 digit untuk reset password
+  Future<void> sendPasswordResetOtp({required String email}) async {
+    final check = await checkEmailRole(
+      email: email,
+      targetRole: UserRole.user,
+    );
+    if (check.isDeleted) {
+      throw Exception('Akun dengan email ini telah dinonaktifkan.');
+    }
+    if (check.isSuspendedPermanent) {
+      throw Exception('Akun telah dinonaktifkan permanen oleh operasional.');
+    }
+
+    await _client.auth.signInWithOtp(
+      email: email.trim().toLowerCase(),
+      shouldCreateUser: false,
+    );
+  }
+
+  /// Verifikasi kode OTP 6 digit dan perbarui password, lalu kembalikan Profil
+  Future<Profile> verifyOtpAndResetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+    required UserRole expectedRole,
+  }) async {
+    // 1. Verifikasi OTP
+    final response = await _client.auth.verifyOTP(
+      email: email.trim().toLowerCase(),
+      token: otp.trim(),
+      type: OtpType.email,
+    );
+
+    final user = response.user;
+    if (user == null) {
+      throw Exception('Kode OTP tidak valid atau telah kedaluwarsa.');
+    }
+
+    // 2. Perbarui Password Baru
+    await _client.auth.updateUser(
+      UserAttributes(password: newPassword),
+    );
+
+    // 3. Sinkronisasi Profil
+    final rpcRes = await _client.rpc(
+      'rpc_sync_profile_after_auth',
+      params: {
+        'p_user_id': user.id,
+        'p_email': user.email ?? email.trim().toLowerCase(),
+        'p_role': expectedRole.value,
+        'p_full_name':
+            (user.userMetadata?['full_name'] as String?) ?? 'Pelanggan Beres',
+      },
+    );
+
+    if (rpcRes is Map && rpcRes['profile'] != null) {
+      return Profile.fromJson(
+          Map<String, dynamic>.from(rpcRes['profile'] as Map));
+    }
+
+    final current = await getCurrentProfile();
+    if (current != null) return current;
+
+    return Profile(
+      id: user.id,
+      email: user.email ?? email.trim().toLowerCase(),
+      role: expectedRole,
+      fullName:
+          (user.userMetadata?['full_name'] as String?) ?? 'Pelanggan Beres',
+      createdAt: DateTime.now(),
+    );
+  }
+
   /// Mengirim email tautan atur ulang password (Lupa Password)
   Future<void> resetPasswordForEmail({required String email}) async {
     await _client.auth.resetPasswordForEmail(email.trim().toLowerCase());
