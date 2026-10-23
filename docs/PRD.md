@@ -108,7 +108,7 @@ Kebutuhan jasa perbaikan di Indonesia tersebar, mendesak, dan didominasi pasar i
 | NG-09 | Mediasi finansial/pengembalian dana otomatis oleh sistem. MVP menyediakan fitur **Laporkan** (termasuk Laporan Masalah Pembayaran) + investigasi & tindakan tegas oleh Admin (FR-041, BR-67) |
 | NG-10 | Multi-bahasa (MVP hanya Bahasa Indonesia) |
 | NG-11 | **(v1.1)** Verifikasi nomor HP via SMS/WhatsApp OTP. Login MVP memakai email OTP (D-09) |
-| NG-12 | **(v1.4)** Satu email untuk dua peran. Satu alamat email HANYA boleh terdaftar sebagai `USER` atau `TUKANG` (BR-44) |
+| NG-12 | **(Diperbarui)** ~~Satu email untuk dua peran~~. Kini 1 alamat email **DIPERBOLEHKAN** untuk 2 peran (`USER` dan `TUKANG`) dengan role `BOTH` sesuai BR-44 |
 
 ---
 
@@ -291,7 +291,7 @@ Kebutuhan jasa perbaikan di Indonesia tersebar, mendesak, dan didominasi pasar i
 | BR-41 | KYC membutuhkan Foto KTP dan Foto Selfie memegang KTP | Validasi |
 | BR-42 | **(v1.4)** **Suspend Manual vs Suspend Otomatis:** **(a) Suspend Permanen/Manual oleh Admin** (misal karena penipuan KTP atau User tidak mau membayar): pengguna tidak dapat bertransaksi dan layar menampilkan alasan suspend serta alamat Email Resmi Perusahaan untuk banding. **(b) Suspend Otomatis 2 Hari (48 jam)** karena melewati batas 3x Strike: pengguna masih dapat membuka aplikasi untuk melihat halaman penjelasan suspend (penyebab, daftar pelanggaran, dan hitung mundur waktu berakhir), namun DILARANG melakukan transaksi baru (`Online`, `Bid`, atau `Posting Job`) | Server + UI |
 | BR-43 | Kategori pekerjaan dikelola dinamis oleh Admin tanpa rilis aplikasi | Data-driven |
-| BR-44 | **(v1.4)** **Satu Email = Satu Peran:** Satu alamat email HANYA dapat didaftarkan untuk satu peran (`USER` atau `TUKANG`). Jika sebuah email sudah terdaftar di aplikasi Beres User, maka ketika email tersebut dimasukkan di aplikasi Beres Mitra (Tukang), sistem menolak pendaftaran dengan pesan *"Email ini sudah terdaftar sebagai akun Pelanggan. Silakan gunakan email lain untuk mendaftar sebagai Mitra Tukang"* (dan sebaliknya). Aturan ini juga mencegah tukang melamar pekerjaannya sendiri | Constraint DB + Auth check |
+| BR-44 | **(Diperbarui)** **Satu Email = Dua Peran (USER & TUKANG):** Satu alamat email DIPERBOLEHKAN terdaftar sekaligus di aplikasi Beres User dan Beres Mitra (Tukang). Jika pengguna mendaftar di kedua aplikasi, perannya di database menjadi `BOTH`. Data pesanan pelanggan (`jobs.user_id`) dan data pekerjaan tukang (`job_bids.tukang_id` & `tukang_profiles`) terpisah secara alami di masing-masing aplikasi. Aturan mutlak: Akun dilarang melamar pekerjaannya sendiri (`jobs.user_id != auth.uid()`) | Constraint DB + RPC Sync |
 | BR-45 | **(v1.4)** Pengguna (`USER` maupun `TUKANG`) dapat mengajukan **Hapus Akun** dari menu pengaturan profil selama tidak sedang memiliki pekerjaan berjalan atau sengketa pembayaran yang belum selesai | Fungsi server |
 
 ### 8.6 Pembatalan pada `ON_THE_WAY` dan `ARRIVED` (v1.4)
@@ -367,11 +367,12 @@ Format acceptance criteria: **Given / When / Then**. Prioritas default `P0`.
 
 ### 10.1 Autentikasi, Peran Tunggal per Email, & Profil
 
-#### FR-001: Registrasi, Login Email OTP, & Aturan Satu Email Satu Peran (v1.4)
-- **Metode:** Email + kode OTP 6 digit (melalui custom SMTP).
+#### FR-001: Registrasi, Login Email/Password/OTP/Google, & Aturan Satu Email Dua Peran
+- **Metode:** Email + Password, Email OTP 6 digit, atau Google OAuth.
 - **Acceptance Criteria:**
   - [ ] Given email belum pernah terdaftar di peran mana pun, When pengguna mendaftar di aplikasi User, Then akun dibuat dengan peran `USER`.
-  - [ ] Given email sudah terdaftar sebagai `USER`, When email yang sama digunakan mendaftar/login di aplikasi Tukang (`TUKANG`), Then server menolak dengan pesan jelas bahwa 1 email hanya untuk 1 peran (BR-44) — berlaku sebaliknya.
+  - [ ] Given email sudah terdaftar sebagai `USER`, When email yang sama digunakan mendaftar/login di aplikasi Tukang (`TUKANG`), Then peran akun ditingkatkan menjadi `BOTH` dan profil mitra tukang dibuat (BR-44) — berlaku sebaliknya tanpa penolakan akun.
+  - [ ] Given akun dengan peran `BOTH`, When tukang melihat daftar pekerjaan di Job Portal, Then pekerjaan yang diposting oleh dirinya sendiri disembunyikan/dilarang dilamar (`jobs.user_id != auth.uid()`).
   - [ ] Given akun terkena **Suspend Permanen (Manual Admin)**, When membuka aplikasi, Then transaksi diblokir dan tampil alasan suspend beserta alamat Email Resmi Perusahaan untuk pengajuan banding (BR-42a).
   - [ ] Given akun terkena **Suspend Otomatis 2 Hari (karena > 3x Strike)**, When membuka aplikasi, Then pengguna dapat melihat banner/halaman penjelasan penyebab suspend, rincian strike, dan waktu berakhirnya suspend, namun tidak dapat memposting job atau mengambil job (BR-42b).
 
@@ -624,7 +625,7 @@ Format acceptance criteria: **Given / When / Then**. Prioritas default `P0`.
 
 | Area | Kebutuhan |
 | :--- | :--- |
-| Hak akses & Peran | RLS ketat di semua tabel; **1 email hanya untuk 1 peran** (BR-44); **MFA wajib untuk login Web Admin** (FR-037) |
+| Hak akses & Peran | RLS ketat di semua tabel; **1 email dapat untuk 2 peran (role BOTH)** (BR-44); **MFA wajib untuk login Web Admin** (FR-037) |
 | Data sensitif | KTP, selfie, nomor rekening, bukti transfer, lokasi, alamat lengkap = **data pribadi**; wajib disimpan di bucket privat dengan signed URL |
 | Privasi sebelum Lock | Tukang hanya melihat detail job & kecamatan (`area_label`); User hanya melihat nama, foto, keahlian, hari aktif, dan rating tukang (BR-16) |
 | UU PDP & App Store | Persetujuan eksplisit saat registrasi; fitur **Hapus Akun** tersedia di dalam aplikasi (FR-004); teks izin background location jelas untuk review iOS/Android |
@@ -700,7 +701,7 @@ Sebuah FR/milestone selesai jika **semua** terpenuhi:
 | **D-01** | **Radius:** job tersebar maks **50 km**; tukang mengatur slider **0–50 km** | **User** | BR-11, BR-20 |
 | **D-02** | **Seluruh fitur Gold (termasuk Toggle Manual Admin), Boost, dan DOKU ditunda 100% ke Phase 2** | **User (Dikonfirmasi v1.4)** | NG-02, NG-03, BR-24/25, FR-034 |
 | **D-04** | **Kuota Mingguan:** 5 job `COMPLETED` per minggu menurut zona waktu lokal tukang | **User** | BR-21–23, BR-75 |
-| **D-09** | **Login via Email OTP** (Resend SMTP); **1 Email = 1 Peran** (`USER` atau `TUKANG` tidak boleh memakai email yang sama); **Web Admin wajib MFA** | **User (v1.4)** | FR-001, FR-037, BR-44 |
+| **D-09** | **Login Fleksibel** (Email+Password, Email OTP, Google OAuth); **1 Email = 2 Peran** (`USER` dan `TUKANG` diperbolehkan, role `BOTH`); **Web Admin wajib MFA** | **User (Diperbarui)** | FR-001, FR-037, BR-44 |
 | **D-15** | **Backend:** Supabase saja (Auth, Realtime, Storage, Postgres + PostGIS + RPC/Edge Functions) | **User** | `docs/ARCHITECTURE.md` |
 | **D-16** | **`WORKING` tidak dapat dibatalkan** oleh User maupun Tukang; tukang wajib menyelesaikan pekerjaan | **User** | BR-65, 9.3 |
 | **D-17** | **Status `ARRIVED`:** otomatis pada jarak **≤ 50 m** (akurasi ≤ 30 m) + fallback manual **"Saya Sudah Tiba" pada ≤ 200 m** | **User (Dikonfirmasi v1.4)** | BR-60, BR-61, FR-024 |

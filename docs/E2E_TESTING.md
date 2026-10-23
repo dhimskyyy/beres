@@ -139,8 +139,8 @@ Setiap skenario di bawah ini wajib memiliki file test otomatis sebelum masuk tah
 
 ---
 
-### 🟢 E2E-09: Aturan Satu Email Satu Peran (`BR-44`) & Perubahan Metode Bayar Aktual (`BR-32`)
-1. **Satu Email Satu Peran:** Email `budi@contoh.com` didaftarkan sebagai `USER`. Ketika email `budi@contoh.com` digunakan mendaftar di aplikasi Tukang (`TUKANG`), server menolak pendaftaran (`BR-44`).
+### 🟢 E2E-09: Aturan Satu Email Dua Peran (`BR-44`) & Perubahan Metode Bayar Aktual (`BR-32`)
+1. **Satu Email Dua Peran:** Email `budi@contoh.com` didaftarkan sebagai `USER`. Ketika email `budi@contoh.com` digunakan mendaftar di aplikasi Tukang (`TUKANG`), akun berhasil tersinkron dengan peran `BOTH` (`BR-44`). Tukang dilarang melamar order yang dibuat oleh dirinya sendiri.
 2. **Perubahan Metode Bayar Aktual di Lapangan:** Nota Sah awal menggunakan metode `BANK_TRANSFER`, tetapi saat pekerjaan selesai User membayar dengan uang tunai (`CASH`). Pada form penyelesaian, Tukang mengubah pilihan **Metode Bayar Aktual** menjadi `CASH` $\rightarrow$ kolom unggah bukti transfer otomatis disembunyikan dan Tukang berhasil menyelesaikan pekerjaan (`COMPLETED`) dengan mengunggah foto hasil kerja + centang *"User sudah membayar"*.
 
 ---

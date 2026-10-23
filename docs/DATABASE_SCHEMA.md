@@ -6,7 +6,7 @@ Dokumen ini mendefinisikan struktur tabel, tipe enum, constraint, indeks spasial
 
 ## 1. Daftar Enum (Tipe Status Baku v1.4.0)
 
-* **`user_role`**: `'USER'`, `'TUKANG'`, `'ADMIN'` *(Aturan `BR-44`: 1 alamat email hanya untuk 1 peran)*
+* **`user_role`**: `'USER'`, `'TUKANG'`, `'ADMIN'`, `'BOTH'` *(Aturan `BR-44`: 1 alamat email dapat memiliki 2 peran `USER` dan `TUKANG` dengan status `BOTH`)*
 * **`suspend_type`**: `'NONE'`, `'AUTO_2_DAYS'`, `'MANUAL_PERMANENT'`
 * **`kyc_status`**: `'PENDING'`, `'APPROVED'`, `'REJECTED'`
 * **`job_status` (10 Status — Bagian 9.1 PRD)**:
@@ -42,8 +42,8 @@ Dokumen ini mendefinisikan struktur tabel, tipe enum, constraint, indeks spasial
 | Kolom | Tipe Data | Keterangan |
 | :--- | :--- | :--- |
 | `id` | `UUID (PK)` | Terhubung 1-1 dengan `auth.users.id` |
-| `email` | `TEXT UNIQUE NOT NULL` | **Constraint `BR-44`:** 1 email hanya boleh memiliki 1 `role` |
-| `role` | `user_role NOT NULL` | `'USER'`, `'TUKANG'`, atau `'ADMIN'` |
+| `email` | `TEXT UNIQUE NOT NULL` | Alamat email unik (terhubung ke `auth.users`) |
+| `role` | `user_role NOT NULL` | `'USER'`, `'TUKANG'`, `'ADMIN'`, atau `'BOTH'` (`BR-44`) |
 | `full_name` | `TEXT NOT NULL` | Nama lengkap |
 | `phone` | `TEXT` | Nomor HP kontak |
 | `avatar_url` | `TEXT` | URL foto profil |

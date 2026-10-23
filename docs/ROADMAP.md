@@ -19,7 +19,7 @@ Dokumen ini adalah daftar periksa (*checklist*) tahapan pembangunan ekosistem **
 ---
 
 ## Milestone M1: Autentikasi, Peran Tunggal per Email, MFA Admin, & Profil
-- [x] **FR-001 & BR-44:** Implementasi Registrasi & Login Email OTP (6 digit via Custom SMTP/Resend) untuk `Beres User` dan `Beres Mitra (Tukang)` dengan penegakan **1 Email = 1 Peran** (tolak jika email User dipakai daftar Tukang, dan sebaliknya).
+- [x] **FR-001 & BR-44:** Implementasi Autentikasi (Email+Password, Email OTP 6 digit, & Google OAuth) dengan dukungan **1 Email = 2 Peran** (1 email dapat dipakai di Beres User & Beres Mitra Tukang dengan status role `BOTH`).
 - [x] **FR-002:** Form biodata Tukang, pemilihan multi-kategori keahlian, dan manajemen rekening bank / e-wallet pribadi.
 - [x] **FR-004 & BR-45:** Fitur **Hapus Akun** di aplikasi User dan Tukang (ditolak bila sedang ada job berjalan atau sengketa pembayaran aktif).
 - [x] **FR-037:** Login Web Admin dengan kewajiban **MFA (Email + Password + OTP 2 Langkah)**.

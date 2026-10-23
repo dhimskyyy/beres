@@ -68,7 +68,7 @@ Dokumen ini menjelaskan struktur monorepo, arsitektur **Supabase-Only Backend (`
 Sesuai keputusan `D-15`, MVP menggunakan **Supabase secara penuh** tanpa server Node.js terpisah:
 1. **Supabase Auth + Custom SMTP (Resend):**
    * Menangani pengiriman kode OTP 6 digit ke email User dan Tukang (`FR-001`).
-   * Menegakkan aturan **1 Email = 1 Peran (`BR-44`)** melalui trigger/hook autentikasi dan tabel `profiles`.
+   * Mendukung aturan **1 Email = 2 Peran (`BR-44`)** di mana 1 email dapat digunakan di aplikasi User dan Tukang (role `BOTH`) dengan data pesanan dan pekerjaan terisolasi aman.
    * Menegakkan **MFA (Multi-Factor Authentication)** wajib untuk akun berperan `ADMIN` (`FR-037`).
 2. **PostgreSQL + PostGIS + Fungsi RPC Atomik (`NFR-18`):**
    * Seluruh transisi status kritis dijalankan melalui fungsi PostgreSQL (`SECURITY DEFINER` dengan validasi peran) di dalam transaksi atomik:

@@ -39,7 +39,7 @@ Selamat datang di **Beres**, platform penghubung jasa pertukangan *on-demand* di
 ---
 
 ## 4. Ketentuan Akun & Pendaftaran (`BR-10`, `BR-44`, `BR-45`)
-1. **Aturan 1 Email = 1 Peran (`BR-44`):** Satu alamat email hanya boleh digunakan untuk satu jenis peran (`USER` atau `TUKANG`). Alamat email yang terdaftar sebagai Pelanggan tidak dapat digunakan untuk mendaftar sebagai Mitra Tukang (dan sebaliknya).
+1. **Ketentuan 1 Email = 2 Peran (`BR-44`):** Satu alamat email diperkenankan untuk digunakan baik di aplikasi Pelanggan (Beres User) maupun Mitra Tukang (Beres Mitra). Akun tersebut memiliki data pesanan dan riwayat kerja yang terpisah, serta secara tegas dilarang melamar pekerjaannya sendiri.
 2. **Verifikasi Identitas Resmi (KYC):** Mitra Tukang wajib mengunggah foto KTP asli dan foto selfie memegang KTP yang valid sebelum diizinkan menerima pekerjaan.
 3. **Hak Hapus Akun (`BR-45`):** Pengguna berhak menghapus akunnya sewaktu-waktu, sepanjang tidak sedang terikat dalam pekerjaan aktif atau sengketa pembayaran yang belum terselesaikan.
 
