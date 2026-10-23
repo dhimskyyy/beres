@@ -306,11 +306,41 @@ class AuthService {
   }
 
   /// Masuk dengan Google OAuth
-  Future<bool> signInWithGoogle() async {
+  Future<bool> signInWithGoogle({String? redirectTo}) async {
     return await _client.auth.signInWithOAuth(
       OAuthProvider.google,
-      redirectTo: 'beres://auth-callback',
+      redirectTo: redirectTo ?? 'beres://auth-callback',
     );
+  }
+
+  /// Sinkronisasi profil otomatis setelah login OAuth (Google)
+  Future<Profile?> syncOAuthProfile(User user,
+      {UserRole role = UserRole.user}) async {
+    final meta = user.userMetadata ?? {};
+    final fullName = (meta['full_name'] as String?) ??
+        (meta['name'] as String?) ??
+        (user.email != null ? user.email!.split('@').first : 'Pelanggan');
+
+    try {
+      final res = await _client.rpc(
+        'rpc_sync_profile_after_auth',
+        params: {
+          'p_user_id': user.id,
+          'p_email': user.email ?? '',
+          'p_role': role.value,
+          'p_full_name': fullName,
+          'p_phone': user.phone,
+        },
+      );
+      if (res is Map && res['profile'] != null) {
+        final profileMap = Map<String, dynamic>.from(res['profile'] as Map);
+        if (profileMap['created_at'] == null) {
+          profileMap['created_at'] = DateTime.now().toIso8601String();
+        }
+        return Profile.fromJson(profileMap);
+      }
+    } catch (_) {}
+    return await getCurrentProfile();
   }
 
   /// Mengirim kode OTP 6-digit ke email melalui Supabase Auth / Custom SMTP (FR-001)

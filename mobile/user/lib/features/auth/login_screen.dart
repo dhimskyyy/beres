@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,9 +26,30 @@ class _UserLoginScreenState extends ConsumerState<UserLoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   String? _errorMessage;
+  StreamSubscription<AuthState>? _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _authSubscription = SupabaseClientService
+        .instance.client.auth.onAuthStateChange
+        .listen((data) async {
+      final session = data.session;
+      if (session != null && mounted) {
+        try {
+          final authService = ref.read(authServiceProvider);
+          await authService.syncOAuthProfile(session.user, role: UserRole.user);
+        } catch (_) {}
+        if (mounted) {
+          context.go('/home');
+        }
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
