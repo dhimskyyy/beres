@@ -15,6 +15,18 @@ function RootRedirect() {
         return;
       }
 
+      const error = searchParams.get('error');
+      const errorCode = searchParams.get('error_code');
+      const errorDesc = searchParams.get('error_description');
+      if (error || errorCode) {
+        const query = new URLSearchParams();
+        if (error) query.set('error', error);
+        if (errorCode) query.set('error_code', errorCode);
+        if (errorDesc) query.set('error_description', errorDesc);
+        router.replace(`/auth/reset-password?${query.toString()}`);
+        return;
+      }
+
       // Cek apakah ada hash token recovery
       if (window.location.hash.includes('access_token=') || window.location.hash.includes('type=recovery')) {
         router.replace(`/auth/reset-password${window.location.hash}`);

@@ -24,6 +24,26 @@ function ResetPasswordContent() {
       setIsVerifying(true);
       setErrorMessage(null);
 
+      // 0. Cek parameter error langsung dari Supabase redirect
+      const errorParam = searchParams.get('error') || searchParams.get('error_code');
+      const errorDesc = searchParams.get('error_description');
+      if (errorParam) {
+        if (
+          errorParam.toLowerCase().includes('expired') ||
+          (errorDesc && errorDesc.toLowerCase().includes('expired'))
+        ) {
+          setErrorMessage(
+            'Tautan pemulihan kata sandi telah kedaluwarsa karena telah melewati batas waktu 1 jam. Silakan buka aplikasi Beres di ponsel Anda dan klik "Lupa Password?" kembali untuk mendapatkan email tautan baru.'
+          );
+        } else {
+          setErrorMessage(
+            errorDesc || 'Tautan pemulihan kata sandi tidak valid atau telah digunakan sebelumnya.'
+          );
+        }
+        setIsVerifying(false);
+        return;
+      }
+
       try {
         // 1. Ambil code dari query param atau hash
         const authCode = searchParams.get('code');
