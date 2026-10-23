@@ -215,7 +215,7 @@ class _UserRegisterScreenState extends ConsumerState<UserRegisterScreen> {
                         ),
                         const SizedBox(height: 6),
                         const Text(
-                          'Daftar untuk memesan layanan tukang dengan mudah',
+                          'Daftar untuk menggunakan layanan dengan mudah',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 13,
