@@ -131,3 +131,53 @@ class BeresFormatters {
         .trim();
   }
 }
+
+/// Validasi Password Kuat Standar Profesional Beres
+class BeresPasswordValidation {
+  final bool hasMinLength;
+  final bool hasUppercase;
+  final bool hasLowercase;
+  final bool hasDigit;
+  final bool hasSymbol;
+
+  const BeresPasswordValidation({
+    required this.hasMinLength,
+    required this.hasUppercase,
+    required this.hasLowercase,
+    required this.hasDigit,
+    required this.hasSymbol,
+  });
+
+  bool get isValid =>
+      hasMinLength && hasUppercase && hasLowercase && hasDigit && hasSymbol;
+
+  static BeresPasswordValidation check(String password) {
+    return BeresPasswordValidation(
+      hasMinLength: password.length >= 8,
+      hasUppercase: RegExp(r'[A-Z]').hasMatch(password),
+      hasLowercase: RegExp(r'[a-z]').hasMatch(password),
+      hasDigit: RegExp(r'[0-9]').hasMatch(password),
+      hasSymbol:
+          RegExp(r'[!@#$%^&*()_+\-=\[\]{};\x27:"\\|,.<>/?`~]').hasMatch(password),
+    );
+  }
+
+  String? get errorMessage {
+    if (!hasMinLength) {
+      return 'Password minimal terdiri dari 8 karakter.';
+    }
+    if (!hasUppercase) {
+      return 'Password harus mengandung minimal 1 huruf besar (A-Z).';
+    }
+    if (!hasLowercase) {
+      return 'Password harus mengandung minimal 1 huruf kecil (a-z).';
+    }
+    if (!hasDigit) {
+      return 'Password harus mengandung minimal 1 angka (0-9).';
+    }
+    if (!hasSymbol) {
+      return 'Password harus mengandung minimal 1 simbol (!, @, #, dll).';
+    }
+    return null;
+  }
+}

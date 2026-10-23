@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_role.dart';
 import '../models/profile.dart';
+import '../utils/formatters.dart';
 import 'supabase_client_service.dart';
 
 /// Hasil pengecekan peran sebelum OTP dikirim (BR-44, BR-42)
@@ -135,6 +136,12 @@ class AuthService {
     String? phone,
     required UserRole role,
   }) async {
+    final validationError =
+        BeresPasswordValidation.check(password).errorMessage;
+    if (validationError != null) {
+      throw Exception(validationError);
+    }
+
     final response = await _client.auth.signUp(
       email: email.trim().toLowerCase(),
       password: password,
@@ -235,6 +242,12 @@ class AuthService {
     required String newPassword,
     required UserRole expectedRole,
   }) async {
+    final validationError =
+        BeresPasswordValidation.check(newPassword).errorMessage;
+    if (validationError != null) {
+      throw Exception(validationError);
+    }
+
     // 1. Verifikasi OTP
     final response = await _client.auth.verifyOTP(
       email: email.trim().toLowerCase(),

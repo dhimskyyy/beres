@@ -30,7 +30,18 @@ class _UserResetPasswordScreenState
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    _newPasswordController.addListener(_onPasswordChanged);
+  }
+
+  void _onPasswordChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    _newPasswordController.removeListener(_onPasswordChanged);
     _emailController.dispose();
     _otpController.dispose();
     _newPasswordController.dispose();
@@ -96,10 +107,14 @@ class _UserResetPasswordScreenState
       setState(() => _errorMessage = 'Masukkan kode OTP yang valid.');
       return;
     }
-    if (newPassword.length < 6) {
-      setState(() => _errorMessage = 'Password baru minimal terdiri dari 6 karakter.');
+
+    final passwordError =
+        BeresPasswordValidation.check(newPassword).errorMessage;
+    if (passwordError != null) {
+      setState(() => _errorMessage = passwordError);
       return;
     }
+
     if (newPassword != confirmPassword) {
       setState(() => _errorMessage = 'Konfirmasi password tidak cocok.');
       return;
@@ -138,6 +153,78 @@ class _UserResetPasswordScreenState
         });
       }
     }
+  }
+
+  Widget _buildPasswordCriteria(String password) {
+    final check = BeresPasswordValidation.check(password);
+    final isStarted = password.isNotEmpty;
+
+    Widget item(bool valid, String text) {
+      final color = !isStarted
+          ? const Color(0xFF94A3B8)
+          : (valid ? const Color(0xFF16A34A) : const Color(0xFFDC2626));
+      final icon = !isStarted
+          ? Icons.circle_outlined
+          : (valid ? Icons.check_circle_rounded : Icons.cancel_outlined);
+
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight:
+                  valid && isStarted ? FontWeight.w600 : FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: !isStarted
+              ? const Color(0xFFE2E8F0)
+              : (check.isValid
+                  ? const Color(0xFF86EFAC)
+                  : const Color(0xFFCBD5E1)),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Syarat Keamanan Password:',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF475569),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 12,
+            runSpacing: 6,
+            children: [
+              item(check.hasMinLength, '8+ Karakter'),
+              item(check.hasUppercase, 'Huruf Besar (A-Z)'),
+              item(check.hasLowercase, 'Huruf Kecil (a-z)'),
+              item(check.hasDigit, 'Angka (0-9)'),
+              item(check.hasSymbol, 'Simbol (!#@\$)'),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -350,7 +437,7 @@ class _UserResetPasswordScreenState
 
                           AuthTextField(
                             label: 'Password Baru',
-                            hintText: 'Minimal 6 karakter',
+                            hintText: 'Minimal 8 karakter (A-Z, a-z, 0-9, simbol)',
                             controller: _newPasswordController,
                             isPassword: true,
                             obscureText: _obscureNewPassword,
@@ -359,6 +446,8 @@ class _UserResetPasswordScreenState
                             onToggleObscure: () => setState(() =>
                                 _obscureNewPassword = !_obscureNewPassword),
                           ),
+
+                          _buildPasswordCriteria(_newPasswordController.text),
 
                           const SizedBox(height: 14),
 
