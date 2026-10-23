@@ -474,7 +474,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
 
           const SizedBox(height: 18),
 
-          // 3. Tiga Kartu Nilai Unggulan (Mitra Terverifikasi, Harga Transparan, Bayar Langsung)
+          // 3. Tiga Kartu Nilai Unggulan (Mitra Terverifikasi, Harga Transparan, Pantau Progres)
           Row(
             children: [
               Expanded(
@@ -497,10 +497,10 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: _buildValueCard(
-                  icon: Icons.payments_rounded,
-                  iconColor: const Color(0xFF16A34A),
-                  title: 'Bayar Langsung',
-                  subtitle: '100% langsung ke mitra (Rp 0 fee)',
+                  icon: Icons.timeline_rounded,
+                  iconColor: const Color(0xFF10B981),
+                  title: 'Pantau Progres',
+                  subtitle: 'Lacak status kerja & posisi mitra',
                 ),
               ),
             ],
@@ -708,7 +708,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
     return GestureDetector(
       onTap: () => FaqRulesScreen.show(context),
       child: Container(
-        height: 105,
+        height: 112,
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -733,8 +733,9 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                 fontSize: 11.5,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF0F172A),
+                height: 1.2,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 2),
