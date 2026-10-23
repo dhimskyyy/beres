@@ -1279,7 +1279,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
           ),
           const SizedBox(height: 12),
           const Text(
-            'Belum Ada Pesanan Aktif',
+            'Belum Ada Permintaan Aktif',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w800,
@@ -1288,7 +1288,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Pesanan yang sedang berlangsung akan ditampilkan di sini untuk memudahkan pemantauan.',
+            'Permintaan yang sedang berlangsung akan ditampilkan di sini.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
@@ -1297,21 +1297,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
-            onPressed: () =>
-                context.push('/jobs/create').then((_) => _loadData()),
-            icon: const Icon(Icons.add_rounded, size: 16),
-            label: const Text('Panggil Tukang Sekarang'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF16397E),
-              side: const BorderSide(color: Color(0xFF16397E), width: 1.2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
-          ),
+          const SizedBox(height: 10),
         ],
       ),
     );
@@ -1325,27 +1311,20 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
 
     return Column(
       children: [
-        // App Bar Aktivitas
+        // App Bar Aktivitas (Tengah, Tanpa Icon Reload)
         Container(
           color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Aktivitas Saya',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded, size: 22),
-                tooltip: 'Segarkan',
-                onPressed: _loadData,
-              ),
-            ],
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          alignment: Alignment.center,
+          child: const Text(
+            'Aktivitas Saya',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
+            ),
           ),
         ),
 
@@ -1373,78 +1352,93 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
         const Divider(height: 1, color: Color(0xFFE2E8F0)),
 
         Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : jobs.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border:
-                                    Border.all(color: const Color(0xFFE2E8F0)),
-                              ),
-                              child: const Icon(
-                                Icons.assignment_outlined,
-                                size: 26,
-                                color: Color(0xFF94A3B8),
-                              ),
+          child: RefreshIndicator(
+            onRefresh: _loadData,
+            color: const Color(0xFF16397E),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : jobs.isEmpty
+                    ? LayoutBuilder(
+                        builder: (context, constraints) => SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
                             ),
-                            const SizedBox(height: 14),
-                            const Text(
-                              'Belum Ada Aktivitas',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Pekerjaan yang Anda posting akan tersimpan dan dapat dipantau di sini.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                            const SizedBox(height: 18),
-                            ElevatedButton.icon(
-                              onPressed: () => context
-                                  .push('/jobs/create')
-                                  .then((_) => _loadData()),
-                              icon: const Icon(Icons.add_rounded, size: 18),
-                              label: const Text('Buat Permintaan Baru'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF16397E),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(32),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 56,
+                                      height: 56,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                            color: const Color(0xFFE2E8F0)),
+                                      ),
+                                      child: const Icon(
+                                        Icons.assignment_outlined,
+                                        size: 26,
+                                        color: Color(0xFF94A3B8),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    const Text(
+                                      'Belum Ada Aktivitas',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      'Pekerjaan yang Anda posting akan tersimpan dan dapat dipantau di sini.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 18),
+                                    ElevatedButton.icon(
+                                      onPressed: () => context
+                                          .push('/jobs/create')
+                                          .then((_) => _loadData()),
+                                      icon: const Icon(Icons.add_rounded,
+                                          size: 18),
+                                      label: const Text('Buat Permintaan Baru'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            const Color(0xFF16397E),
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      color: const Color(0xFF16397E),
-                      child: ListView.separated(
+                      )
+                    : ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.all(18),
                         itemCount: jobs.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 12),
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: 12),
                         itemBuilder: (context, index) =>
                             _buildJobCard(jobs[index]),
                       ),
-                    ),
+          ),
         ),
       ],
     );
@@ -1476,38 +1470,31 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
 
     return Column(
       children: [
-        // App Bar Pesan
+        // App Bar Pesan (Tengah, Tanpa Icon Reload)
         Container(
           color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Pesan & Nota Digital',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Diskusi langsung dan persetujuan Nota Sah',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ],
+              Text(
+                'Pesan & Nota Digital',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
               ),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded, size: 22),
-                tooltip: 'Segarkan',
-                onPressed: _loadData,
+              SizedBox(height: 2),
+              Text(
+                'Diskusi langsung dan persetujuan Nota Sah',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF64748B),
+                ),
               ),
             ],
           ),
@@ -1516,57 +1503,68 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
         const Divider(height: 1, color: Color(0xFFE2E8F0)),
 
         Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : chatJobs.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border:
-                                    Border.all(color: const Color(0xFFE2E8F0)),
-                              ),
-                              child: const Icon(
-                                Icons.chat_bubble_outline_rounded,
-                                size: 26,
-                                color: Color(0xFF94A3B8),
+          child: RefreshIndicator(
+            onRefresh: _loadData,
+            color: const Color(0xFF16397E),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : chatJobs.isEmpty
+                    ? LayoutBuilder(
+                        builder: (context, constraints) => SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(32),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 56,
+                                      height: 56,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                            color: const Color(0xFFE2E8F0)),
+                                      ),
+                                      child: const Icon(
+                                        Icons.chat_bubble_outline_rounded,
+                                        size: 26,
+                                        color: Color(0xFF94A3B8),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    const Text(
+                                      'Belum Ada Percakapan Aktif',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      'Ruang chat dan Nota Digital akan otomatis aktif saat Anda mengunci (lock) 1 mitra tukang untuk berdiskusi.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        color: Color(0xFF64748B),
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 14),
-                            const Text(
-                              'Belum Ada Percakapan Aktif',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Ruang chat dan Nota Digital akan otomatis aktif saat Anda mengunci (lock) 1 mitra tukang untuk berdiskusi.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                color: Color(0xFF64748B),
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      color: const Color(0xFF16397E),
-                      child: ListView.separated(
+                      )
+                    : ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.all(18),
                         itemCount: chatJobs.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 12),
@@ -1684,7 +1682,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                           );
                         },
                       ),
-                    ),
+          ),
         ),
       ],
     );
@@ -1706,18 +1704,25 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
         : 'Belum diatur';
     final initial = _initial;
 
-    return ListView(
-      padding: const EdgeInsets.all(18),
-      children: [
-        // App Bar Title
-        const Text(
-          'Profil & Akun',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF0F172A),
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      color: const Color(0xFF16397E),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(18),
+        children: [
+          // App Bar Title (Centered)
+          const Center(
+            child: Text(
+              'Profil & Akun',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF0F172A),
+              ),
+            ),
           ),
-        ),
 
         const SizedBox(height: 16),
 
@@ -1980,8 +1985,9 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildProfileStatCard(String count, String label, Color color) {
     return Container(
