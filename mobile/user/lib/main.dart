@@ -51,7 +51,10 @@ final _router = GoRouter(
     GoRoute(path: '/home', builder: (context, state) => const UserHomeScreen()),
     GoRoute(
       path: '/jobs/create',
-      builder: (context, state) => const JobCreateScreen(),
+      builder: (context, state) {
+        final category = state.uri.queryParameters['category'];
+        return JobCreateScreen(preselectedCategory: category);
+      },
     ),
     GoRoute(
       path: '/jobs/:jobId',

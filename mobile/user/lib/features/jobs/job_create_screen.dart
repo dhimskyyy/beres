@@ -7,7 +7,9 @@ import 'package:beres_shared/beres_shared.dart';
 final jobServiceProvider = Provider((ref) => JobService());
 
 class JobCreateScreen extends ConsumerStatefulWidget {
-  const JobCreateScreen({super.key});
+  final String? preselectedCategory;
+
+  const JobCreateScreen({super.key, this.preselectedCategory});
 
   @override
   ConsumerState<JobCreateScreen> createState() => _JobCreateScreenState();
@@ -67,7 +69,19 @@ class _JobCreateScreenState extends ConsumerState<JobCreateScreen> {
         setState(() {
           _categories = cats;
           if (cats.isNotEmpty) {
-            _selectedCategoryId = cats.first.id;
+            if (widget.preselectedCategory != null &&
+                widget.preselectedCategory!.isNotEmpty) {
+              final target = widget.preselectedCategory!.trim().toLowerCase();
+              final matched = cats.firstWhere(
+                (c) =>
+                    c.name.toLowerCase().contains(target) ||
+                    target.contains(c.name.toLowerCase()),
+                orElse: () => cats.first,
+              );
+              _selectedCategoryId = matched.id;
+            } else {
+              _selectedCategoryId = cats.first.id;
+            }
           }
           _isLoadingCategories = false;
         });
