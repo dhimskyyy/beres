@@ -143,6 +143,205 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
     }
   }
 
+  String get _displayName {
+    final name = _profile?.fullName.trim();
+    if (name != null &&
+        name.isNotEmpty &&
+        name != 'Pengguna Beres' &&
+        name != 'Pelanggan Beres') {
+      return name.split(' ').first;
+    }
+    // Periksa user metadata dari auth session
+    final authUser = SupabaseClientService.instance.currentUser;
+    final metaName = authUser?.userMetadata?['full_name'] as String?;
+    if (metaName != null &&
+        metaName.trim().isNotEmpty &&
+        metaName.trim() != 'Pengguna Beres' &&
+        metaName.trim() != 'Pelanggan Beres') {
+      return metaName.trim().split(' ').first;
+    }
+
+    // Jika masih default, ambil nama depan dari prefix email
+    final email = _profile?.email.trim() ?? authUser?.email?.trim();
+    if (email != null && email.contains('@')) {
+      final prefix = email.split('@').first.trim();
+      if (prefix.isNotEmpty) {
+        return prefix[0].toUpperCase() + prefix.substring(1);
+      }
+    }
+    return 'Pelanggan';
+  }
+
+  String get _initial {
+    final name = _displayName;
+    return name.isNotEmpty ? name[0].toUpperCase() : 'U';
+  }
+
+  void _showEditProfileBottomSheet() {
+    final currentName = _profile?.fullName.trim();
+    final initialText = (currentName == 'Pengguna Beres' ||
+            currentName == 'Pelanggan Beres')
+        ? _displayName
+        : (currentName ?? '');
+
+    final nameController = TextEditingController(text: initialText);
+    final phoneController = TextEditingController(text: _profile?.phone ?? '');
+    bool isSaving = false;
+    String? localError;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (modalCtx, setModalState) => Container(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 24,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Ubah Profil & Nama',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Nama ini akan ditampilkan pada sapaan beranda dan di ruang chat dengan mitra tukang.',
+                style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+              ),
+              if (localError != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  localError!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFFDC2626),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 18),
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'Nama Lengkap / Panggilan',
+                  hintText: 'Contoh: Rizal, Budi Santoso',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: 'Nomor WhatsApp / HP',
+                  hintText: 'Contoh: 081234567890',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF16397E),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  onPressed: isSaving
+                      ? null
+                      : () async {
+                          final newName = nameController.text.trim();
+                          if (newName.isEmpty) {
+                            setModalState(() =>
+                                localError = 'Nama tidak boleh kosong.');
+                            return;
+                          }
+                          setModalState(() {
+                            isSaving = true;
+                            localError = null;
+                          });
+                          try {
+                            final authService = ref.read(authServiceProvider);
+                            await authService.updateProfile(
+                              fullName: newName,
+                              phone: phoneController.text.trim(),
+                            );
+                            if (ctx.mounted) {
+                              Navigator.of(ctx).pop();
+                            }
+                            await _loadData();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Profil berhasil disimpan!'),
+                                  backgroundColor: Color(0xFF16A34A),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            setModalState(() {
+                              isSaving = false;
+                              localError = e.toString();
+                            });
+                          }
+                        },
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Simpan Perubahan',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   List<Job> get _activeJobs => _myJobs.where((j) => j.status.isActive).toList();
 
   List<Job> get _filteredActivityJobs {
@@ -314,55 +513,49 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
   // TAB 0: HOME / BERANDA (Kombinasi Gambar 1 & Gambar 2 Sesuai Arahan)
   // ===========================================================================
   Widget _buildDashboardTab() {
-    final firstName =
-        (_profile?.fullName ?? 'User').split(' ').first.trim();
-    final initial =
-        firstName.isNotEmpty ? firstName[0].toUpperCase() : 'U';
-
     return RefreshIndicator(
       onRefresh: _loadData,
       color: const Color(0xFF16397E),
       child: ListView(
         padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
         children: [
-          // 1. Header Top Bar (Halo, User + Logo BERES + Avatar)
+          // 1. Header Top Bar (Halo, Nama User + Avatar Profil tanpa logo Beres di tengah)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Greeting User
-              Text(
-                'Halo, $firstName',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                  letterSpacing: -0.3,
-                ),
-              ),
-
-              // Logo BERES di Tengah
-              Image.asset(
-                'packages/beres_shared/assets/beres_long.png',
-                height: 32,
-                fit: BoxFit.contain,
-                errorBuilder: (ctx, err, st) => Image.asset(
-                  'assets/images/beres_long.png',
-                  height: 32,
-                  fit: BoxFit.contain,
-                  errorBuilder: (c, e, s) => const Text(
-                    'BERES',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF16397E),
-                      letterSpacing: 1.2,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Halo, $_displayName',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Mau perbaiki apa hari ini?',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
-              // Profile Avatar (Tap to Tab Profil)
+              const SizedBox(width: 12),
+
+              // Profile Avatar (Tap to Tab Profil, Menampilkan Inisial Nama Depan User)
               GestureDetector(
                 onTap: () => setState(() => _selectedTabIndex = 3),
                 child: Container(
@@ -373,12 +566,12 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                         Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
                   ),
                   child: CircleAvatar(
-                    radius: 18,
+                    radius: 20,
                     backgroundColor: const Color(0xFFE0E7FF),
                     child: Text(
-                      initial,
+                      _initial,
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF16397E),
                       ),
@@ -500,7 +693,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                   icon: Icons.timeline_rounded,
                   iconColor: const Color(0xFF10B981),
                   title: 'Pantau Progres',
-                  subtitle: 'Lacak status kerja & posisi mitra',
+                  subtitle: 'Lacak status pekrejaan realtime',
                 ),
               ),
             ],
@@ -1501,12 +1694,17 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
   // TAB 3: PROFIL & PENGATURAN AKUN (Mengikuti Tema Navy Home)
   // ===========================================================================
   Widget _buildProfileTab() {
-    final name = _profile?.fullName ?? 'Pelanggan Beres';
+    final name = (_profile?.fullName != null &&
+            _profile!.fullName.trim().isNotEmpty &&
+            _profile!.fullName.trim() != 'Pengguna Beres' &&
+            _profile!.fullName.trim() != 'Pelanggan Beres')
+        ? _profile!.fullName.trim()
+        : _displayName;
     final email = _profile?.email ?? '-';
     final phone = (_profile?.phone != null && _profile!.phone!.isNotEmpty)
         ? _profile!.phone!
         : 'Belum diatur';
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'P';
+    final initial = _initial;
 
     return ListView(
       padding: const EdgeInsets.all(18),
@@ -1596,6 +1794,15 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                   ],
                 ),
               ),
+              IconButton(
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  size: 20,
+                  color: Color(0xFF16397E),
+                ),
+                tooltip: 'Ubah Profil',
+                onPressed: _showEditProfileBottomSheet,
+              ),
             ],
           ),
         ),
@@ -1680,6 +1887,28 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
           clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
+              ListTile(
+                leading: const Icon(
+                  Icons.person_outline_rounded,
+                  color: Color(0xFF16397E),
+                  size: 22,
+                ),
+                title: const Text(
+                  'Ubah Profil & Nama Lengkap',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                subtitle: const Text(
+                  'Perbarui nama lengkap dan nomor telepon Anda',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                onTap: _showEditProfileBottomSheet,
+              ),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
               ListTile(
                 leading: const Icon(
                   Icons.help_outline_rounded,

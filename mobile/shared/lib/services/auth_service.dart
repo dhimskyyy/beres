@@ -386,6 +386,27 @@ class AuthService {
     return null;
   }
 
+  /// Memperbarui nama lengkap dan nomor telepon profil pengguna
+  Future<void> updateProfile({
+    required String fullName,
+    String? phone,
+  }) async {
+    final user = _supabaseService.currentUser;
+    if (user == null) {
+      throw Exception('Pengguna belum login.');
+    }
+
+    final updateData = <String, dynamic>{
+      'full_name': fullName.trim(),
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (phone != null) {
+      updateData['phone'] = phone.trim();
+    }
+
+    await _client.from('profiles').update(updateData).eq('id', user.id);
+  }
+
   /// Menghapus akun secara permanen (FR-004, BR-45)
   /// Ditolak server bila pengguna memiliki job aktif atau sengketa pembayaran terbuka
   Future<void> deleteAccount() async {
