@@ -1704,25 +1704,21 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
         : 'Belum diatur';
     final initial = _initial;
 
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      color: const Color(0xFF16397E),
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(18),
-        children: [
-          // App Bar Title (Centered)
-          const Center(
-            child: Text(
-              'Profil & Akun',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF0F172A),
-              ),
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        // App Bar Title (Centered)
+        const Center(
+          child: Text(
+            'Profil & Akun',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
             ),
           ),
+        ),
 
         const SizedBox(height: 16),
 
@@ -1985,9 +1981,8 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
           ),
         ),
       ],
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildProfileStatCard(String count, String label, Color color) {
     return Container(
