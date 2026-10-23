@@ -23,6 +23,8 @@ class CheckEmailRoleResult {
 
   bool get isAllowed =>
       status == 'ALLOWED_NEW_USER' || status == 'ALLOWED_EXISTING_USER';
+  bool get isNewUser => status == 'ALLOWED_NEW_USER';
+  bool get isExistingUser => status == 'ALLOWED_EXISTING_USER';
   bool get isRoleMismatch => status == 'ROLE_MISMATCH';
   bool get isSuspendedPermanent => status == 'SUSPENDED_PERMANENT';
   bool get isSuspendedAuto2Days => status == 'SUSPENDED_AUTO_2_DAYS';
@@ -178,21 +180,50 @@ class AuthService {
     );
   }
 
-  /// Mengirim kode OTP 6 digit untuk reset password
+  /// Mengirim kode OTP untuk reset password
   Future<void> sendPasswordResetOtp({required String email}) async {
+    final cleanEmail = email.trim().toLowerCase();
+
+    // 1. Cek status akun di rpc_check_email_role
     final check = await checkEmailRole(
-      email: email,
+      email: cleanEmail,
       targetRole: UserRole.user,
     );
+
+    if (check.isNewUser) {
+      throw Exception(
+        'Akun dengan email ini tidak ditemukan. Silakan lakukan pendaftaran terlebih dahulu.',
+      );
+    }
     if (check.isDeleted) {
       throw Exception('Akun dengan email ini telah dinonaktifkan.');
     }
     if (check.isSuspendedPermanent) {
       throw Exception('Akun telah dinonaktifkan permanen oleh operasional.');
     }
+    if (check.isSuspendedAuto2Days) {
+      throw Exception(
+        check.suspendReason ??
+            'Akun sedang ditangguhkan sementara selama 48 jam.',
+      );
+    }
 
+    // 2. Proteksi lapis ganda: Pastikan profil memang ada di tabel profiles
+    final profile = await _client
+        .from('profiles')
+        .select('id')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+
+    if (profile == null) {
+      throw Exception(
+        'Akun dengan email ini tidak ditemukan. Silakan lakukan pendaftaran terlebih dahulu.',
+      );
+    }
+
+    // 3. Kirim OTP Supabase
     await _client.auth.signInWithOtp(
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       shouldCreateUser: false,
     );
   }

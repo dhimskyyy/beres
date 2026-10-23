@@ -85,15 +85,15 @@ class _UserResetPasswordScreenState
     }
   }
 
-  // Step 2: Verifikasi OTP 6 Digit & Simpan Password Baru -> Masuk ke Home
+  // Step 2: Verifikasi OTP & Simpan Password Baru -> Masuk ke Home
   Future<void> _handleVerifyAndReset() async {
     final email = _emailController.text.trim();
-    final otp = _otpController.text.trim();
+    final otp = _otpController.text.trim().replaceAll(' ', '');
     final newPassword = _newPasswordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
     if (otp.isEmpty || otp.length < 6) {
-      setState(() => _errorMessage = 'Masukkan 6 digit kode OTP yang valid.');
+      setState(() => _errorMessage = 'Masukkan kode OTP yang valid.');
       return;
     }
     if (newPassword.length < 6) {
@@ -338,7 +338,7 @@ class _UserResetPasswordScreenState
                         ] else ...[
                           // Step 2: Input OTP + Password Baru + Konfirmasi Password
                           AuthTextField(
-                            label: 'Kode OTP 6 Digit',
+                            label: 'Kode OTP',
                             hintText: 'Contoh: 123456',
                             controller: _otpController,
                             keyboardType: TextInputType.number,
