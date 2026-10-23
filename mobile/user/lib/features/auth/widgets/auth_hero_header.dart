@@ -91,12 +91,12 @@ class AuthHeroHeader extends StatelessWidget {
               ),
               child: Image.asset(
                 'assets/images/beres_long.png',
-                height: 72,
+                height: 100,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) {
                   return Image.asset(
                     'packages/beres_shared/assets/beres_long.png',
-                    height: 72,
+                    height: 100,
                     fit: BoxFit.contain,
                     errorBuilder: (ctx, err, st) => const Text(
                       'BERES',

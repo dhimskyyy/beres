@@ -169,8 +169,14 @@ class AuthService {
   }
 
   /// Mengirim email tautan atur ulang password (Lupa Password)
-  Future<void> resetPasswordForEmail({required String email}) async {
-    await _client.auth.resetPasswordForEmail(email.trim().toLowerCase());
+  Future<void> resetPasswordForEmail({
+    required String email,
+    String? redirectTo,
+  }) async {
+    await _client.auth.resetPasswordForEmail(
+      email.trim().toLowerCase(),
+      redirectTo: redirectTo ?? 'http://localhost:3000/auth/reset-password',
+    );
   }
 
   /// Masuk dengan Google OAuth
