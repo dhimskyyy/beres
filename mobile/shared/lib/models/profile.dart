@@ -67,25 +67,27 @@ class Profile {
 
   factory Profile.fromJson(Map<String, dynamic> json) {
     return Profile(
-      id: json['id'] as String,
-      email: json['email'] as String,
+      id: (json['id'] as String?) ?? '',
+      email: (json['email'] as String?) ?? '',
       role: UserRole.fromString(json['role'] as String? ?? 'USER'),
-      fullName: json['full_name'] as String? ?? '',
+      fullName: (json['full_name'] as String?) ?? '',
       phone: json['phone'] as String?,
       avatarUrl: json['avatar_url'] as String?,
-      timezone: json['timezone'] as String? ?? 'Asia/Jakarta',
+      timezone: (json['timezone'] as String?) ?? 'Asia/Jakarta',
       suspendType:
           SuspendType.fromString(json['suspend_type'] as String? ?? 'NONE'),
       suspendedUntil: json['suspended_until'] != null
-          ? DateTime.parse(json['suspended_until'] as String)
+          ? DateTime.tryParse(json['suspended_until'].toString())
           : null,
       suspendReason: json['suspend_reason'] as String?,
       appealEmailInfo:
-          json['appeal_email_info'] as String? ?? 'support@beres.id',
+          (json['appeal_email_info'] as String?) ?? 'support@beres.id',
       deletedAt: json['deleted_at'] != null
-          ? DateTime.parse(json['deleted_at'] as String)
+          ? DateTime.tryParse(json['deleted_at'].toString())
           : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: json['created_at'] != null
+          ? (DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now())
+          : DateTime.now(),
     );
   }
 

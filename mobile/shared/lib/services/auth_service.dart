@@ -91,21 +91,26 @@ class AuthService {
       throw Exception('Login gagal. Periksa kembali email dan password Anda.');
     }
 
-    final rpcRes = await _client.rpc(
-      'rpc_sync_profile_after_auth',
-      params: {
-        'p_user_id': user.id,
-        'p_email': user.email ?? email.trim().toLowerCase(),
-        'p_role': expectedRole.value,
-        'p_full_name':
-            (user.userMetadata?['full_name'] as String?) ?? 'Pengguna Beres',
-      },
-    );
+    try {
+      final rpcRes = await _client.rpc(
+        'rpc_sync_profile_after_auth',
+        params: {
+          'p_user_id': user.id,
+          'p_email': user.email ?? email.trim().toLowerCase(),
+          'p_role': expectedRole.value,
+          'p_full_name':
+              (user.userMetadata?['full_name'] as String?) ?? 'Pengguna Beres',
+        },
+      );
 
-    if (rpcRes is Map && rpcRes['profile'] != null) {
-      return Profile.fromJson(
-          Map<String, dynamic>.from(rpcRes['profile'] as Map));
-    }
+      if (rpcRes is Map && rpcRes['profile'] != null) {
+        final profileMap = Map<String, dynamic>.from(rpcRes['profile'] as Map);
+        if (profileMap['created_at'] == null) {
+          profileMap['created_at'] = DateTime.now().toIso8601String();
+        }
+        return Profile.fromJson(profileMap);
+      }
+    } catch (_) {}
 
     final current = await getCurrentProfile();
     if (current != null) return current;
@@ -142,21 +147,26 @@ class AuthService {
       throw Exception('Pendaftaran gagal. Silakan coba kembali.');
     }
 
-    final rpcRes = await _client.rpc(
-      'rpc_sync_profile_after_auth',
-      params: {
-        'p_user_id': user.id,
-        'p_email': email.trim().toLowerCase(),
-        'p_role': role.value,
-        'p_full_name': fullName.trim(),
-        'p_phone': phone?.trim(),
-      },
-    );
+    try {
+      final rpcRes = await _client.rpc(
+        'rpc_sync_profile_after_auth',
+        params: {
+          'p_user_id': user.id,
+          'p_email': email.trim().toLowerCase(),
+          'p_role': role.value,
+          'p_full_name': fullName.trim(),
+          'p_phone': phone?.trim(),
+        },
+      );
 
-    if (rpcRes is Map && rpcRes['profile'] != null) {
-      return Profile.fromJson(
-          Map<String, dynamic>.from(rpcRes['profile'] as Map));
-    }
+      if (rpcRes is Map && rpcRes['profile'] != null) {
+        final profileMap = Map<String, dynamic>.from(rpcRes['profile'] as Map);
+        if (profileMap['created_at'] == null) {
+          profileMap['created_at'] = DateTime.now().toIso8601String();
+        }
+        return Profile.fromJson(profileMap);
+      }
+    } catch (_) {}
 
     return Profile(
       id: user.id,
@@ -212,21 +222,26 @@ class AuthService {
     );
 
     // 3. Sinkronisasi Profil
-    final rpcRes = await _client.rpc(
-      'rpc_sync_profile_after_auth',
-      params: {
-        'p_user_id': user.id,
-        'p_email': user.email ?? email.trim().toLowerCase(),
-        'p_role': expectedRole.value,
-        'p_full_name':
-            (user.userMetadata?['full_name'] as String?) ?? 'Pelanggan Beres',
-      },
-    );
+    try {
+      final rpcRes = await _client.rpc(
+        'rpc_sync_profile_after_auth',
+        params: {
+          'p_user_id': user.id,
+          'p_email': user.email ?? email.trim().toLowerCase(),
+          'p_role': expectedRole.value,
+          'p_full_name':
+              (user.userMetadata?['full_name'] as String?) ?? 'Pelanggan Beres',
+        },
+      );
 
-    if (rpcRes is Map && rpcRes['profile'] != null) {
-      return Profile.fromJson(
-          Map<String, dynamic>.from(rpcRes['profile'] as Map));
-    }
+      if (rpcRes is Map && rpcRes['profile'] != null) {
+        final profileMap = Map<String, dynamic>.from(rpcRes['profile'] as Map);
+        if (profileMap['created_at'] == null) {
+          profileMap['created_at'] = DateTime.now().toIso8601String();
+        }
+        return Profile.fromJson(profileMap);
+      }
+    } catch (_) {}
 
     final current = await getCurrentProfile();
     if (current != null) return current;
