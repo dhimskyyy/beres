@@ -2920,113 +2920,38 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Badge Header Row: AKUN PELANGGAN & Status Verifikasi
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0A162B),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: const Color(0xFF38BDF8)
-                                  .withValues(alpha: 0.35),
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.shield_outlined,
-                                size: 12,
-                                color: Color(0xFF38BDF8),
-                              ),
-                              SizedBox(width: 5),
-                              Text(
-                                'AKUN PELANGGAN',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF38BDF8),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
+                    // Badge Header: AKUN PELANGGAN
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0A162B),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF38BDF8)
+                              .withValues(alpha: 0.35),
                         ),
-                        if (isEmailVerified)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 9, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF052E16),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: const Color(0xFF22C55E)
-                                    .withValues(alpha: 0.4),
-                              ),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.verified_rounded,
-                                  size: 12,
-                                  color: Color(0xFF22C55E),
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  'TERVERIFIKASI',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF22C55E),
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        else
-                          InkWell(
-                            onTap: _showEmailVerificationModal,
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 9, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF451A03),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: const Color(0xFFF59E0B)
-                                    .withValues(alpha: 0.5),
-                                ),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.warning_amber_rounded,
-                                    size: 12,
-                                    color: Color(0xFFFBBF24),
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'VERIFIKASI EMAIL',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w800,
-                                      color: Color(0xFFFBBF24),
-                                      letterSpacing: 0.3,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.shield_outlined,
+                            size: 12,
+                            color: Color(0xFF38BDF8),
+                          ),
+                          SizedBox(width: 5),
+                          Text(
+                            'AKUN PELANGGAN',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF38BDF8),
+                              letterSpacing: 0.5,
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
 
                     const SizedBox(height: 16),
@@ -3146,6 +3071,44 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                                       Icons.verified_rounded,
                                       size: 16,
                                       color: Color(0xFF22C55E),
+                                    ),
+                                  ] else ...[
+                                    const SizedBox(width: 6),
+                                    InkWell(
+                                      onTap: _showEmailVerificationModal,
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 7, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF451A03),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: const Color(0xFFF59E0B)
+                                                .withValues(alpha: 0.5),
+                                          ),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.warning_amber_rounded,
+                                              size: 11,
+                                              color: Color(0xFFFBBF24),
+                                            ),
+                                            SizedBox(width: 3),
+                                            Text(
+                                              'Verifikasi',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w700,
+                                                color: Color(0xFFFBBF24),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ],
