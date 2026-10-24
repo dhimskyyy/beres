@@ -29,7 +29,7 @@ export 'config/app_environment.dart';
 
 // Services
 export 'package:supabase_flutter/supabase_flutter.dart'
-    show AuthException, Session, User, SupabaseClient, AuthState;
+    show AuthException, Session, User, SupabaseClient, AuthState, AuthChangeEvent;
 export 'package:image_picker/image_picker.dart' show ImageSource, XFile;
 export 'services/supabase_client_service.dart';
 export 'services/auth_service.dart';
