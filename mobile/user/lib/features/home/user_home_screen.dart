@@ -2593,42 +2593,21 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
 
         const SizedBox(height: 18),
 
-        // 1. HERO PROFILE CARD (Gradient Navy, Avatar with Camera Overlay, Name, Role Badge, Edit Action)
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF16397E), Color(0xFF1E40AF)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x2616397E),
-                blurRadius: 18,
-                offset: Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
+        // 1. PROFIL HEADER (Avatar + Kamera, Nama, Email, Role Pill Sesuai Gambar Referensi)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Avatar with interactive camera badge
-              Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        width: 2,
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 46,
-                      backgroundColor: const Color(0xFFE0E7FF),
+              // Avatar dengan Badge Kamera di Sudut Kanan Bawah
+              GestureDetector(
+                onTap: _showAvatarOptionsSheet,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundColor: const Color(0xFF16397E),
                       backgroundImage: (_profile?.avatarUrl != null &&
                               _profile!.avatarUrl!.trim().isNotEmpty)
                           ? NetworkImage(_profile!.avatarUrl!)
@@ -2636,130 +2615,192 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                       child: _isUploadingAvatar
                           ? const CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              color: Color(0xFF16397E),
+                              color: Colors.white,
                             )
                           : ((_profile?.avatarUrl == null ||
                                   _profile!.avatarUrl!.trim().isEmpty)
                               ? Text(
                                   initial,
                                   style: const TextStyle(
-                                    fontSize: 34,
+                                    fontSize: 30,
                                     fontWeight: FontWeight.w900,
-                                    color: Color(0xFF16397E),
+                                    color: Colors.white,
                                   ),
                                 )
                               : null),
                     ),
-                  ),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Material(
-                      color: Colors.white,
-                      shape: const CircleBorder(),
-                      elevation: 4,
-                      child: InkWell(
-                        onTap: _showAvatarOptionsSheet,
-                        customBorder: const CircleBorder(),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration:
-                              const BoxDecoration(shape: BoxShape.circle),
-                          child: const Icon(
-                            Icons.camera_alt_rounded,
-                            size: 18,
-                            color: Color(0xFF16397E),
+                    Positioned(
+                      right: -2,
+                      bottom: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1.2,
                           ),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x14000000),
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-
-              // Name
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: -0.3,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 4),
-
-              // Email
-              Text(
-                email,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white.withValues(alpha: 0.85),
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 10),
-
-              // Role Pill
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.verified_user_rounded,
-                        size: 14, color: Colors.white),
-                    SizedBox(width: 5),
-                    Text(
-                      'Akun Pelanggan Beres Aktif',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        child: const Icon(
+                          Icons.camera_alt_outlined,
+                          size: 16,
+                          color: Color(0xFF16397E),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(width: 16),
 
-              // Edit Profile Button
-              SizedBox(
-                height: 38,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF16397E),
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+              // Nama, Email, & Pill Akun Pelanggan Beres Aktif
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.4,
+                      ),
                     ),
-                  ),
-                  icon: const Icon(Icons.edit_outlined, size: 16),
-                  label: const Text(
-                    'Ubah Profil & Nama',
-                    style:
-                        TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                  ),
-                  onPressed: _showEditProfileBottomSheet,
+                    const SizedBox(height: 2),
+                    Text(
+                      email,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check, size: 14, color: Color(0xFF16A34A)),
+                          SizedBox(width: 4),
+                          Text(
+                            'Akun Pelanggan Beres Aktif',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF15803D),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
+          ),
+        ),
+
+        const SizedBox(height: 18),
+
+        // 2. TOMBOL OUTLINED: Ubah Profil & Nama Sesuai Gambar
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFF16397E), width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              backgroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.edit_outlined,
+                size: 18, color: Color(0xFF16397E)),
+            label: const Text(
+              'Ubah Profil & Nama',
+              style: TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF16397E),
+              ),
+            ),
+            onPressed: _showEditProfileBottomSheet,
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // 3. STATS CARD TERSAMBUNG (Total Dibuat, Sedang Berjalan, Selesai Sesuai Gambar)
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x06000000),
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildSegmentStat(
+                    count: '${_myJobs.length}',
+                    label: 'Total Dibuat',
+                    color: const Color(0xFF16397E),
+                  ),
+                ),
+                const VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: Color(0xFFF1F5F9),
+                ),
+                Expanded(
+                  child: _buildSegmentStat(
+                    count: '${_activeJobs.length}',
+                    label: 'Sedang Berjalan',
+                    color: const Color(0xFFD97706),
+                  ),
+                ),
+                const VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: Color(0xFFF1F5F9),
+                ),
+                Expanded(
+                  child: _buildSegmentStat(
+                    count: '${_myJobs.length - _activeJobs.length}',
+                    label: 'Selesai',
+                    color: const Color(0xFF16A34A),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
 
@@ -3052,37 +3093,6 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
 
         const SizedBox(height: 18),
 
-        // 3. STATS ROW (Total Dibuat, Sedang Berjalan, Selesai)
-        Row(
-          children: [
-            Expanded(
-              child: _buildProfileStatCard(
-                '${_myJobs.length}',
-                'Total Dibuat',
-                const Color(0xFF16397E),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildProfileStatCard(
-                '${_activeJobs.length}',
-                'Sedang Berjalan',
-                const Color(0xFFF59E0B),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildProfileStatCard(
-                '${_myJobs.length - _activeJobs.length}',
-                'Selesai',
-                const Color(0xFF16A34A),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 18),
-
         // 4. MENU PANDUAN, KELUAR, & HAPUS AKUN
         Material(
           color: Colors.white,
@@ -3189,29 +3199,29 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
     );
   }
 
-  Widget _buildProfileStatCard(String count, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
+  Widget _buildSegmentStat({
+    required String count,
+    required String label,
+    required Color color,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             count,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 26,
               fontWeight: FontWeight.w900,
               color: color,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 12.5,
               fontWeight: FontWeight.w600,
               color: Color(0xFF64748B),
             ),
