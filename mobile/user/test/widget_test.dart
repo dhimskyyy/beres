@@ -1,13 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:beres_shared/beres_shared.dart';
 import 'package:beres_user/main.dart';
 
 void main() {
-  testWidgets('BeresUserApp smoke test renders login', (
+  testWidgets('BeresUserApp smoke test renders splash and navigates to login', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const ProviderScope(child: BeresUserApp()));
-    expect(find.text('Masuk sebagai Pelanggan'), findsOneWidget);
-    expect(find.text('Daftar Sekarang'), findsOneWidget);
+    expect(find.byType(BeresSplash), findsOneWidget);
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Silahkan Masuk ke Akun Anda Terlebih Dahulu'), findsOneWidget);
+    expect(find.text('Daftar Disini'), findsOneWidget);
   });
 }

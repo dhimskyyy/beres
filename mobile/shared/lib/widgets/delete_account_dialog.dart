@@ -156,8 +156,8 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
               child: SelectableText(
                 _expectedText,
                 style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                   color: Color(0xFF0F172A),
                   letterSpacing: 0.2,
                 ),

@@ -44,6 +44,7 @@ export 'services/cancellation_service.dart';
 export 'services/device_permission_service.dart';
 
 // Widgets
+export 'widgets/beres_splash.dart';
 export 'widgets/suspend_screen.dart';
 export 'widgets/delete_account_dialog.dart';
 export 'widgets/faq_rules_screen.dart';

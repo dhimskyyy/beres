@@ -31,20 +31,22 @@ class _UserLoginScreenState extends ConsumerState<UserLoginScreen> {
   @override
   void initState() {
     super.initState();
-    _authSubscription = SupabaseClientService
-        .instance.client.auth.onAuthStateChange
-        .listen((data) async {
-      final session = data.session;
-      if (session != null && mounted) {
-        try {
-          final authService = ref.read(authServiceProvider);
-          await authService.syncOAuthProfile(session.user, role: UserRole.user);
-        } catch (_) {}
-        if (mounted) {
-          context.go('/home');
+    try {
+      _authSubscription = SupabaseClientService
+          .instance.client.auth.onAuthStateChange
+          .listen((data) async {
+        final session = data.session;
+        if (session != null && mounted) {
+          try {
+            final authService = ref.read(authServiceProvider);
+            await authService.syncOAuthProfile(session.user, role: UserRole.user);
+          } catch (_) {}
+          if (mounted) {
+            context.go('/home');
+          }
         }
-      }
-    });
+      });
+    } catch (_) {}
   }
 
   @override

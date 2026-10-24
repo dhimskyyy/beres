@@ -26,10 +26,16 @@ class SupabaseClientService {
   GoTrueClient get auth => client.auth;
 
   /// User getter saat ini
-  User? get currentUser => client.auth.currentUser;
+  User? get currentUser {
+    try {
+      return client.auth.currentUser;
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// ID User saat ini
-  String? get currentUserId => client.auth.currentUser?.id;
+  String? get currentUserId => currentUser?.id;
 
   /// Cek apakah pengguna sudah login
   bool get isAuthenticated => currentUser != null;

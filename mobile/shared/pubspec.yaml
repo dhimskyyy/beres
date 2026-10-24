@@ -25,3 +25,4 @@ flutter:
   assets:
     - assets/beres_long.png
     - assets/images/auth_bg.jpg
+    - assets/splash/

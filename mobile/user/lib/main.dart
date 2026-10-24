@@ -34,8 +34,26 @@ Future<void> main() async {
 }
 
 final _router = GoRouter(
-  initialLocation: '/login',
+  initialLocation: '/splash',
   routes: [
+    GoRoute(
+      path: '/splash',
+      builder: (context, state) => BeresSplash(
+        tagline: 'Panggil Tukang Tanpa Ribet',
+        onFinished: () {
+          try {
+            final user = SupabaseClientService.instance.currentUser;
+            if (user != null) {
+              context.go('/home');
+            } else {
+              context.go('/login');
+            }
+          } catch (_) {
+            context.go('/login');
+          }
+        },
+      ),
+    ),
     GoRoute(
       path: '/login',
       builder: (context, state) => const UserLoginScreen(),
