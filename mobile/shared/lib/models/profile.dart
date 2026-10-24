@@ -27,6 +27,8 @@ class Profile {
   final String fullName;
   final String? phone;
   final String? avatarUrl;
+  final String? birthPlace;
+  final DateTime? birthDate;
   final String timezone;
   final bool isEmailVerified;
   final DateTime? emailVerifiedAt;
@@ -44,6 +46,8 @@ class Profile {
     required this.fullName,
     this.phone,
     this.avatarUrl,
+    this.birthPlace,
+    this.birthDate,
     this.timezone = 'Asia/Jakarta',
     this.isEmailVerified = false,
     this.emailVerifiedAt,
@@ -54,6 +58,47 @@ class Profile {
     this.deletedAt,
     required this.createdAt,
   });
+
+  String? get birthPlaceAndDateFormatted {
+    if (birthPlace != null && birthDate != null) {
+      final d = birthDate!;
+      final months = [
+        'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember'
+      ];
+      return '$birthPlace, ${d.day} ${months[d.month - 1]} ${d.year}';
+    } else if (birthPlace != null) {
+      return birthPlace;
+    } else if (birthDate != null) {
+      final d = birthDate!;
+      final months = [
+        'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember'
+      ];
+      return '${d.day} ${months[d.month - 1]} ${d.year}';
+    }
+    return null;
+  }
 
   bool get isSuspended {
     if (suspendType == SuspendType.manualPermanent) return true;
@@ -77,6 +122,10 @@ class Profile {
       fullName: (json['full_name'] as String?) ?? '',
       phone: json['phone'] as String?,
       avatarUrl: json['avatar_url'] as String?,
+      birthPlace: json['birth_place'] as String?,
+      birthDate: json['birth_date'] != null
+          ? DateTime.tryParse(json['birth_date'].toString())
+          : null,
       timezone: (json['timezone'] as String?) ?? 'Asia/Jakarta',
       isEmailVerified: (json['is_email_verified'] as bool?) ?? false,
       emailVerifiedAt: json['email_verified_at'] != null
@@ -106,6 +155,8 @@ class Profile {
     String? fullName,
     String? phone,
     String? avatarUrl,
+    String? birthPlace,
+    DateTime? birthDate,
     String? timezone,
     bool? isEmailVerified,
     DateTime? emailVerifiedAt,
@@ -123,6 +174,8 @@ class Profile {
       fullName: fullName ?? this.fullName,
       phone: phone ?? this.phone,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      birthPlace: birthPlace ?? this.birthPlace,
+      birthDate: birthDate ?? this.birthDate,
       timezone: timezone ?? this.timezone,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       emailVerifiedAt: emailVerifiedAt ?? this.emailVerifiedAt,
@@ -143,6 +196,8 @@ class Profile {
       'full_name': fullName,
       'phone': phone,
       'avatar_url': avatarUrl,
+      'birth_place': birthPlace,
+      'birth_date': birthDate?.toIso8601String().split('T').first,
       'timezone': timezone,
       'is_email_verified': isEmailVerified,
       'email_verified_at': emailVerifiedAt?.toIso8601String(),

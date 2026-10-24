@@ -477,11 +477,13 @@ class AuthService {
     }).eq('id', user.id);
   }
 
-  /// Memperbarui nama lengkap, nomor telepon, atau foto profil pengguna
+  /// Memperbarui nama lengkap, nomor telepon, foto profil, tempat & tanggal lahir pengguna
   Future<Profile> updateProfile({
     required String fullName,
     String? phone,
     String? avatarUrl,
+    String? birthPlace,
+    DateTime? birthDate,
   }) async {
     final user = _supabaseService.currentUser;
     if (user == null) {
@@ -497,6 +499,14 @@ class AuthService {
     }
     if (avatarUrl != null) {
       updateData['avatar_url'] = avatarUrl;
+    }
+    if (birthPlace != null) {
+      updateData['birth_place'] =
+          birthPlace.trim().isEmpty ? null : birthPlace.trim();
+    }
+    if (birthDate != null) {
+      updateData['birth_date'] =
+          birthDate.toIso8601String().split('T').first;
     }
 
     final res = await _client

@@ -437,9 +437,35 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
         : currentName;
 
     final nameController = TextEditingController(text: initialName);
+    final birthPlaceController =
+        TextEditingController(text: _profile?.birthPlace ?? '');
+    DateTime? selectedBirthDate = _profile?.birthDate;
     final phoneController = TextEditingController(text: _profile?.phone ?? '');
+    final email = _profile?.email.isNotEmpty == true
+        ? _profile!.email
+        : (SupabaseClientService.instance.currentUser?.email ?? '');
+    final isEmailVerified = _isEmailVerified;
+
     bool isSaving = false;
     String? localError;
+
+    String formatBirthDate(DateTime date) {
+      const months = [
+        'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember'
+      ];
+      return '${date.day} ${months[date.month - 1]} ${date.year}';
+    }
 
     showModalBottomSheet(
       context: context,
@@ -447,11 +473,8 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
         builder: (modalCtx, setModalState) => Container(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 24,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(modalCtx).size.height * 0.90,
           ),
           decoration: const BoxDecoration(
             color: Colors.white,
@@ -459,370 +482,585 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+              // Handle Bar & Header (Tetap di atas)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 16, 12),
+                child: Column(
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 44,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFCBD5E1),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Ubah Profil Pengguna',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          onPressed: () => Navigator.of(ctx).pop(),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 18),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Ubah Profil Pengguna',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                    ),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
+              // Scrollable Form Content
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.only(
+                    left: 24,
+                    right: 24,
+                    top: 16,
+                    bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 28,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20),
-                    onPressed: () => Navigator.of(ctx).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Perbarui nama lengkap dan nomor kontak Anda agar mitra tukang dapat mengenali pesanan Anda.',
-                style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-              ),
-              if (localError != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF2F2),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFFECACA)),
-                  ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.error_outline_rounded,
-                          size: 16, color: Color(0xFFDC2626)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          localError!,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFFDC2626),
-                            fontWeight: FontWeight.w600,
+                      const Text(
+                        'Perbarui data pribadi dan kontak Anda agar mitra tukang dapat mengenali dan menghubungi Anda dengan mudah.',
+                        style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                      ),
+                      if (localError != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF2F2),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFECACA)),
                           ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline_rounded,
+                                  size: 16, color: Color(0xFFDC2626)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  localError!,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFFDC2626),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 18),
+
+                      // FIELD 1: Nama Lengkap
+                      const Text(
+                        'Nama Lengkap',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: nameController,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.person_outline_rounded,
+                              size: 20, color: Color(0xFF16397E)),
+                          hintText: 'Contoh: Budi Santoso',
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF16397E), width: 1.5),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // FIELD 2: Tempat Lahir
+                      const Text(
+                        'Tempat Lahir',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: birthPlaceController,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.location_city_outlined,
+                              size: 20, color: Color(0xFF16397E)),
+                          hintText: 'Contoh: Jakarta',
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF16397E), width: 1.5),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // FIELD 3: Tanggal Lahir (Interactive Date Picker)
+                      const Text(
+                        'Tanggal Lahir',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: modalCtx,
+                            initialDate:
+                                selectedBirthDate ?? DateTime(2000, 1, 1),
+                            firstDate: DateTime(1920),
+                            lastDate: DateTime.now(),
+                            builder: (context, child) {
+                              return Theme(
+                                data: Theme.of(context).copyWith(
+                                  colorScheme: const ColorScheme.light(
+                                    primary: Color(0xFF16397E),
+                                    onPrimary: Colors.white,
+                                    onSurface: Color(0xFF0F172A),
+                                  ),
+                                ),
+                                child: child!,
+                              );
+                            },
+                          );
+                          if (picked != null) {
+                            setModalState(() {
+                              selectedBirthDate = picked;
+                            });
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(14),
+                            border:
+                                Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_today_rounded,
+                                  size: 19, color: Color(0xFF16397E)),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  selectedBirthDate != null
+                                      ? formatBirthDate(selectedBirthDate!)
+                                      : 'Pilih Tanggal Lahir',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: selectedBirthDate != null
+                                        ? const Color(0xFF0F172A)
+                                        : const Color(0xFF94A3B8),
+                                    fontWeight: selectedBirthDate != null
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                              if (selectedBirthDate != null)
+                                GestureDetector(
+                                  onTap: () {
+                                    setModalState(() {
+                                      selectedBirthDate = null;
+                                    });
+                                  },
+                                  child: const Icon(Icons.cancel_rounded,
+                                      size: 18, color: Color(0xFF94A3B8)),
+                                )
+                              else
+                                const Icon(Icons.keyboard_arrow_down_rounded,
+                                    size: 20, color: Color(0xFF64748B)),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // FIELD 4: Email Terdaftar
+                      const Text(
+                        'Email Terdaftar',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(14),
+                          border:
+                              Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.mail_outline_rounded,
+                                size: 20, color: Color(0xFF64748B)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    email.isNotEmpty ? email : '-',
+                                    style: const TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF334155),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  const Text(
+                                    'Terhubung dengan akun autentikasi Beres',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (isEmailVerified) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFDCFCE7),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color: const Color(0xFF86EFAC)),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.verified_rounded,
+                                        size: 13, color: Color(0xFF16A34A)),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Terverifikasi',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF16A34A),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ] else ...[
+                              InkWell(
+                                onTap: () {
+                                  Navigator.of(ctx).pop();
+                                  _showEmailVerificationModal();
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFEF3C7),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: const Color(0xFFFDE68A)),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.warning_amber_rounded,
+                                          size: 12, color: Color(0xFFD97706)),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'Verifikasi',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFFD97706),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // FIELD 5: Nomor Telepon / WhatsApp
+                      const Text(
+                        'Nomor Telepon / WhatsApp',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: phoneController,
+                        keyboardType: TextInputType.phone,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.phone_outlined,
+                              size: 20, color: Color(0xFF16397E)),
+                          hintText: 'Contoh: 081234567890',
+                          helperText:
+                              'Tukang dapat menghubungi nomor ini saat menuju lokasi pesanan.',
+                          helperStyle: const TextStyle(
+                              fontSize: 11, color: Color(0xFF94A3B8)),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF16397E), width: 1.5),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // ACTION: Simpan Perubahan
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF16397E),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          onPressed: isSaving
+                              ? null
+                              : () async {
+                                  final newName = nameController.text.trim();
+                                  if (newName.isEmpty) {
+                                    setModalState(() => localError =
+                                        'Nama lengkap tidak boleh kosong.');
+                                    return;
+                                  }
+                                  if (newName.length < 2) {
+                                    setModalState(() => localError =
+                                        'Nama lengkap minimal 2 karakter.');
+                                    return;
+                                  }
+                                  setModalState(() {
+                                    isSaving = true;
+                                    localError = null;
+                                  });
+                                  try {
+                                    final authService =
+                                        ref.read(authServiceProvider);
+                                    final updated =
+                                        await authService.updateProfile(
+                                      fullName: newName,
+                                      phone: phoneController.text.trim().isEmpty
+                                          ? null
+                                          : phoneController.text.trim(),
+                                      birthPlace: birthPlaceController.text
+                                              .trim()
+                                              .isEmpty
+                                          ? null
+                                          : birthPlaceController.text.trim(),
+                                      birthDate: selectedBirthDate,
+                                    );
+                                    if (ctx.mounted) {
+                                      Navigator.of(ctx).pop();
+                                    }
+                                    if (mounted) {
+                                      setState(() {
+                                        _profile = updated;
+                                      });
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content:
+                                              Text('Profil berhasil disimpan!'),
+                                          backgroundColor: Color(0xFF16A34A),
+                                        ),
+                                      );
+                                    }
+                                    await _loadData();
+                                  } catch (e) {
+                                    setModalState(() {
+                                      isSaving = false;
+                                      localError = e
+                                          .toString()
+                                          .replaceFirst('Exception: ', '');
+                                    });
+                                  }
+                                },
+                          child: isSaving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Simpan Perubahan',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                        ),
+                      ),
+
+                      // DANGER ZONE: Hapus Akun Saya (BR-45 & UU PDP)
+                      Container(
+                        margin: const EdgeInsets.only(top: 28),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(16),
+                          border:
+                              Border.all(color: const Color(0xFFFECACA)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.warning_amber_rounded,
+                                    size: 18, color: Color(0xFFDC2626)),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Zona Bahaya Akun',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFFDC2626),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Menghapus akun akan menghapus profil Anda secara permanen sesuai kepatuhan UU PDP. Pesanan aktif harus diselesaikan terlebih dahulu.',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: Color(0xFF991B1B),
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 42,
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFFDC2626),
+                                  side: const BorderSide(
+                                      color: Color(0xFFDC2626), width: 1.2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  backgroundColor: Colors.white,
+                                ),
+                                icon: const Icon(Icons.delete_forever_rounded,
+                                    size: 18, color: Color(0xFFDC2626)),
+                                label: const Text(
+                                  'Hapus Akun Saya',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFFDC2626),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.of(ctx).pop();
+                                  DeleteAccountDialog.show(
+                                    context,
+                                    authService:
+                                        ref.read(authServiceProvider),
+                                    onAccountDeleted: () =>
+                                        context.go('/login'),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-              const SizedBox(height: 18),
-              const Text(
-                'Nama Lengkap',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF334155),
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.person_outline_rounded,
-                      size: 20, color: Color(0xFF16397E)),
-                  hintText: 'Contoh: Budi Santoso',
-                  filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
-                        color: Color(0xFF16397E), width: 1.5),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                'Nomor Telepon / WhatsApp',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF334155),
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.phone_outlined,
-                      size: 20, color: Color(0xFF16397E)),
-                  hintText: 'Contoh: 081234567890',
-                  filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
-                        color: Color(0xFF16397E), width: 1.5),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF16397E),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  onPressed: isSaving
-                      ? null
-                      : () async {
-                          final newName = nameController.text.trim();
-                          if (newName.isEmpty) {
-                            setModalState(() => localError =
-                                'Nama lengkap tidak boleh kosong.');
-                            return;
-                          }
-                          if (newName.length < 2) {
-                            setModalState(() => localError =
-                                'Nama lengkap minimal 2 karakter.');
-                            return;
-                          }
-                          setModalState(() {
-                            isSaving = true;
-                            localError = null;
-                          });
-                          try {
-                            final authService = ref.read(authServiceProvider);
-                            final updated = await authService.updateProfile(
-                              fullName: newName,
-                              phone: phoneController.text.trim(),
-                            );
-                            if (ctx.mounted) {
-                              Navigator.of(ctx).pop();
-                            }
-                            if (mounted) {
-                              setState(() {
-                                _profile = updated;
-                              });
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Profil berhasil disimpan!'),
-                                  backgroundColor: Color(0xFF16A34A),
-                                ),
-                              );
-                            }
-                            await _loadData();
-                          } catch (e) {
-                            setModalState(() {
-                              isSaving = false;
-                              localError = e
-                                  .toString()
-                                  .replaceFirst('Exception: ', '');
-                            });
-                          }
-                        },
-                  child: isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          'Simpan Perubahan',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showEditPhoneDialog() {
-    final phoneController =
-        TextEditingController(text: _profile?.phone ?? '');
-    bool isSaving = false;
-    String? localError;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (modalCtx, setModalState) => Container(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 24,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Nomor WhatsApp / HP',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20),
-                    onPressed: () => Navigator.of(ctx).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Nomor ini akan digunakan mitra tukang untuk menghubungi Anda saat sedang dalam perjalanan menuju lokasi.',
-                style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-              ),
-              if (localError != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  localError!,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFFDC2626),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 18),
-              TextField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                autofocus: true,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.phone_outlined,
-                      size: 20, color: Color(0xFF16397E)),
-                  hintText: 'Contoh: 081234567890',
-                  filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF16397E),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  onPressed: isSaving
-                      ? null
-                      : () async {
-                          final phone = phoneController.text.trim();
-                          setModalState(() {
-                            isSaving = true;
-                            localError = null;
-                          });
-                          try {
-                            final authService = ref.read(authServiceProvider);
-                            final updated = await authService.updateProfile(
-                              fullName: _profile?.fullName ?? _displayName,
-                              phone: phone,
-                            );
-                            if (ctx.mounted) Navigator.of(ctx).pop();
-                            if (mounted) {
-                              setState(() => _profile = updated);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content:
-                                      Text('Nomor telepon berhasil disimpan!'),
-                                  backgroundColor: Color(0xFF16A34A),
-                                ),
-                              );
-                            }
-                            await _loadData();
-                          } catch (e) {
-                            setModalState(() {
-                              isSaving = false;
-                              localError = e
-                                  .toString()
-                                  .replaceFirst('Exception: ', '');
-                            });
-                          }
-                        },
-                  child: isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text(
-                          'Simpan Nomor Telepon',
-                          style: TextStyle(
-                              fontSize: 14.5, fontWeight: FontWeight.w700),
-                        ),
                 ),
               ),
             ],
@@ -2568,9 +2806,6 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
     final email = _profile?.email ??
         SupabaseClientService.instance.currentUser?.email ??
         '-';
-    final phone = (_profile?.phone != null && _profile!.phone!.trim().isNotEmpty)
-        ? _profile!.phone!.trim()
-        : null;
     final initial = _initial;
     final isEmailVerified = _isEmailVerified;
 
@@ -2678,15 +2913,64 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      email,
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            email,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        if (isEmailVerified) ...[
+                          const Tooltip(
+                            message: 'Email Terverifikasi',
+                            child: Icon(
+                              Icons.verified_rounded,
+                              size: 16,
+                              color: Color(0xFF16A34A),
+                            ),
+                          ),
+                        ] else ...[
+                          InkWell(
+                            onTap: _showEmailVerificationModal,
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(6),
+                                border:
+                                    Border.all(color: const Color(0xFFFDE68A)),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.warning_amber_rounded,
+                                      size: 11, color: Color(0xFFD97706)),
+                                  SizedBox(width: 3),
+                                  Text(
+                                    'Verifikasi',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFFD97706),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 6),
                     Container(
@@ -2806,294 +3090,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
 
         const SizedBox(height: 18),
 
-        // 2. KARTU INFORMASI AKUN & KEAMANAN
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x06000000),
-                blurRadius: 10,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.shield_outlined,
-                      size: 18, color: Color(0xFF16397E)),
-                  SizedBox(width: 8),
-                  Text(
-                    'Informasi Akun & Keamanan',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // ROW 1: Nama Lengkap
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(9),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.person_outline_rounded,
-                        size: 18, color: Color(0xFF475569)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Nama Lengkap',
-                          style: TextStyle(
-                              fontSize: 11.5,
-                              color: Color(0xFF64748B),
-                              fontWeight: FontWeight.w500),
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined,
-                        size: 18, color: Color(0xFF16397E)),
-                    tooltip: 'Ubah Nama',
-                    onPressed: _showEditProfileBottomSheet,
-                  ),
-                ],
-              ),
-
-              const Divider(height: 22, color: Color(0xFFF1F5F9)),
-
-              // ROW 2: Email & Verifikasi
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(9),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.mail_outline_rounded,
-                        size: 18, color: Color(0xFF475569)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Email Terdaftar',
-                          style: TextStyle(
-                              fontSize: 11.5,
-                              color: Color(0xFF64748B),
-                              fontWeight: FontWeight.w500),
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          email,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        if (isEmailVerified) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFDCFCE7),
-                              borderRadius: BorderRadius.circular(8),
-                              border:
-                                  Border.all(color: const Color(0xFF86EFAC)),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.verified_rounded,
-                                    size: 13, color: Color(0xFF16A34A)),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Terverifikasi',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF16A34A),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ] else ...[
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 6,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFEF3C7),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                      color: const Color(0xFFFDE68A)),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.warning_amber_rounded,
-                                        size: 13, color: Color(0xFFD97706)),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Belum Terverifikasi',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFFD97706),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              InkWell(
-                                onTap: _showEmailVerificationModal,
-                                borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF16397E),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.send_rounded,
-                                          size: 11, color: Colors.white),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        'Verifikasi Email',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const Divider(height: 22, color: Color(0xFFF1F5F9)),
-
-              // ROW 3: Nomor WhatsApp / HP
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(9),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.phone_outlined,
-                        size: 18, color: Color(0xFF475569)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Nomor WhatsApp / HP',
-                          style: TextStyle(
-                              fontSize: 11.5,
-                              color: Color(0xFF64748B),
-                              fontWeight: FontWeight.w500),
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          phone ?? 'Belum ditambahkan',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: phone != null
-                                ? const Color(0xFF0F172A)
-                                : const Color(0xFF94A3B8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (phone != null) ...[
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined,
-                          size: 18, color: Color(0xFF16397E)),
-                      tooltip: 'Ubah Nomor',
-                      onPressed: _showEditPhoneDialog,
-                    ),
-                  ] else ...[
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF16397E),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                      ),
-                      icon: const Icon(Icons.add_rounded, size: 16),
-                      label: const Text(
-                        'Tambah',
-                        style: TextStyle(
-                            fontSize: 12.5, fontWeight: FontWeight.w700),
-                      ),
-                      onPressed: _showEditPhoneDialog,
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 18),
-
-        // 4. MENU PANDUAN, KELUAR, & HAPUS AKUN
+        // 4. MENU PANDUAN & KELUAR DARI AKUN
         Material(
           color: Colors.white,
           shape: RoundedRectangleBorder(
@@ -3155,42 +3152,6 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                 ),
                 trailing: const Icon(Icons.chevron_right_rounded, size: 20),
                 onTap: _handleSignOut,
-              ),
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF2F2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.delete_forever_rounded,
-                    color: Color(0xFFDC2626),
-                    size: 20,
-                  ),
-                ),
-                title: const Text(
-                  'Hapus Akun Saya',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFDC2626),
-                  ),
-                ),
-                subtitle: const Text(
-                  'Hapus data akun secara permanen sesuai kepatuhan UU PDP',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded,
-                    size: 20, color: Color(0xFFDC2626)),
-                onTap: () {
-                  DeleteAccountDialog.show(
-                    context,
-                    authService: ref.read(authServiceProvider),
-                    onAccountDeleted: () => context.go('/login'),
-                  );
-                },
               ),
             ],
           ),
