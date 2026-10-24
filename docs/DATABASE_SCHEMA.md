@@ -47,6 +47,8 @@ Dokumen ini mendefinisikan struktur tabel, tipe enum, constraint, indeks spasial
 | `full_name` | `TEXT NOT NULL` | Nama lengkap |
 | `phone` | `TEXT` | Nomor HP kontak |
 | `avatar_url` | `TEXT` | URL foto profil |
+| `is_email_verified` | `BOOLEAN NOT NULL` | Default `false`, status verifikasi email |
+| `email_verified_at` | `TIMESTAMPTZ` | Waktu diverifikasinya email via tautan atau OTP |
 | `timezone` | `TEXT NOT NULL` | Default `'Asia/Jakarta'` (`'Asia/Jakarta'`, `'Asia/Makassar'`, `'Asia/Jayapura'` — `BR-75`) |
 | `suspend_type` | `suspend_type NOT NULL` | Default `'NONE'` (`'AUTO_2_DAYS'` atau `'MANUAL_PERMANENT'` — `BR-42`) |
 | `suspended_until` | `TIMESTAMPTZ` | Waktu berakhirnya suspend otomatis 2 hari (48 jam) |

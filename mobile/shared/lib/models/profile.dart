@@ -28,6 +28,8 @@ class Profile {
   final String? phone;
   final String? avatarUrl;
   final String timezone;
+  final bool isEmailVerified;
+  final DateTime? emailVerifiedAt;
   final SuspendType suspendType;
   final DateTime? suspendedUntil;
   final String? suspendReason;
@@ -43,6 +45,8 @@ class Profile {
     this.phone,
     this.avatarUrl,
     this.timezone = 'Asia/Jakarta',
+    this.isEmailVerified = false,
+    this.emailVerifiedAt,
     this.suspendType = SuspendType.none,
     this.suspendedUntil,
     this.suspendReason,
@@ -74,6 +78,10 @@ class Profile {
       phone: json['phone'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       timezone: (json['timezone'] as String?) ?? 'Asia/Jakarta',
+      isEmailVerified: (json['is_email_verified'] as bool?) ?? false,
+      emailVerifiedAt: json['email_verified_at'] != null
+          ? DateTime.tryParse(json['email_verified_at'].toString())
+          : null,
       suspendType:
           SuspendType.fromString(json['suspend_type'] as String? ?? 'NONE'),
       suspendedUntil: json['suspended_until'] != null
@@ -91,6 +99,42 @@ class Profile {
     );
   }
 
+  Profile copyWith({
+    String? id,
+    String? email,
+    UserRole? role,
+    String? fullName,
+    String? phone,
+    String? avatarUrl,
+    String? timezone,
+    bool? isEmailVerified,
+    DateTime? emailVerifiedAt,
+    SuspendType? suspendType,
+    DateTime? suspendedUntil,
+    String? suspendReason,
+    String appealEmailInfo = 'support@beres.id',
+    DateTime? deletedAt,
+    DateTime? createdAt,
+  }) {
+    return Profile(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      role: role ?? this.role,
+      fullName: fullName ?? this.fullName,
+      phone: phone ?? this.phone,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      timezone: timezone ?? this.timezone,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      emailVerifiedAt: emailVerifiedAt ?? this.emailVerifiedAt,
+      suspendType: suspendType ?? this.suspendType,
+      suspendedUntil: suspendedUntil ?? this.suspendedUntil,
+      suspendReason: suspendReason ?? this.suspendReason,
+      appealEmailInfo: appealEmailInfo,
+      deletedAt: deletedAt ?? this.deletedAt,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -100,6 +144,8 @@ class Profile {
       'phone': phone,
       'avatar_url': avatarUrl,
       'timezone': timezone,
+      'is_email_verified': isEmailVerified,
+      'email_verified_at': emailVerifiedAt?.toIso8601String(),
       'suspend_type': suspendType.value,
       'suspended_until': suspendedUntil?.toIso8601String(),
       'suspend_reason': suspendReason,

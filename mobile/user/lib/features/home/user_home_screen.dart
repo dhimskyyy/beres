@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:beres_shared/beres_shared.dart';
 
 import '../auth/login_screen.dart';
@@ -22,6 +24,8 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
   bool _isLoading = true;
   int _selectedTabIndex = 0;
   String _activityFilter = 'ALL'; // ALL, ACTIVE, HISTORY
+  StreamSubscription<AuthState>? _authSubscription;
+  bool _isUploadingAvatar = false;
 
   // 8 Kategori Beres v1.4.0 (Sesuai Desain Image 1)
   static const List<Map<String, dynamic>> _homeCategories = [
@@ -103,6 +107,18 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _authSubscription =
+        SupabaseClientService.instance.auth.onAuthStateChange.listen((data) {
+      if (mounted) {
+        _loadData();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -177,14 +193,250 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
     return name.isNotEmpty ? name[0].toUpperCase() : 'U';
   }
 
+  bool get _isEmailVerified {
+    if (_profile?.isEmailVerified == true) return true;
+    final authUser = SupabaseClientService.instance.currentUser;
+    if (authUser?.emailConfirmedAt != null) return true;
+    final provider = authUser?.appMetadata['provider'] as String?;
+    if (provider == 'google') return true;
+    return false;
+  }
+
+  void _showAvatarOptionsSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              'Foto Profil',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Pilih sumber foto profil Anda atau hapus foto profil saat ini.',
+              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 18),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.camera_alt_rounded,
+                  color: Color(0xFF16397E),
+                  size: 22,
+                ),
+              ),
+              title: const Text(
+                'Ambil Foto dari Kamera',
+                style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
+              ),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _pickAndUploadAvatar(ImageSource.camera);
+              },
+            ),
+            const SizedBox(height: 4),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.photo_library_rounded,
+                  color: Color(0xFF16A34A),
+                  size: 22,
+                ),
+              ),
+              title: const Text(
+                'Pilih dari Galeri',
+                style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
+              ),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _pickAndUploadAvatar(ImageSource.gallery);
+              },
+            ),
+            if (_profile?.avatarUrl != null &&
+                _profile!.avatarUrl!.trim().isNotEmpty) ...[
+              const SizedBox(height: 4),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Color(0xFFDC2626),
+                    size: 22,
+                  ),
+                ),
+                title: const Text(
+                  'Hapus Foto Profil',
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFDC2626),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _deleteAvatar();
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadAvatar(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+
+      setState(() => _isUploadingAvatar = true);
+      final authService = ref.read(authServiceProvider);
+      final newUrl = await authService.uploadAvatar(picked);
+
+      if (mounted) {
+        setState(() {
+          _isUploadingAvatar = false;
+          _profile = _profile?.copyWith(avatarUrl: newUrl);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Foto profil berhasil diperbarui!'),
+            backgroundColor: Color(0xFF16A34A),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingAvatar = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Gagal mengunggah foto: ${e.toString().replaceFirst('Exception: ', '')}',
+            ),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteAvatar() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Hapus Foto Profil?'),
+        content: const Text(
+          'Foto profil Anda akan dihapus dan kembali menggunakan inisial nama Anda.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dCtx).pop(false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(dCtx).pop(true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      setState(() => _isUploadingAvatar = true);
+      final authService = ref.read(authServiceProvider);
+      await authService.deleteAvatar();
+
+      if (mounted) {
+        setState(() {
+          _isUploadingAvatar = false;
+          _profile = _profile?.copyWith(avatarUrl: '');
+        });
+        await _loadData();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Foto profil berhasil dihapus.'),
+              backgroundColor: Color(0xFF16A34A),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingAvatar = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Gagal menghapus foto: ${e.toString().replaceFirst('Exception: ', '')}',
+            ),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
+
   void _showEditProfileBottomSheet() {
     final currentName = _profile?.fullName.trim();
-    final initialText = (currentName == 'Pengguna Beres' ||
+    final initialName = (currentName == null ||
+            currentName.isEmpty ||
+            currentName == 'Pengguna Beres' ||
             currentName == 'Pelanggan Beres')
-        ? _displayName
-        : (currentName ?? '');
+        ? (_displayName != 'Pelanggan' ? _displayName : '')
+        : currentName;
 
-    final nameController = TextEditingController(text: initialText);
+    final nameController = TextEditingController(text: initialName);
     final phoneController = TextEditingController(text: _profile?.phone ?? '');
     bool isSaving = false;
     String? localError;
@@ -220,54 +472,125 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
-                'Ubah Profil & Nama',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Ubah Profil Pengguna',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               const Text(
-                'Nama ini akan ditampilkan pada sapaan beranda dan di ruang chat dengan mitra tukang.',
+                'Perbarui nama lengkap dan nomor kontak Anda agar mitra tukang dapat mengenali pesanan Anda.',
                 style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
               ),
               if (localError != null) ...[
                 const SizedBox(height: 12),
-                Text(
-                  localError!,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFFDC2626),
-                    fontWeight: FontWeight.w600,
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFFECACA)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline_rounded,
+                          size: 16, color: Color(0xFFDC2626)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          localError!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFDC2626),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
               const SizedBox(height: 18),
+              const Text(
+                'Nama Lengkap',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF334155),
+                ),
+              ),
+              const SizedBox(height: 6),
               TextField(
                 controller: nameController,
                 decoration: InputDecoration(
-                  labelText: 'Nama Lengkap / Panggilan',
-                  hintText: 'Contoh: Rizal, Budi Santoso',
+                  prefixIcon: const Icon(Icons.person_outline_rounded,
+                      size: 20, color: Color(0xFF16397E)),
+                  hintText: 'Contoh: Budi Santoso',
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(
+                        color: Color(0xFF16397E), width: 1.5),
                   ),
                 ),
               ),
               const SizedBox(height: 14),
+              const Text(
+                'Nomor Telepon / WhatsApp',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF334155),
+                ),
+              ),
+              const SizedBox(height: 6),
               TextField(
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
                 decoration: InputDecoration(
-                  labelText: 'Nomor WhatsApp / HP',
+                  prefixIcon: const Icon(Icons.phone_outlined,
+                      size: 20, color: Color(0xFF16397E)),
                   hintText: 'Contoh: 081234567890',
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(
+                        color: Color(0xFF16397E), width: 1.5),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -275,8 +598,9 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF16397E),
                     foregroundColor: Colors.white,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   onPressed: isSaving
@@ -284,8 +608,13 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                       : () async {
                           final newName = nameController.text.trim();
                           if (newName.isEmpty) {
-                            setModalState(() =>
-                                localError = 'Nama tidak boleh kosong.');
+                            setModalState(() => localError =
+                                'Nama lengkap tidak boleh kosong.');
+                            return;
+                          }
+                          if (newName.length < 2) {
+                            setModalState(() => localError =
+                                'Nama lengkap minimal 2 karakter.');
                             return;
                           }
                           setModalState(() {
@@ -294,15 +623,17 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                           });
                           try {
                             final authService = ref.read(authServiceProvider);
-                            await authService.updateProfile(
+                            final updated = await authService.updateProfile(
                               fullName: newName,
                               phone: phoneController.text.trim(),
                             );
                             if (ctx.mounted) {
                               Navigator.of(ctx).pop();
                             }
-                            await _loadData();
                             if (mounted) {
+                              setState(() {
+                                _profile = updated;
+                              });
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Profil berhasil disimpan!'),
@@ -310,10 +641,13 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                                 ),
                               );
                             }
+                            await _loadData();
                           } catch (e) {
                             setModalState(() {
                               isSaving = false;
-                              localError = e.toString();
+                              localError = e
+                                  .toString()
+                                  .replaceFirst('Exception: ', '');
                             });
                           }
                         },
@@ -329,12 +663,538 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                       : const Text(
                           'Simpan Perubahan',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 14.5,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showEditPhoneDialog() {
+    final phoneController =
+        TextEditingController(text: _profile?.phone ?? '');
+    bool isSaving = false;
+    String? localError;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (modalCtx, setModalState) => Container(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 24,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Nomor WhatsApp / HP',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Nomor ini akan digunakan mitra tukang untuk menghubungi Anda saat sedang dalam perjalanan menuju lokasi.',
+                style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+              ),
+              if (localError != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  localError!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFFDC2626),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 18),
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                autofocus: true,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.phone_outlined,
+                      size: 20, color: Color(0xFF16397E)),
+                  hintText: 'Contoh: 081234567890',
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF16397E),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  onPressed: isSaving
+                      ? null
+                      : () async {
+                          final phone = phoneController.text.trim();
+                          setModalState(() {
+                            isSaving = true;
+                            localError = null;
+                          });
+                          try {
+                            final authService = ref.read(authServiceProvider);
+                            final updated = await authService.updateProfile(
+                              fullName: _profile?.fullName ?? _displayName,
+                              phone: phone,
+                            );
+                            if (ctx.mounted) Navigator.of(ctx).pop();
+                            if (mounted) {
+                              setState(() => _profile = updated);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content:
+                                      Text('Nomor telepon berhasil disimpan!'),
+                                  backgroundColor: Color(0xFF16A34A),
+                                ),
+                              );
+                            }
+                            await _loadData();
+                          } catch (e) {
+                            setModalState(() {
+                              isSaving = false;
+                              localError = e
+                                  .toString()
+                                  .replaceFirst('Exception: ', '');
+                            });
+                          }
+                        },
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text(
+                          'Simpan Nomor Telepon',
+                          style: TextStyle(
+                              fontSize: 14.5, fontWeight: FontWeight.w700),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showEmailVerificationModal() {
+    final email = _profile?.email ??
+        SupabaseClientService.instance.currentUser?.email ??
+        '';
+    bool isSending = false;
+    bool isSent = false;
+    bool isVerifying = false;
+    String? statusMessage;
+    String? errorMessage;
+    final otpController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (modalCtx, setModalState) => Container(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 24,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.mark_email_read_outlined,
+                      color: Color(0xFF16397E),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Verifikasi Email Akun',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        Text(
+                          'Validasi kepemilikan email Anda',
+                          style: TextStyle(
+                              fontSize: 12.5, color: Color(0xFF64748B)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.email_outlined,
+                        size: 20, color: Color(0xFF64748B)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        email,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (errorMessage != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFFECACA)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline_rounded,
+                          size: 16, color: Color(0xFFDC2626)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          errorMessage!,
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFDC2626),
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (statusMessage != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_outline_rounded,
+                          size: 16, color: Color(0xFF16A34A)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          statusMessage!,
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF16A34A),
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              if (!isSent) ...[
+                const Text(
+                  'Kami akan mengirimkan tautan konfirmasi langsung ke kotak masuk email Anda. Anda cukup membuka email tersebut dan mengeklik tautan untuk memverifikasi akun secara instan.',
+                  style: TextStyle(
+                      fontSize: 13, color: Color(0xFF475569), height: 1.4),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF16397E),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    icon: isSending
+                        ? const SizedBox.shrink()
+                        : const Icon(Icons.send_rounded, size: 18),
+                    label: isSending
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text(
+                            'Kirim Tautan Verifikasi',
+                            style: TextStyle(
+                                fontSize: 14.5, fontWeight: FontWeight.w700),
+                          ),
+                    onPressed: isSending
+                        ? null
+                        : () async {
+                            setModalState(() {
+                              isSending = true;
+                              errorMessage = null;
+                            });
+                            try {
+                              final authService = ref.read(authServiceProvider);
+                              await authService.sendEmailVerificationLink(
+                                  email: email);
+                              setModalState(() {
+                                isSending = false;
+                                isSent = true;
+                                statusMessage =
+                                    'Tautan verifikasi telah dikirim ke $email!';
+                              });
+                            } catch (e) {
+                              setModalState(() {
+                                isSending = false;
+                                errorMessage = e
+                                    .toString()
+                                    .replaceFirst('Exception: ', '');
+                              });
+                            }
+                          },
+                  ),
+                ),
+              ] else ...[
+                const Text(
+                  'Silakan periksa kotak masuk atau folder spam email Anda, lalu klik tautan verifikasi.\n\nJika tautan tidak terbuka otomatis, Anda juga dapat memasukkan 6 digit kode yang tertera di email:',
+                  style: TextStyle(
+                      fontSize: 12.5, color: Color(0xFF475569), height: 1.4),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: otpController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 8),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    hintText: '123456',
+                    hintStyle: const TextStyle(
+                        fontSize: 20,
+                        letterSpacing: 6,
+                        color: Color(0xFFCBD5E1)),
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF16A34A),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: isVerifying
+                        ? null
+                        : () async {
+                            final code = otpController.text.trim();
+                            if (code.length != 6) {
+                              setModalState(() => errorMessage =
+                                  'Masukkan 6 digit kode dari email.');
+                              return;
+                            }
+                            setModalState(() {
+                              isVerifying = true;
+                              errorMessage = null;
+                            });
+                            try {
+                              final authService = ref.read(authServiceProvider);
+                              await authService.verifyEmailOtp(
+                                  email: email, token: code);
+                              if (ctx.mounted) Navigator.of(ctx).pop();
+                              if (mounted) {
+                                setState(() {
+                                  _profile = _profile?.copyWith(
+                                      isEmailVerified: true);
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Selamat! Email Anda telah berhasil diverifikasi.'),
+                                    backgroundColor: Color(0xFF16A34A),
+                                  ),
+                                );
+                              }
+                              await _loadData();
+                            } catch (e) {
+                              setModalState(() {
+                                isVerifying = false;
+                                errorMessage = e
+                                    .toString()
+                                    .replaceFirst('Exception: ', '');
+                              });
+                            }
+                          },
+                    child: isVerifying
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text(
+                            'Verifikasi Kode Sekarang',
+                            style: TextStyle(
+                                fontSize: 14.5, fontWeight: FontWeight.w700),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Center(
+                  child: TextButton(
+                    onPressed: isSending
+                        ? null
+                        : () async {
+                            setModalState(() {
+                              isSending = true;
+                              errorMessage = null;
+                            });
+                            try {
+                              final authService = ref.read(authServiceProvider);
+                              await authService.sendEmailVerificationLink(
+                                  email: email);
+                              setModalState(() {
+                                isSending = false;
+                                statusMessage =
+                                    'Tautan baru telah dikirim kembali!';
+                              });
+                            } catch (e) {
+                              setModalState(() {
+                                isSending = false;
+                                errorMessage = e
+                                    .toString()
+                                    .replaceFirst('Exception: ', '');
+                              });
+                            }
+                          },
+                    child: Text(
+                      isSending ? 'Mengirim ulang...' : 'Kirim Ulang Email',
+                      style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF16397E),
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -568,14 +1428,21 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                   child: CircleAvatar(
                     radius: 20,
                     backgroundColor: const Color(0xFFE0E7FF),
-                    child: Text(
-                      _initial,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF16397E),
-                      ),
-                    ),
+                    backgroundImage: (_profile?.avatarUrl != null &&
+                            _profile!.avatarUrl!.trim().isNotEmpty)
+                        ? NetworkImage(_profile!.avatarUrl!)
+                        : null,
+                    child: (_profile?.avatarUrl == null ||
+                            _profile!.avatarUrl!.trim().isEmpty)
+                        ? Text(
+                            _initial,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF16397E),
+                            ),
+                          )
+                        : null,
                   ),
                 ),
               ),
@@ -1698,31 +2565,207 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
             _profile!.fullName.trim() != 'Pelanggan Beres')
         ? _profile!.fullName.trim()
         : _displayName;
-    final email = _profile?.email ?? '-';
-    final phone = (_profile?.phone != null && _profile!.phone!.isNotEmpty)
-        ? _profile!.phone!
-        : 'Belum diatur';
+    final email = _profile?.email ??
+        SupabaseClientService.instance.currentUser?.email ??
+        '-';
+    final phone = (_profile?.phone != null && _profile!.phone!.trim().isNotEmpty)
+        ? _profile!.phone!.trim()
+        : null;
     final initial = _initial;
+    final isEmailVerified = _isEmailVerified;
 
     return ListView(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
       children: [
         // App Bar Title (Centered)
         const Center(
           child: Text(
-            'Profil & Akun',
+            'Profil & Pengaturan Akun',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
               color: Color(0xFF0F172A),
+              letterSpacing: -0.3,
             ),
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
 
-        // Profile Summary Card
+        // 1. HERO PROFILE CARD (Gradient Navy, Avatar with Camera Overlay, Name, Role Badge, Edit Action)
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF16397E), Color(0xFF1E40AF)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x2616397E),
+                blurRadius: 18,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Avatar with interactive camera badge
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 2,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 46,
+                      backgroundColor: const Color(0xFFE0E7FF),
+                      backgroundImage: (_profile?.avatarUrl != null &&
+                              _profile!.avatarUrl!.trim().isNotEmpty)
+                          ? NetworkImage(_profile!.avatarUrl!)
+                          : null,
+                      child: _isUploadingAvatar
+                          ? const CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Color(0xFF16397E),
+                            )
+                          : ((_profile?.avatarUrl == null ||
+                                  _profile!.avatarUrl!.trim().isEmpty)
+                              ? Text(
+                                  initial,
+                                  style: const TextStyle(
+                                    fontSize: 34,
+                                    fontWeight: FontWeight.w900,
+                                    color: Color(0xFF16397E),
+                                  ),
+                                )
+                              : null),
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Material(
+                      color: Colors.white,
+                      shape: const CircleBorder(),
+                      elevation: 4,
+                      child: InkWell(
+                        onTap: _showAvatarOptionsSheet,
+                        customBorder: const CircleBorder(),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration:
+                              const BoxDecoration(shape: BoxShape.circle),
+                          child: const Icon(
+                            Icons.camera_alt_rounded,
+                            size: 18,
+                            color: Color(0xFF16397E),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              // Name
+              Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 4),
+
+              // Email
+              Text(
+                email,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withValues(alpha: 0.85),
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 10),
+
+              // Role Pill
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.verified_user_rounded,
+                        size: 14, color: Colors.white),
+                    SizedBox(width: 5),
+                    Text(
+                      'Akun Pelanggan Beres Aktif',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Edit Profile Button
+              SizedBox(
+                height: 38,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF16397E),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: const Text(
+                    'Ubah Profil & Nama',
+                    style:
+                        TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                  ),
+                  onPressed: _showEditProfileBottomSheet,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 18),
+
+        // 2. KARTU INFORMASI AKUN & KEAMANAN
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
@@ -1737,80 +2780,279 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
               ),
             ],
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: const Color(0xFFE0E7FF),
-                child: Text(
-                  initial,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF16397E),
+              const Row(
+                children: [
+                  Icon(Icons.shield_outlined,
+                      size: 18, color: Color(0xFF16397E)),
+                  SizedBox(width: 8),
+                  Text(
+                    'Informasi Akun & Keamanan',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F172A),
-                      ),
+
+              const SizedBox(height: 16),
+
+              // ROW 1: Nama Lengkap
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      email,
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE0E7FF),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'Akun Pelanggan Aktif',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF16397E),
+                    child: const Icon(Icons.person_outline_rounded,
+                        size: 18, color: Color(0xFF475569)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Nama Lengkap',
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500),
                         ),
+                        const SizedBox(height: 1),
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined,
+                        size: 18, color: Color(0xFF16397E)),
+                    tooltip: 'Ubah Nama',
+                    onPressed: _showEditProfileBottomSheet,
+                  ),
+                ],
+              ),
+
+              const Divider(height: 22, color: Color(0xFFF1F5F9)),
+
+              // ROW 2: Email & Verifikasi
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.mail_outline_rounded,
+                        size: 18, color: Color(0xFF475569)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Email Terdaftar',
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          email,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        if (isEmailVerified) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFDCFCE7),
+                              borderRadius: BorderRadius.circular(8),
+                              border:
+                                  Border.all(color: const Color(0xFF86EFAC)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.verified_rounded,
+                                    size: 13, color: Color(0xFF16A34A)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Terverifikasi',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF16A34A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ] else ...[
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF3C7),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color: const Color(0xFFFDE68A)),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.warning_amber_rounded,
+                                        size: 13, color: Color(0xFFD97706)),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Belum Terverifikasi',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFFD97706),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              InkWell(
+                                onTap: _showEmailVerificationModal,
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF16397E),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.send_rounded,
+                                          size: 11, color: Colors.white),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'Verifikasi Email',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const Divider(height: 22, color: Color(0xFFF1F5F9)),
+
+              // ROW 3: Nomor WhatsApp / HP
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.phone_outlined,
+                        size: 18, color: Color(0xFF475569)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Nomor WhatsApp / HP',
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          phone ?? 'Belum ditambahkan',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: phone != null
+                                ? const Color(0xFF0F172A)
+                                : const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (phone != null) ...[
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined,
+                          size: 18, color: Color(0xFF16397E)),
+                      tooltip: 'Ubah Nomor',
+                      onPressed: _showEditPhoneDialog,
+                    ),
+                  ] else ...[
+                    TextButton.icon(
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF16397E),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                       ),
+                      icon: const Icon(Icons.add_rounded, size: 16),
+                      label: const Text(
+                        'Tambah',
+                        style: TextStyle(
+                            fontSize: 12.5, fontWeight: FontWeight.w700),
+                      ),
+                      onPressed: _showEditPhoneDialog,
                     ),
                   ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(
-                  Icons.edit_outlined,
-                  size: 20,
-                  color: Color(0xFF16397E),
-                ),
-                tooltip: 'Ubah Profil',
-                onPressed: _showEditProfileBottomSheet,
+                ],
               ),
             ],
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
 
-        // Stats Row (Permintaan, Aktif, Selesai)
+        // 3. STATS ROW (Total Dibuat, Sedang Berjalan, Selesai)
         Row(
           children: [
             Expanded(
@@ -1839,82 +3081,30 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
           ],
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
 
-        // Informasi Kontak
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Informasi Kontak',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildInfoRow(
-                icon: Icons.mail_outline_rounded,
-                label: 'Email Terdaftar',
-                value: email,
-              ),
-              const Divider(height: 20, color: Color(0xFFF1F5F9)),
-              _buildInfoRow(
-                icon: Icons.phone_outlined,
-                label: 'Nomor WhatsApp / HP',
-                value: phone,
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Menu Pengaturan & Bantuan
+        // 4. MENU PANDUAN, KELUAR, & HAPUS AKUN
         Material(
           color: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             side: const BorderSide(color: Color(0xFFE2E8F0)),
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
               ListTile(
-                leading: const Icon(
-                  Icons.person_outline_rounded,
-                  color: Color(0xFF16397E),
-                  size: 22,
-                ),
-                title: const Text(
-                  'Ubah Profil & Nama Lengkap',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                ),
-                subtitle: const Text(
-                  'Perbarui nama lengkap dan nomor telepon Anda',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded, size: 20),
-                onTap: _showEditProfileBottomSheet,
-              ),
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              ListTile(
-                leading: const Icon(
-                  Icons.help_outline_rounded,
-                  color: Color(0xFF16397E),
-                  size: 22,
+                  child: const Icon(
+                    Icons.help_outline_rounded,
+                    color: Color(0xFF16397E),
+                    size: 20,
+                  ),
                 ),
                 title: const Text(
                   'Panduan Layanan & Aturan Beres',
@@ -1925,7 +3115,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                   ),
                 ),
                 subtitle: const Text(
-                  'Cara kerja Nota Digital, timer 30 mnt, & sistem bayar',
+                  'Cara kerja Nota Digital, timer 30 mnt, & sistem bayar langsung',
                   style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                 ),
                 trailing: const Icon(Icons.chevron_right_rounded, size: 20),
@@ -1933,10 +3123,17 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
               ),
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
               ListTile(
-                leading: const Icon(
-                  Icons.logout_rounded,
-                  color: Color(0xFF0F172A),
-                  size: 22,
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.logout_rounded,
+                    color: Color(0xFF0F172A),
+                    size: 20,
+                  ),
                 ),
                 title: const Text(
                   'Keluar dari Akun',
@@ -1951,10 +3148,17 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
               ),
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
               ListTile(
-                leading: const Icon(
-                  Icons.delete_outline_rounded,
-                  color: Color(0xFFDC2626),
-                  size: 22,
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.delete_forever_rounded,
+                    color: Color(0xFFDC2626),
+                    size: 20,
+                  ),
                 ),
                 title: const Text(
                   'Hapus Akun Saya',
@@ -1965,10 +3169,11 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                   ),
                 ),
                 subtitle: const Text(
-                  'Hapus permanen data akun sesuai UU PDP',
+                  'Hapus data akun secara permanen sesuai kepatuhan UU PDP',
                   style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                 ),
-                trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+                trailing: const Icon(Icons.chevron_right_rounded,
+                    size: 20, color: Color(0xFFDC2626)),
                 onTap: () {
                   DeleteAccountDialog.show(
                     context,
@@ -2014,39 +3219,6 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildInfoRow({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: const Color(0xFF64748B)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 

@@ -1,3 +1,4 @@
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_role.dart';
 import '../models/profile.dart';
@@ -151,16 +152,29 @@ class AuthService {
       },
     );
 
-    final user = response.user;
+    var user = response.user;
     if (user == null) {
       throw Exception('Pendaftaran gagal. Silakan coba kembali.');
     }
+
+    // Pastikan session aktif di client (bila Supabase belum membuat session saat signUp)
+    if (response.session == null) {
+      try {
+        final loginRes = await _client.auth.signInWithPassword(
+          email: email.trim().toLowerCase(),
+          password: password,
+        );
+        user = loginRes.user ?? user;
+      } catch (_) {}
+    }
+
+    final activeUser = user!;
 
     try {
       final rpcRes = await _client.rpc(
         'rpc_sync_profile_after_auth',
         params: {
-          'p_user_id': user.id,
+          'p_user_id': activeUser.id,
           'p_email': email.trim().toLowerCase(),
           'p_role': role.value,
           'p_full_name': fullName.trim(),
@@ -178,7 +192,7 @@ class AuthService {
     } catch (_) {}
 
     return Profile(
-      id: user.id,
+      id: activeUser.id,
       email: email.trim().toLowerCase(),
       role: role,
       fullName: fullName.trim(),
@@ -400,7 +414,7 @@ class AuthService {
 
   /// Mengambil data profil pengguna yang sedang login
   Future<Profile?> getCurrentProfile() async {
-    final user = _supabaseService.currentUser;
+    final user = _supabaseService.currentUser ?? _client.auth.currentUser;
     if (user == null) return null;
 
     try {
@@ -416,10 +430,58 @@ class AuthService {
     return null;
   }
 
-  /// Memperbarui nama lengkap dan nomor telepon profil pengguna
-  Future<void> updateProfile({
+  /// Mengunggah foto profil pengguna ke Supabase Storage (bucket avatars)
+  Future<String> uploadAvatar(XFile file) async {
+    final user = _supabaseService.currentUser;
+    if (user == null) {
+      throw Exception('Pengguna belum login.');
+    }
+
+    final bytes = await file.readAsBytes();
+    final ext = file.name.split('.').last.toLowerCase();
+    final mimeType = ext == 'png'
+        ? 'image/png'
+        : (ext == 'webp' ? 'image/webp' : 'image/jpeg');
+    final filePath =
+        '${user.id}/avatar_${DateTime.now().millisecondsSinceEpoch}.$ext';
+
+    await _client.storage.from('avatars').uploadBinary(
+          filePath,
+          bytes,
+          fileOptions: FileOptions(
+            upsert: true,
+            contentType: mimeType,
+          ),
+        );
+
+    final publicUrl = _client.storage.from('avatars').getPublicUrl(filePath);
+
+    await _client.from('profiles').update({
+      'avatar_url': publicUrl,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', user.id);
+
+    return publicUrl;
+  }
+
+  /// Menghapus foto profil pengguna (set avatar_url menjadi null)
+  Future<void> deleteAvatar() async {
+    final user = _supabaseService.currentUser;
+    if (user == null) {
+      throw Exception('Pengguna belum login.');
+    }
+
+    await _client.from('profiles').update({
+      'avatar_url': null,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', user.id);
+  }
+
+  /// Memperbarui nama lengkap, nomor telepon, atau foto profil pengguna
+  Future<Profile> updateProfile({
     required String fullName,
     String? phone,
+    String? avatarUrl,
   }) async {
     final user = _supabaseService.currentUser;
     if (user == null) {
@@ -431,10 +493,78 @@ class AuthService {
       'updated_at': DateTime.now().toIso8601String(),
     };
     if (phone != null) {
-      updateData['phone'] = phone.trim();
+      updateData['phone'] = phone.trim().isEmpty ? null : phone.trim();
+    }
+    if (avatarUrl != null) {
+      updateData['avatar_url'] = avatarUrl;
     }
 
-    await _client.from('profiles').update(updateData).eq('id', user.id);
+    final res = await _client
+        .from('profiles')
+        .update(updateData)
+        .eq('id', user.id)
+        .select()
+        .single();
+
+    try {
+      await _client.auth.updateUser(
+        UserAttributes(
+          data: {'full_name': fullName.trim()},
+        ),
+      );
+    } catch (_) {}
+
+    return Profile.fromJson(res);
+  }
+
+  /// Mengirim tautan / kode verifikasi email dari Profile
+  Future<void> sendEmailVerificationLink({required String email}) async {
+    final cleanEmail = email.trim().toLowerCase();
+    try {
+      await _client.auth.resend(
+        type: OtpType.signup,
+        email: cleanEmail,
+        emailRedirectTo: 'beres://auth-callback',
+      );
+    } catch (_) {
+      await _client.auth.signInWithOtp(
+        email: cleanEmail,
+        emailRedirectTo: 'beres://auth-callback',
+        shouldCreateUser: false,
+      );
+    }
+  }
+
+  /// Verifikasi kode OTP email dan tandai profil terverifikasi
+  Future<bool> verifyEmailOtp({
+    required String email,
+    required String token,
+  }) async {
+    try {
+      try {
+        await _client.auth.verifyOTP(
+          email: email.trim().toLowerCase(),
+          token: token.trim(),
+          type: OtpType.email,
+        );
+      } catch (_) {
+        await _client.auth.verifyOTP(
+          email: email.trim().toLowerCase(),
+          token: token.trim(),
+          type: OtpType.signup,
+        );
+      }
+
+      await markEmailAsVerified();
+      return true;
+    } catch (e) {
+      throw Exception(BeresFormatters.formatAuthError(e));
+    }
+  }
+
+  /// Menandai email profil saat ini sebagai terverifikasi di database
+  Future<void> markEmailAsVerified() async {
+    await _client.rpc('rpc_verify_profile_email');
   }
 
   /// Menghapus akun secara permanen (FR-004, BR-45)
