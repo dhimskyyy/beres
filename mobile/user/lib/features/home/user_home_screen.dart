@@ -503,7 +503,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Ubah Profil Pengguna',
+                          'Edit Profil Anda',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
@@ -768,15 +768,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  const Text(
-                                    'Terhubung dengan akun autentikasi Beres',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Color(0xFF94A3B8),
-                                    ),
-                                  ),
+                                  ),                                                                    
                                 ],
                               ),
                             ),
@@ -1050,6 +1042,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                                     context,
                                     authService:
                                         ref.read(authServiceProvider),
+                                    userEmail: email,
                                     onAccountDeleted: () =>
                                         context.go('/login'),
                                   );
@@ -2815,7 +2808,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
         // App Bar Title (Centered)
         const Center(
           child: Text(
-            'Profil & Pengaturan Akun',
+            'Profil',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 20,

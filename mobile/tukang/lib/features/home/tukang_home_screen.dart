@@ -818,6 +818,7 @@ class _TukangHomeScreenState extends ConsumerState<TukangHomeScreen> {
                     DeleteAccountDialog.show(
                       context,
                       authService: ref.read(authServiceProvider),
+                      userEmail: _profile?.email,
                       onAccountDeleted: () => context.go('/login'),
                     );
                   },
