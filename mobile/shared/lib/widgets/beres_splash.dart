@@ -37,7 +37,10 @@ class _BeresSplashState extends State<BeresSplash>
     super.initState();
     _c.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        if (mounted) widget.onFinished();
+        // Tahan logo selama 2 detik sebelum navigasi
+        Future.delayed(const Duration(milliseconds: 2000), () {
+          if (mounted) widget.onFinished();
+        });
       }
     });
     _c.forward();

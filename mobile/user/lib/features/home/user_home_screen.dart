@@ -1604,14 +1604,14 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
   // TAB 0: HOME / BERANDA (Kombinasi Gambar 1 & Gambar 2 Sesuai Arahan)
   // ===========================================================================
   Widget _buildDashboardTab() {
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      color: const Color(0xFF16397E),
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
-        children: [
-          // 1. Header Top Bar (Halo, Nama User + Avatar Profil tanpa logo Beres di tengah)
-          Row(
+    return Column(
+      children: [
+        // App Bar Beranda (Seragam Top Bar Putih dengan Divider)
+        Container(
+          color: Colors.white,
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -1623,7 +1623,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                     Text(
                       'Halo, $_displayName',
                       style: const TextStyle(
-                        fontSize: 22,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF0F172A),
                         letterSpacing: -0.3,
@@ -1679,10 +1679,18 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
               ),
             ],
           ),
+        ),
 
-          const SizedBox(height: 18),
+        const Divider(height: 1, color: Color(0xFFE2E8F0)),
 
-          // 2. Banner Hero Card (Warna Deep Navy #102A71)
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _loadData,
+            color: const Color(0xFF16397E),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+              children: [
+                // 2. Banner Hero Card (Warna Deep Navy #102A71)
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -1986,8 +1994,11 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  ),
+],
+);
+}
 
   // Value Card Widget (3 Kolom Ringkas)
   Widget _buildValueCard({
@@ -2573,28 +2584,15 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
           color: Colors.white,
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                'Pesan & Nota Digital',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              SizedBox(height: 2),
-              Text(
-                'Diskusi langsung dan persetujuan Nota Sah',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-            ],
+          alignment: Alignment.center,
+          child: const Text(
+            'Pesan',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
+            ),
           ),
         ),
 
@@ -2802,26 +2800,32 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
     final initial = _initial;
     final isEmailVerified = _isEmailVerified;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
+    return Column(
       children: [
-        // App Bar Title (Centered)
-        const Center(
-          child: Text(
+        // App Bar Profil (Seragam Putih + Divider seperti Aktivitas & Pesan)
+        Container(
+          color: Colors.white,
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          alignment: Alignment.center,
+          child: const Text(
             'Profil',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.w800,
               color: Color(0xFF0F172A),
-              letterSpacing: -0.3,
             ),
           ),
         ),
 
-        const SizedBox(height: 18),
+        const Divider(height: 1, color: Color(0xFFE2E8F0)),
 
-        // 1. PROFIL HEADER (Avatar + Kamera, Nama, Email, Role Pill Sesuai Gambar Referensi)
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 28),
+            children: [
+              // 1. PROFIL HEADER (Avatar + Kamera, Nama, Email, Role Pill Sesuai Gambar Referensi)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           child: Row(
@@ -3150,8 +3154,11 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
           ),
         ),
       ],
-    );
-  }
+    ),
+  ),
+],
+);
+}
 
   Widget _buildSegmentStat({
     required String count,

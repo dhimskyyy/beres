@@ -10,6 +10,9 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: BeresUserApp()));
     expect(find.byType(BeresSplash), findsOneWidget);
 
+    // Animasi splash (2900ms) + delay tahanan akhir (2000ms)
+    await tester.pump(const Duration(milliseconds: 3000));
+    await tester.pump(const Duration(milliseconds: 2500));
     await tester.pumpAndSettle();
 
     expect(find.text('Silahkan Masuk ke Akun Anda Terlebih Dahulu'), findsOneWidget);

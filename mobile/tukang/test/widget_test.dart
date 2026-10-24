@@ -9,7 +9,12 @@ void main() {
   ) async {
     await tester.pumpWidget(const ProviderScope(child: BeresTukangApp()));
     expect(find.byType(BeresSplash), findsOneWidget);
+
+    // Animasi splash (2900ms) + delay tahanan akhir (2000ms)
+    await tester.pump(const Duration(milliseconds: 3000));
+    await tester.pump(const Duration(milliseconds: 2500));
     await tester.pumpAndSettle();
+
     expect(find.text('Masuk Mitra Tukang'), findsOneWidget);
     expect(find.text('Daftar Mitra Baru'), findsOneWidget);
   });
