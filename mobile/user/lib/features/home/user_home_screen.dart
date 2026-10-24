@@ -1509,7 +1509,9 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: _selectedTabIndex == 0
+            ? const Color(0xFFF8FAFC)
+            : Colors.white,
         body: SafeArea(
           child: IndexedStack(
             index: _selectedTabIndex,
@@ -1604,14 +1606,14 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
   // TAB 0: HOME / BERANDA (Kombinasi Gambar 1 & Gambar 2 Sesuai Arahan)
   // ===========================================================================
   Widget _buildDashboardTab() {
-    return Column(
-      children: [
-        // App Bar Beranda (Seragam Top Bar Putih dengan Divider)
-        Container(
-          color: Colors.white,
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          child: Row(
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      color: const Color(0xFF16397E),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+        children: [
+          // 1. Header Top Bar (Halo, Nama User + Avatar Profil - Scrollable, Tidak Stack)
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -1623,7 +1625,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                     Text(
                       'Halo, $_displayName',
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF0F172A),
                         letterSpacing: -0.3,
@@ -1679,18 +1681,10 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
               ),
             ],
           ),
-        ),
 
-        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          const SizedBox(height: 18),
 
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _loadData,
-            color: const Color(0xFF16397E),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
-              children: [
-                // 2. Banner Hero Card (Warna Deep Navy #102A71)
+          // 2. Banner Hero Card (Warna Deep Navy #102A71)
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -1994,11 +1988,8 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
           ),
         ],
       ),
-    ),
-  ),
-],
-);
-}
+    );
+  }
 
   // Value Card Widget (3 Kolom Ringkas)
   Widget _buildValueCard({
@@ -2461,7 +2452,9 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
         const Divider(height: 1, color: Color(0xFFE2E8F0)),
 
         Expanded(
-          child: RefreshIndicator(
+          child: Container(
+            color: const Color(0xFFF8FAFC),
+            child: RefreshIndicator(
             onRefresh: _loadData,
             color: const Color(0xFF16397E),
             child: _isLoading
@@ -2549,9 +2542,10 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                       ),
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Widget _buildActivityFilterChip(String key, String label) {
     final selected = _activityFilter == key;
@@ -2599,7 +2593,9 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
         const Divider(height: 1, color: Color(0xFFE2E8F0)),
 
         Expanded(
-          child: RefreshIndicator(
+          child: Container(
+            color: const Color(0xFFF8FAFC),
+            child: RefreshIndicator(
             onRefresh: _loadData,
             color: const Color(0xFF16397E),
             child: _isLoading
@@ -2780,9 +2776,10 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
                       ),
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   // ===========================================================================
   // TAB 3: PROFIL & PENGATURAN AKUN (Mengikuti Tema Navy Home)
@@ -2822,9 +2819,11 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
         const Divider(height: 1, color: Color(0xFFE2E8F0)),
 
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 28),
-            children: [
+          child: Container(
+            color: const Color(0xFFF8FAFC),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 28),
+              children: [
               // 1. PROFIL HEADER (Avatar + Kamera, Nama, Email, Role Pill Sesuai Gambar Referensi)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -3156,6 +3155,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> {
       ],
     ),
   ),
+),
 ],
 );
 }
