@@ -1,7 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:beres_shared/beres_shared.dart';
+
+import 'widgets/auth_hero_header.dart';
+import 'widgets/auth_text_field.dart';
+import 'widgets/google_logo.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
 
@@ -13,20 +19,66 @@ class TukangLoginScreen extends ConsumerStatefulWidget {
 }
 
 class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  final _otpController = TextEditingController();
-  final _fullNameController = TextEditingController();
+  final _passwordController = TextEditingController();
 
-  bool _isOtpSent = false;
+  bool _obscurePassword = true;
   bool _isLoading = false;
-  bool _isNewUser = false;
+  bool _isOAuthFlow = false;
   String? _errorMessage;
+  StreamSubscription<AuthState>? _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    try {
+      _authSubscription = SupabaseClientService
+          .instance.client.auth.onAuthStateChange
+          .listen((data) async {
+        final session = data.session;
+        final isGoogleProvider =
+            (session?.user.appMetadata['provider'] as String?) == 'google';
+        if (session != null && (_isOAuthFlow || isGoogleProvider) && mounted) {
+          _isOAuthFlow = false;
+          bool needsOnboarding = false;
+          try {
+            final authService = ref.read(authServiceProvider);
+            final existingProfile = await authService.getCurrentProfile();
+            if (existingProfile == null ||
+                existingProfile.role == UserRole.user) {
+              needsOnboarding = true;
+            }
+            await authService.syncOAuthProfile(
+              session.user,
+              role: UserRole.tukang,
+            );
+          } catch (_) {}
+          if (mounted) {
+            if (needsOnboarding) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Silakan lengkapi pendaftaran & profil keahlian Mitra Tukang Anda terlebih dahulu.',
+                  ),
+                  backgroundColor: AppColors.safetyOrange,
+                ),
+              );
+              context.go('/onboarding');
+            } else {
+              context.go('/home');
+            }
+          }
+        }
+      });
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
     _emailController.dispose();
-    _otpController.dispose();
-    _fullNameController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -34,10 +86,16 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
     return BeresFormatters.formatAuthError(raw);
   }
 
-  Future<void> _handleSendOtp() async {
+  Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
     if (email.isEmpty || !email.contains('@')) {
       setState(() => _errorMessage = 'Masukkan alamat email yang valid.');
+      return;
+    }
+    if (password.isEmpty) {
+      setState(() => _errorMessage = 'Password wajib diisi.');
       return;
     }
 
@@ -49,27 +107,17 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
     try {
       final authService = ref.read(authServiceProvider);
 
+      // 1. Cek status suspend atau deleted sebelum login (BR-42, BR-44)
       final checkResult = await authService.checkEmailRole(
         email: email,
         targetRole: UserRole.tukang,
       );
 
-      if (checkResult.isRoleMismatch) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = checkResult.message != null
-              ? _cleanMessage(checkResult.message!)
-              : 'Email ini sudah terdaftar sebagai akun Pelanggan. Gunakan email lain untuk masuk sebagai Mitra Tukang.';
-        });
-        return;
-      }
-
       if (checkResult.isDeleted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = checkResult.message != null
-              ? _cleanMessage(checkResult.message!)
-              : 'Akun dengan email ini telah dihapus atau dinonaktifkan.';
+          _errorMessage = checkResult.message ??
+              'Akun dengan email ini telah dinonaktifkan.';
         });
         return;
       }
@@ -80,11 +128,11 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
             MaterialPageRoute(
               builder: (context) => SuspendScreen(
                 isPermanent: true,
-                reason:
-                    checkResult.suspendReason ??
+                reason: checkResult.suspendReason ??
                     'Akun mitra dinonaktifkan permanen oleh tim operasional.',
                 appealEmail: checkResult.appealEmail ?? 'support@beres.id',
-                onSignOut: () => context.go('/login'),
+                onSignOut: () =>
+                    Navigator.of(context).pushReplacementNamed('/login'),
               ),
             ),
           );
@@ -98,11 +146,11 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
             MaterialPageRoute(
               builder: (context) => SuspendScreen(
                 isPermanent: false,
-                reason:
-                    checkResult.suspendReason ??
+                reason: checkResult.suspendReason ??
                     'Akun mitra ditangguhkan sementara selama 48 jam.',
                 suspendedUntil: checkResult.suspendedUntil,
-                onSignOut: () => context.go('/login'),
+                onSignOut: () =>
+                    Navigator.of(context).pushReplacementNamed('/login'),
               ),
             ),
           );
@@ -110,66 +158,55 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
         return;
       }
 
-      await authService.sendEmailOtp(email: email);
-
-      if (mounted) {
+      // Proteksi BR-44: Jika email baru terdaftar sebagai USER (belum pernah daftar jadi Mitra Tukang),
+      // tolak login dan arahkan untuk mendaftar sebagai mitra terlebih dahulu.
+      if (checkResult.isExistingUser &&
+          !checkResult.hasRoleFor(UserRole.tukang)) {
         setState(() {
           _isLoading = false;
-          _isOtpSent = true;
-          _isNewUser = (checkResult.status == 'ALLOWED_NEW_USER');
+          _errorMessage =
+              'Email ini terdaftar sebagai akun Pelanggan. Untuk masuk sebagai Mitra Tukang, silakan lakukan pendaftaran mitra terlebih dahulu melalui tombol Daftar Mitra.';
         });
+        return;
+      }
+
+      // 2. Autentikasi Email + Password
+      await authService.signInWithPassword(
+        email: email,
+        password: password,
+        expectedRole: UserRole.tukang,
+      );
+
+      if (mounted) {
+        context.go('/home');
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Gagal mengirim kode verifikasi. Silakan coba lagi.';
+          _errorMessage = _cleanMessage(e.toString());
         });
       }
     }
   }
 
-  Future<void> _handleVerifyOtp() async {
-    final otp = _otpController.text.trim();
-    if (otp.length < 6 || otp.length > 8) {
-      setState(() => _errorMessage = 'Masukkan kode OTP 6 hingga 8 digit.');
-      return;
-    }
-
-    final fullName = _isNewUser
-        ? (_fullNameController.text.trim().isNotEmpty
-              ? _fullNameController.text.trim()
-              : 'Mitra Tukang')
-        : 'Mitra Tukang';
-
+  Future<void> _handleGoogleSignIn() async {
     setState(() {
       _isLoading = true;
+      _isOAuthFlow = true;
       _errorMessage = null;
     });
 
     try {
       final authService = ref.read(authServiceProvider);
-      await authService.verifyOtpAndSyncProfile(
-        email: _emailController.text.trim(),
-        token: otp,
-        targetRole: UserRole.tukang,
-        fullName: fullName,
-      );
-
-      if (mounted) {
-        if (_isNewUser) {
-          context.go('/onboarding');
-        } else {
-          context.go('/home');
-        }
-      }
+      await authService.signInWithGoogle();
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e is AuthException
-              ? 'Kode OTP tidak sesuai atau sudah kedaluwarsa.'
-              : _cleanMessage(e.toString());
+          _isOAuthFlow = false;
+          _errorMessage =
+              'Gagal masuk menggunakan Google. Silakan coba kembali.';
         });
       }
     }
@@ -177,207 +214,313 @@ class _TukangLoginScreenState extends ConsumerState<TukangLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
-      appBar: AppBar(title: const Text('Masuk Mitra Tukang')),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: AppColors.tukangBadgeBg,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(
-                        Icons.handyman_outlined,
-                        size: 26,
-                        color: AppColors.safetyOrange,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text('Beres Mitra', style: AppTypography.headingLarge),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Terima pesanan pekerjaan sesuai keahlian Anda dan terima pembayaran 100% langsung tanpa potongan komisi.',
-                    style: AppTypography.bodyMedium,
-                  ),
-                  const SizedBox(height: 24),
+    final screenHeight = MediaQuery.of(context).size.height;
+    final heroHeight = (screenHeight * 0.32).clamp(230.0, 270.0);
 
-                  if (_errorMessage != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.dangerLight,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.dangerCrimson.withValues(
-                            alpha: 0.25,
-                          ),
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.error_outline_rounded,
-                            color: AppColors.dangerCrimson,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.dangerCrimson,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarBrightness: Brightness.dark, // iOS: Light (white) text and icons
+        statusBarIconBrightness: Brightness.light, // Android: White icons
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0F172A),
+        body: Stack(
+          children: [
+            // 1. Hero Workshop & Logo Area
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: AuthHeroHeader(
+                height: heroHeight + 36,
+                showBackButton: false,
+                subtitleBadge: 'MITRA TUKANG',
+              ),
+            ),
+
+            // 2. Solid White Sheet Container
+            Positioned.fill(
+              top: heroHeight,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x25000000),
+                      blurRadius: 18,
+                      offset: Offset(0, -6),
                     ),
-                    const SizedBox(height: 18),
                   ],
-
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceWhite,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.borderLight),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        TextField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          enabled: !_isOtpSent && !_isLoading,
-                          decoration: const InputDecoration(
-                            labelText: 'Alamat Email Mitra',
-                            hintText: 'mitra@email.com',
-                            prefixIcon: Icon(Icons.mail_outline_rounded),
-                          ),
-                        ),
-
-                        if (_isOtpSent) ...[
-                          const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.tukangBadgeBg,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              'Kode verifikasi telah dikirim ke ${_emailController.text.trim()}.',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.tukangBadgeText,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _otpController,
-                            keyboardType: TextInputType.number,
-                            maxLength: 8,
-                            enabled: !_isLoading,
-                            style: AppTypography.otpCode,
+                ),
+                child: ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(36)),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(28, 28, 28, 36),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Title & Subtitle
+                          const Text(
+                            'Selamat Datang Mitra',
                             textAlign: TextAlign.center,
-                            decoration: const InputDecoration(
-                              labelText: 'Kode Verifikasi (OTP)',
-                              hintText: '••••••',
-                              counterText: '',
-                              prefixIcon: Icon(Icons.lock_outline_rounded),
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0F172A),
+                              letterSpacing: -0.5,
                             ),
                           ),
-                          if (_isNewUser) ...[
-                            const SizedBox(height: 14),
-                            TextField(
-                              controller: _fullNameController,
-                              enabled: !_isLoading,
-                              decoration: const InputDecoration(
-                                labelText: 'Nama Lengkap Sesuai KTP',
-                                hintText: 'Masukkan nama lengkap Anda',
-                                prefixIcon: Icon(Icons.badge_outlined),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Silahkan Masuk ke Akun Mitra Tukang Anda',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+
+                          if (_errorMessage != null) ...[
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF2F2),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFFFCA5A5),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline_rounded,
+                                    size: 18,
+                                    color: Color(0xFFDC2626),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _errorMessage!,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFFDC2626),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
-                          const SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: _isLoading ? null : _handleVerifyOtp,
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Text('Verifikasi & Masuk'),
+
+                          const SizedBox(height: 22),
+
+                          // Field Email
+                          AuthTextField(
+                            label: 'Email Mitra',
+                            hintText: 'mitra@email.com',
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            prefixIcon: Icons.mail_outline_rounded,
+                            focusBorderColor: AppColors.safetyOrange,
+                            enabled: !_isLoading,
                           ),
-                          const SizedBox(height: 8),
-                          TextButton(
-                            onPressed: _isLoading
-                                ? null
-                                : () => setState(() {
-                                    _isOtpSent = false;
-                                    _otpController.clear();
-                                  }),
-                            child: const Text('Ubah Alamat Email'),
+
+                          const SizedBox(height: 16),
+
+                          // Field Password
+                          AuthTextField(
+                            label: 'Password',
+                            hintText: '••••••••',
+                            controller: _passwordController,
+                            isPassword: true,
+                            obscureText: _obscurePassword,
+                            prefixIcon: Icons.lock_outline_rounded,
+                            focusBorderColor: AppColors.safetyOrange,
+                            enabled: !_isLoading,
+                            onToggleObscure: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
                           ),
-                        ] else ...[
+
+                          const SizedBox(height: 10),
+
+                          // Lupa Password Button
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: GestureDetector(
+                              onTap: _isLoading
+                                  ? null
+                                  : () => context.push('/forgot-password'),
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 4),
+                                child: Text(
+                                  'Lupa Password?',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.safetyOrange,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
                           const SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: _isLoading ? null : _handleSendOtp,
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
+
+                          // Primary Button "MASUK"
+                          SizedBox(
+                            height: 50,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.safetyOrange,
+                                foregroundColor: Colors.white,
+                                elevation: 3,
+                                shadowColor: AppColors.safetyOrange
+                                    .withValues(alpha: 0.35),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                              ),
+                              onPressed: _isLoading ? null : _handleLogin,
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'MASUK',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 1.2,
+                                      ),
                                     ),
-                                  )
-                                : const Text('Kirim Kode Masuk'),
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // Divider "Atau masuk dengan"
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  height: 1,
+                                  color: const Color(0xFFE2E8F0),
+                                ),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 12),
+                                child: Text(
+                                  'Atau masuk dengan',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF94A3B8),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Container(
+                                  height: 1,
+                                  color: const Color(0xFFE2E8F0),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 18),
+
+                          // Button "Masuk menggunakan Google"
+                          SizedBox(
+                            height: 48,
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: const Color(0xFFF8FAFC),
+                                side: const BorderSide(
+                                  color: Color(0xFFE2E8F0),
+                                  width: 1.2,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                                elevation: 0,
+                              ),
+                              onPressed:
+                                  _isLoading ? null : _handleGoogleSignIn,
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  GoogleLogo(size: 18),
+                                  SizedBox(width: 10),
+                                  Text(
+                                    'Masuk menggunakan Google',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Footer: Belum punya akun? Daftar Disini
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              const Text(
+                                'Ingin bergabung sebagai mitra? ',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF64748B),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: _isLoading
+                                    ? null
+                                    : () => context.push('/register'),
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 4),
+                                  child: Text(
+                                    'Daftar Disini',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.safetyOrange,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
-                      ],
+                      ),
                     ),
                   ),
-
-                  const SizedBox(height: 20),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      const Text(
-                        'Ingin bergabung sebagai mitra?',
-                        style: AppTypography.bodySmall,
-                      ),
-                      TextButton(
-                        onPressed: _isLoading
-                            ? null
-                            : () => context.push('/register'),
-                        child: const Text('Daftar Mitra Baru'),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

@@ -5,6 +5,7 @@ import 'package:beres_shared/beres_shared.dart';
 
 import 'features/auth/tukang_login_screen.dart';
 import 'features/auth/tukang_register_screen.dart';
+import 'features/auth/tukang_reset_password_screen.dart';
 import 'features/home/tukang_home_screen.dart';
 import 'features/profile/tukang_onboarding_screen.dart';
 import 'features/kyc/tukang_kyc_screen.dart';
@@ -32,16 +33,23 @@ final _router = GoRouter(
       path: '/splash',
       builder: (context, state) => BeresSplash(
         tagline: 'Aplikasi Mitra Tukang',
-        onFinished: () {
+        onFinished: () async {
           try {
             final user = SupabaseClientService.instance.currentUser;
             if (user != null) {
-              context.go('/home');
+              final authService = AuthService();
+              final profile = await authService.getCurrentProfile();
+              if (profile != null && profile.role == UserRole.user) {
+                await authService.signOut();
+                if (context.mounted) context.go('/login');
+                return;
+              }
+              if (context.mounted) context.go('/home');
             } else {
-              context.go('/login');
+              if (context.mounted) context.go('/login');
             }
           } catch (_) {
-            context.go('/login');
+            if (context.mounted) context.go('/login');
           }
         },
       ),
@@ -53,6 +61,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/register',
       builder: (context, state) => const TukangRegisterScreen(),
+    ),
+    GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const TukangResetPasswordScreen(),
     ),
     GoRoute(
       path: '/home',

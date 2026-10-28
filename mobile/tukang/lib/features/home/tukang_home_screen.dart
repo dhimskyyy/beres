@@ -37,6 +37,13 @@ class _TukangHomeScreenState extends ConsumerState<TukangHomeScreen> {
 
     try {
       final profile = await authService.getCurrentProfile();
+      if (profile != null && profile.role == UserRole.user) {
+        await authService.signOut();
+        if (mounted) {
+          context.go('/login');
+        }
+        return;
+      }
       TukangProfile? tProfile;
       Job? lockedJob;
       if (profile != null) {

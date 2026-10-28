@@ -32,17 +32,25 @@ class CheckEmailRoleResult {
   bool get isSuspendedAuto2Days => status == 'SUSPENDED_AUTO_2_DAYS';
   bool get isDeleted => status == 'ACCOUNT_DELETED';
 
+  /// Mengecek apakah akun yang sudah ada memiliki akses ke peran target (termasuk BOTH)
+  bool hasRoleFor(UserRole targetRole) {
+    if (currentRole == null) return false;
+    if (currentRole == UserRole.both) return true;
+    return currentRole == targetRole;
+  }
+
   factory CheckEmailRoleResult.fromJson(Map<String, dynamic> json) {
+    final rawRole = json['current_role'] ?? json['role'];
     return CheckEmailRoleResult(
       status: json['status'] as String? ?? 'UNKNOWN',
       message: json['message'] as String?,
-      currentRole: json['current_role'] != null
-          ? UserRole.fromString(json['current_role'] as String)
+      currentRole: rawRole != null
+          ? UserRole.fromString(rawRole as String)
           : null,
       suspendReason: json['suspend_reason'] as String?,
       suspendedUntil: json['suspended_until'] != null
           ? DateTime.parse(json['suspended_until'] as String)
-          : null,
+           : null,
       appealEmail: json['appeal_email'] as String?,
     );
   }
@@ -80,14 +88,71 @@ class AuthService {
     }
   }
 
+  /// Helper internal untuk memanggil rpc_sync_profile_after_auth (8-param maupun 5-param)
+  Future<Profile?> _invokeSyncProfileRpc({
+    required String userId,
+    required String email,
+    required UserRole role,
+    required String fullName,
+    String? phone,
+    String? avatarUrl,
+  }) async {
+    try {
+      final rpcRes = await _client.rpc(
+        'rpc_sync_profile_after_auth',
+        params: {
+          'p_user_id': userId,
+          'p_email': email.trim().toLowerCase(),
+          'p_role': role.value,
+          'p_full_name': fullName.trim(),
+          'p_phone': phone?.trim(),
+          'p_avatar_url': avatarUrl,
+          'p_birth_place': null,
+          'p_birth_date': null,
+        },
+      );
+      if (rpcRes is Map && rpcRes['profile'] != null) {
+        final profileMap = Map<String, dynamic>.from(rpcRes['profile'] as Map);
+        if (profileMap['created_at'] == null) {
+          profileMap['created_at'] = DateTime.now().toIso8601String();
+        }
+        return Profile.fromJson(profileMap);
+      }
+    } catch (_) {
+      try {
+        final rpcRes = await _client.rpc(
+          'rpc_sync_profile_after_auth',
+          params: {
+            'p_user_id': userId,
+            'p_email': email.trim().toLowerCase(),
+            'p_role': role.value,
+            'p_full_name': fullName.trim(),
+            'p_phone': phone?.trim(),
+          },
+        );
+        if (rpcRes is Map && rpcRes['profile'] != null) {
+          final profileMap =
+              Map<String, dynamic>.from(rpcRes['profile'] as Map);
+          if (profileMap['created_at'] == null) {
+            profileMap['created_at'] = DateTime.now().toIso8601String();
+          }
+          return Profile.fromJson(profileMap);
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
   /// Masuk dengan Email dan Password tradisional
+  /// Login TIDAK meng-upgrade role secara otomatis; pengguna wajib mendaftar di peran terkait terlebih dahulu.
   Future<Profile> signInWithPassword({
     required String email,
     required String password,
     required UserRole expectedRole,
   }) async {
+    final cleanEmail = email.trim().toLowerCase();
     final response = await _client.auth.signInWithPassword(
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       password: password,
     );
     final user = response.user;
@@ -95,33 +160,37 @@ class AuthService {
       throw Exception('Login gagal. Periksa kembali email dan password Anda.');
     }
 
-    try {
-      final rpcRes = await _client.rpc(
-        'rpc_sync_profile_after_auth',
-        params: {
-          'p_user_id': user.id,
-          'p_email': user.email ?? email.trim().toLowerCase(),
-          'p_role': expectedRole.value,
-          'p_full_name':
-              (user.userMetadata?['full_name'] as String?) ?? 'Pengguna Beres',
-        },
-      );
-
-      if (rpcRes is Map && rpcRes['profile'] != null) {
-        final profileMap = Map<String, dynamic>.from(rpcRes['profile'] as Map);
-        if (profileMap['created_at'] == null) {
-          profileMap['created_at'] = DateTime.now().toIso8601String();
-        }
-        return Profile.fromJson(profileMap);
-      }
-    } catch (_) {}
-
+    // Periksa profil yang sudah ada di database sebelum mengizinkan masuk
     final current = await getCurrentProfile();
-    if (current != null) return current;
+    if (current != null) {
+      if (expectedRole == UserRole.tukang && current.role == UserRole.user) {
+        await _client.auth.signOut();
+        throw Exception(
+          'Email ini terdaftar sebagai akun Pelanggan. Untuk masuk sebagai Mitra Tukang, silakan lakukan pendaftaran mitra terlebih dahulu melalui tombol Daftar Mitra.',
+        );
+      }
+      if (expectedRole == UserRole.user && current.role == UserRole.tukang) {
+        await _client.auth.signOut();
+        throw Exception(
+          'Email ini terdaftar sebagai akun Mitra Tukang. Untuk masuk sebagai Pelanggan, silakan lakukan pendaftaran akun pelanggan terlebih dahulu melalui menu Daftar.',
+        );
+      }
+      return current;
+    }
+
+    // Fallback bila baris profil belum terbentuk sama sekali
+    final synced = await _invokeSyncProfileRpc(
+      userId: user.id,
+      email: user.email ?? cleanEmail,
+      role: expectedRole,
+      fullName:
+          (user.userMetadata?['full_name'] as String?) ?? 'Pengguna Beres',
+    );
+    if (synced != null) return synced;
 
     return Profile(
       id: user.id,
-      email: user.email ?? email.trim().toLowerCase(),
+      email: user.email ?? cleanEmail,
       role: expectedRole,
       fullName:
           (user.userMetadata?['full_name'] as String?) ?? 'Pengguna Beres',
@@ -129,7 +198,7 @@ class AuthService {
     );
   }
 
-  /// Mendaftar dengan Email dan Password tradisional
+  /// Mendaftar dengan Email dan Password tradisional (mendukung aktivasi peran ganda BOTH pada BR-44)
   Future<Profile> signUpWithPassword({
     required String email,
     required String password,
@@ -137,63 +206,132 @@ class AuthService {
     String? phone,
     required UserRole role,
   }) async {
+    final cleanEmail = email.trim().toLowerCase();
     final validationError =
         BeresPasswordValidation.check(password).errorMessage;
     if (validationError != null) {
       throw Exception(validationError);
     }
 
-    final response = await _client.auth.signUp(
-      email: email.trim().toLowerCase(),
-      password: password,
-      data: {
-        'full_name': fullName.trim(),
-        'role': role.value,
-      },
+    // 1. Cek status email & peran saat ini di database
+    final check = await checkEmailRole(
+      email: cleanEmail,
+      targetRole: role,
     );
 
-    var user = response.user;
-    if (user == null) {
+    if (check.isDeleted) {
+      throw Exception(
+        check.message ?? 'Akun dengan email ini telah dinonaktifkan.',
+      );
+    }
+
+    // Jika sudah memiliki peran yang sama (atau sudah BOTH), tolak pendaftaran ulang
+    if (check.isExistingUser && check.hasRoleFor(role)) {
+      if (role == UserRole.tukang) {
+        throw Exception(
+          'Email ini sudah terdaftar sebagai Mitra Tukang. Silakan masuk melalui halaman Login.',
+        );
+      }
+      throw Exception(
+        'Email ini sudah terdaftar. Silakan masuk menggunakan akun Anda.',
+      );
+    }
+
+    User? activeUser;
+
+    // 2. Kasus Aktivasi Peran Ganda (BOTH): email sudah terdaftar di peran lain (misal USER daftar jadi TUKANG)
+    if (check.isExistingUser && !check.hasRoleFor(role)) {
+      try {
+        final loginRes = await _client.auth.signInWithPassword(
+          email: cleanEmail,
+          password: password,
+        );
+        activeUser = loginRes.user;
+      } catch (_) {
+        final existingLabel = check.currentRole?.label ?? 'Beres';
+        throw Exception(
+          'Email ini sudah terdaftar sebagai akun $existingLabel. Masukkan password akun $existingLabel Anda yang sama untuk mengaktifkan peran ${role.label}.',
+        );
+      }
+    } else {
+      // 3. Pendaftaran pengguna baru di Supabase Auth
+      try {
+        final response = await _client.auth.signUp(
+          email: cleanEmail,
+          password: password,
+          data: {
+            'full_name': fullName.trim(),
+            'role': role.value,
+          },
+        );
+        activeUser = response.user;
+
+        if (activeUser != null && response.session == null) {
+          try {
+            final loginRes = await _client.auth.signInWithPassword(
+              email: cleanEmail,
+              password: password,
+            );
+            activeUser = loginRes.user ?? activeUser;
+          } catch (_) {}
+        }
+      } catch (e) {
+        final lower = e.toString().toLowerCase();
+        if (lower.contains('already registered') ||
+            lower.contains('user_already_exists') ||
+            lower.contains('user already exists')) {
+          // Fallback aktivasi peran ganda bila checkEmailRole tadi belum mendeteksi
+          try {
+            final loginRes = await _client.auth.signInWithPassword(
+              email: cleanEmail,
+              password: password,
+            );
+            final loggedInUser = loginRes.user;
+            if (loggedInUser != null) {
+              final existingProfile = await getCurrentProfile();
+              if (existingProfile != null &&
+                  (existingProfile.role == role ||
+                      existingProfile.role == UserRole.both)) {
+                throw Exception(
+                  'Email ini sudah terdaftar. Silakan masuk menggunakan akun Anda.',
+                );
+              }
+              activeUser = loggedInUser;
+            }
+          } catch (innerErr) {
+            if (innerErr.toString().contains('sudah terdaftar')) {
+              rethrow;
+            }
+            throw Exception(
+              'Email ini sudah terdaftar di ekosistem Beres. Gunakan password akun Anda yang sama untuk mengaktifkan peran ${role.label}, atau masuk melalui halaman Login.',
+            );
+          }
+        } else {
+          rethrow;
+        }
+      }
+    }
+
+    if (activeUser == null) {
       throw Exception('Pendaftaran gagal. Silakan coba kembali.');
     }
 
-    // Pastikan session aktif di client (bila Supabase belum membuat session saat signUp)
-    if (response.session == null) {
-      try {
-        final loginRes = await _client.auth.signInWithPassword(
-          email: email.trim().toLowerCase(),
-          password: password,
-        );
-        user = loginRes.user ?? user;
-      } catch (_) {}
-    }
+    // 4. Sinkronisasi profil & peningkatan role menjadi BOTH bila sebelumnya peran berbeda
+    final synced = await _invokeSyncProfileRpc(
+      userId: activeUser.id,
+      email: cleanEmail,
+      role: role,
+      fullName: fullName.trim(),
+      phone: phone?.trim(),
+    );
+    if (synced != null) return synced;
 
-    final activeUser = user!;
-
-    try {
-      final rpcRes = await _client.rpc(
-        'rpc_sync_profile_after_auth',
-        params: {
-          'p_user_id': activeUser.id,
-          'p_email': email.trim().toLowerCase(),
-          'p_role': role.value,
-          'p_full_name': fullName.trim(),
-          'p_phone': phone?.trim(),
-        },
-      );
-
-      if (rpcRes is Map && rpcRes['profile'] != null) {
-        final profileMap = Map<String, dynamic>.from(rpcRes['profile'] as Map);
-        if (profileMap['created_at'] == null) {
-          profileMap['created_at'] = DateTime.now().toIso8601String();
-        }
-        return Profile.fromJson(profileMap);
-      }
-    } catch (_) {}
+    final current = await getCurrentProfile();
+    if (current != null) return current;
 
     return Profile(
       id: activeUser.id,
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       role: role,
       fullName: fullName.trim(),
       phone: phone?.trim(),
@@ -202,13 +340,16 @@ class AuthService {
   }
 
   /// Mengirim kode OTP untuk reset password
-  Future<void> sendPasswordResetOtp({required String email}) async {
+  Future<void> sendPasswordResetOtp({
+    required String email,
+    UserRole targetRole = UserRole.user,
+  }) async {
     final cleanEmail = email.trim().toLowerCase();
 
     // 1. Cek status akun di rpc_check_email_role
     final check = await checkEmailRole(
       email: cleanEmail,
-      targetRole: UserRole.user,
+      targetRole: targetRole,
     );
 
     if (check.isNewUser) {
@@ -226,6 +367,16 @@ class AuthService {
       throw Exception(
         check.suspendReason ??
             'Akun sedang ditangguhkan sementara selama 48 jam.',
+      );
+    }
+    if (check.isExistingUser && !check.hasRoleFor(targetRole)) {
+      if (targetRole == UserRole.tukang) {
+        throw Exception(
+          'Email ini terdaftar sebagai akun Pelanggan, namun belum terdaftar sebagai Mitra Tukang. Silakan lakukan pendaftaran mitra terlebih dahulu.',
+        );
+      }
+      throw Exception(
+        'Email ini terdaftar sebagai Mitra Tukang, namun belum terdaftar sebagai Pelanggan. Silakan lakukan pendaftaran terlebih dahulu.',
       );
     }
 
@@ -279,37 +430,25 @@ class AuthService {
       UserAttributes(password: newPassword),
     );
 
-    // 3. Sinkronisasi Profil
-    try {
-      final rpcRes = await _client.rpc(
-        'rpc_sync_profile_after_auth',
-        params: {
-          'p_user_id': user.id,
-          'p_email': user.email ?? email.trim().toLowerCase(),
-          'p_role': expectedRole.value,
-          'p_full_name':
-              (user.userMetadata?['full_name'] as String?) ?? 'Pelanggan Beres',
-        },
-      );
-
-      if (rpcRes is Map && rpcRes['profile'] != null) {
-        final profileMap = Map<String, dynamic>.from(rpcRes['profile'] as Map);
-        if (profileMap['created_at'] == null) {
-          profileMap['created_at'] = DateTime.now().toIso8601String();
-        }
-        return Profile.fromJson(profileMap);
-      }
-    } catch (_) {}
-
+    // 3. Ambil profil yang sudah ada tanpa mengubah role secara paksa
     final current = await getCurrentProfile();
     if (current != null) return current;
+
+    final synced = await _invokeSyncProfileRpc(
+      userId: user.id,
+      email: user.email ?? email.trim().toLowerCase(),
+      role: expectedRole,
+      fullName:
+          (user.userMetadata?['full_name'] as String?) ?? 'Pengguna Beres',
+    );
+    if (synced != null) return synced;
 
     return Profile(
       id: user.id,
       email: user.email ?? email.trim().toLowerCase(),
       role: expectedRole,
       fullName:
-          (user.userMetadata?['full_name'] as String?) ?? 'Pelanggan Beres',
+          (user.userMetadata?['full_name'] as String?) ?? 'Pengguna Beres',
       createdAt: DateTime.now(),
     );
   }
@@ -334,26 +473,18 @@ class AuthService {
     final fullName = (meta['full_name'] as String?) ??
         (meta['name'] as String?) ??
         (user.email != null ? user.email!.split('@').first : 'Pelanggan');
+    final avatarUrl =
+        (meta['avatar_url'] as String?) ?? (meta['picture'] as String?);
 
-    try {
-      final res = await _client.rpc(
-        'rpc_sync_profile_after_auth',
-        params: {
-          'p_user_id': user.id,
-          'p_email': user.email ?? '',
-          'p_role': role.value,
-          'p_full_name': fullName,
-          'p_phone': user.phone,
-        },
-      );
-      if (res is Map && res['profile'] != null) {
-        final profileMap = Map<String, dynamic>.from(res['profile'] as Map);
-        if (profileMap['created_at'] == null) {
-          profileMap['created_at'] = DateTime.now().toIso8601String();
-        }
-        return Profile.fromJson(profileMap);
-      }
-    } catch (_) {}
+    final synced = await _invokeSyncProfileRpc(
+      userId: user.id,
+      email: user.email ?? '',
+      role: role,
+      fullName: fullName,
+      phone: user.phone,
+      avatarUrl: avatarUrl,
+    );
+    if (synced != null) return synced;
     return await getCurrentProfile();
   }
 
@@ -385,21 +516,14 @@ class AuthService {
     }
 
     // Sinkronisasi profil di PostgreSQL
-    final rpcRes = await _client.rpc(
-      'rpc_sync_profile_after_auth',
-      params: {
-        'p_user_id': user.id,
-        'p_email': email.trim().toLowerCase(),
-        'p_role': targetRole.value,
-        'p_full_name': fullName.trim(),
-        'p_phone': phone?.trim(),
-      },
+    final synced = await _invokeSyncProfileRpc(
+      userId: user.id,
+      email: email.trim().toLowerCase(),
+      role: targetRole,
+      fullName: fullName.trim(),
+      phone: phone?.trim(),
     );
-
-    if (rpcRes is Map && rpcRes['profile'] != null) {
-      return Profile.fromJson(
-          Map<String, dynamic>.from(rpcRes['profile'] as Map));
-    }
+    if (synced != null) return synced;
 
     // Fallback profil
     return Profile(

@@ -25,6 +25,7 @@ class _UserLoginScreenState extends ConsumerState<UserLoginScreen> {
 
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _isOAuthFlow = false;
   String? _errorMessage;
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -36,7 +37,10 @@ class _UserLoginScreenState extends ConsumerState<UserLoginScreen> {
           .instance.client.auth.onAuthStateChange
           .listen((data) async {
         final session = data.session;
-        if (session != null && mounted) {
+        final isGoogleProvider =
+            (session?.user.appMetadata['provider'] as String?) == 'google';
+        if (session != null && (_isOAuthFlow || isGoogleProvider) && mounted) {
+          _isOAuthFlow = false;
           try {
             final authService = ref.read(authServiceProvider);
             await authService.syncOAuthProfile(session.user, role: UserRole.user);
@@ -133,6 +137,16 @@ class _UserLoginScreenState extends ConsumerState<UserLoginScreen> {
         return;
       }
 
+      if (checkResult.isExistingUser &&
+          !checkResult.hasRoleFor(UserRole.user)) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage =
+              'Email ini terdaftar sebagai akun Mitra Tukang. Untuk masuk sebagai Pelanggan, silakan lakukan pendaftaran akun pelanggan terlebih dahulu melalui tombol Daftar Disini.';
+        });
+        return;
+      }
+
       // 2. Autentikasi Email + Password
       await authService.signInWithPassword(
         email: email,
@@ -156,6 +170,7 @@ class _UserLoginScreenState extends ConsumerState<UserLoginScreen> {
   Future<void> _handleGoogleSignIn() async {
     setState(() {
       _isLoading = true;
+      _isOAuthFlow = true;
       _errorMessage = null;
     });
 
@@ -166,6 +181,7 @@ class _UserLoginScreenState extends ConsumerState<UserLoginScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _isOAuthFlow = false;
           _errorMessage =
               'Gagal masuk menggunakan Google. Silakan coba kembali.';
         });

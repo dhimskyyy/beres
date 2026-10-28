@@ -15,7 +15,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 2500));
     await tester.pumpAndSettle();
 
-    expect(find.text('Masuk Mitra Tukang'), findsOneWidget);
-    expect(find.text('Daftar Mitra Baru'), findsOneWidget);
+    expect(find.text('Selamat Datang Mitra'), findsOneWidget);
+    expect(find.text('Silahkan Masuk ke Akun Mitra Tukang Anda'), findsOneWidget);
+    expect(find.text('Daftar Disini'), findsOneWidget);
   });
 }
